@@ -1,11 +1,8 @@
 
 /**
-BGL_sample_2_4.cpp
-
+sample_1.cpp
 
 Finds all the loops inside an undirected graph
-
-Same as BGL_sample_2_3.cpp, but with all the code packed in undir_graph.hpp
 
 */
 

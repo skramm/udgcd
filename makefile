@@ -11,7 +11,7 @@ COLOR_OFF="\e[0m"
 CFLAGS = -std=c++0x -Wall -O2 -Iinclude
 
 # don't delete intermediate files
-.SECONDARY
+.SECONDARY:
 
 # disable implicit rules
 .SUFFIXES:
@@ -23,20 +23,15 @@ SRC_DIR=.
 OBJ_DIR=obj
 
 
-#HEADER_FILES = $(wildcard $(SRC_DIR)/*.h*)
 SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)
-#OBJ_FILES = $(patsubst $(SRC_DIR)/%.cpp,%.o,$(SRC_FILES))
 OBJ_FILES = $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRC_FILES))
-EXEC_FILES  = $(patsubst $(SRC_DIR)/%.cpp,$(BIN_DIR)/%,$(SRC_FILES))
-#EXEC_FILES  = $(patsubst $(SRC_DIR)/%.cpp,%,$(SRC_FILES))
+EXEC_FILES = $(patsubst $(SRC_DIR)/%.cpp,$(BIN_DIR)/%,$(SRC_FILES))
 
 # default target
 all: $(EXEC_FILES)
 	@echo "- Done target $@"
 
-
 show:
-#	@echo HEADER_FILES=$(HEADER_FILES)
 	@echo SRC_FILES=$(SRC_FILES)
 	@echo OBJ_FILES=$(OBJ_FILES)
 	@echo EXEC_FILES=$(EXEC_FILES)
@@ -50,7 +45,10 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp undir_graph.hpp
 	@echo $(COLOR_2) " - Compiling app file $<." $(COLOR_OFF)
 	$(L)$(CXX) -o $@ -c $< $(CFLAGS)
 
+
 # linking
 $(BIN_DIR)/%: $(OBJ_DIR)/%.o
 	@echo $(COLOR_3) " - Link demo $@." $(COLOR_OFF)
-	$(L)$(CXX) -o $@ -s $(subst $(BIN_DIR)/,$(OBJ_DIR)/,$@).o  $(LDFLAGS)
+#	$(L)$(CXX) -o $@ -s $(subst $(BIN_DIR)/,$(OBJ_DIR)/,$@).o  $(LDFLAGS)
+	$(L)$(CXX) -o $@ -s $<  $(LDFLAGS)
+
