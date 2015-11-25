@@ -8,6 +8,7 @@ COLOR_OFF="\e[0m"
 
 #--------------------------------
 # general compiler flags
+#CFLAGS = -std=c++0x -Wall -O2 -Iinclude -DUDGLD_PRINT_STEPS
 CFLAGS = -std=c++0x -Wall -O2 -Iinclude
 
 # don't delete intermediate files

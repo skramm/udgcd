@@ -1,13 +1,27 @@
+// Copyright Sebastien Kramm 2015
+// Distributed under the Boost Software License, Version 1.0.
+// (See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt)
 
 /**
 \name undir_graph.hpp
-\brief Undirected graph loop detection build upon BGL
+\brief UnDirected Graph Loop Detection (UDGLD)
+
+This code is a wrapper abode BGL (Boost Graph Library) and provides a solution to get the
+inner loops of undirected graph.
 
 - Usage:
- Just include this file in your application
+ - Include this file in your application.
+ - Call the \c UDGLD_INIT macro (outside of \c main() )
+
+See \ref sample_1.cpp as example.
 
 - Options:
- -if UDGLD_PRINT_STEPS is defined, the different steps will be printed on std::cout
+ -if UDGLD_PRINT_STEPS is defined, then different steps will be printed on \c std::cout (useful only for debugging purposes).
+
+- Issues:
+ - at present, this code requires a static member that you need to allocate memory for (see \c UDGLD_INIT).
+ Thus it is not thread safe, neither can it handle multiple graphs simultaneously.
 
 */
 
@@ -20,11 +34,19 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/undirected_dfs.hpp>
 
+/// A macro that you need to put in your code
+/**
+Needed to allocate memory for a static boolean
+*/
+#define UDGLD_INIT bool udgld::LoopDetector::cycleDetected = false;
 
+namespace udgld {
 
 //-------------------------------------------------------------------------------------------
-/// recursive function, explores edges connected to \c v1 until we find a loop
+/// Private, don't use.
 /**
+Recursive function, explores edges connected to \c v1 until we find a loop
+
 \warning Have to be sure there \b is a loop, else infinite recursion !
 */
 template <class Vertex, class Graph>
@@ -89,14 +111,14 @@ bool explore(
 	return found;
 }
 //-------------------------------------------------------------------------------------------
-#if 1
+/// Additional helper function, can be used to print the loops found
 template<typename T>
-void PrintLoops( std::ostream& f, const std::vector<std::vector<T>>& loops, const char* msg=0 )
+void PrintPaths( std::ostream& f, const std::vector<std::vector<T>>& v_paths, const char* msg=0 )
 {
 	if( msg )
 		f << msg << ": ";
-	f <<  "-Found " << loops.size() << " loops:\n";
-	for( const auto& path: loops )
+	f <<  "-Found " << v_paths.size() << " loops:\n";
+	for( const auto& path: v_paths )
 	{
 		f << " - ";
 		for( const auto& node : path )
@@ -104,12 +126,13 @@ void PrintLoops( std::ostream& f, const std::vector<std::vector<T>>& loops, cons
 		f << "\n";
 	}
 }
-#endif
 
 //-------------------------------------------------------------------------------------------
-/// extract loop segment from whole path
+/// Private, don't use.
 /**
-if an input string is "ABCDEFCXY" then the output string will be "CDEFC"
+Extract loop segment from whole path.
+
+If an input string is "ABCDEFCXY" then the output string will be "CDEFC"
 */
 template<typename T>
 std::vector<std::vector<T>> ExtractRelevantPart( const std::vector<std::vector<T>>& loops )
@@ -134,9 +157,12 @@ std::vector<std::vector<T>> ExtractRelevantPart( const std::vector<std::vector<T
 }
 
 //-------------------------------------------------------------------------------------------
-/// remove twins : vector that are the same, but in reverse order
+/// Private, don't use.
+/**
+ Remove twins : vector that are the same, but in reverse order
+*/
 template<typename T>
-std::vector<std::vector<T>> RemoveOppositePairs(  const std::vector<std::vector<T>>& loops )
+std::vector<std::vector<T>> RemoveOppositePairs( const std::vector<std::vector<T>>& loops )
 {
 	assert( loops.size() );
 	std::vector<std::vector<T>> out;      // output vector
@@ -158,8 +184,10 @@ std::vector<std::vector<T>> RemoveOppositePairs(  const std::vector<std::vector<
 }
 
 //-------------------------------------------------------------------------------------------
-/// helper function for RemoveIdentical()
+/// Private, don't use.
 /**
+Helper function for RemoveIdentical()
+
 Given an input vector "DABCD", it will return "ABCD" (removal of duplicate element, and first element is the smallest)
 */
 template<typename T>
@@ -178,8 +206,9 @@ std::vector<T> GetSortedTrimmed( const std::vector<T>& v_in )
 }
 
 //-------------------------------------------------------------------------------------------
-/// remove identical strings that are the same up to the starting point
+/// Private, don't use.
 /**
+Remove identical strings that are the same up to the starting point
 It also sorts the paths by rotating them so that the node of smallest index is first
 */
 template<typename T>
@@ -227,25 +256,25 @@ FindLoops( const Graph& g )
 	explore( Vertex(0), g, vv_paths, loops );    // call of recursive function
 
 #ifdef UDGLD_PRINT_STEPS
-	PrintLoops( std::cout, loops, "Raw loops" );
+	PrintPaths( std::cout, loops, "Raw loops" );
 #endif
 
 // post process 1: extract loop segments from whole path
 	std::vector<std::vector<Vertex>> loops2 = ExtractRelevantPart( loops );
 #ifdef UDGLD_PRINT_STEPS
-	PrintLoops( std::cout, loops2, "loops2" );
+	PrintPaths( std::cout, loops2, "loops2" );
 #endif
 
 // post process 2: remove the paths that are identical but reversed
 	std::vector<std::vector<Vertex>> loops3 = RemoveOppositePairs( loops2 );
 #ifdef UDGLD_PRINT_STEPS
-	PrintLoops( std::cout, loops3, "loops3" );
+	PrintPaths( std::cout, loops3, "loops3" );
 #endif
 
 // post process 3: remove twin pathes
 	std::vector<std::vector<Vertex>> loops4 = RemoveIdentical( loops3 );
 #ifdef UDGLD_PRINT_STEPS
-	PrintLoops( std::cout, loops3, "loops4" );
+	PrintPaths( std::cout, loops3, "loops4" );
 #endif
 	return loops4;
 }
@@ -253,8 +282,7 @@ FindLoops( const Graph& g )
 //-------------------------------------------------------------------------------------------
 /// Loop detector for an undirected graph
 /**
-Passed as visitor to \c boost::undirected_dfs(), so it needs to allocate the boolean on heap.
-Therefore, we need to define destructor, copy-constructor assignment operator
+Passed by value as visitor to \c boost::undirected_dfs()
 
 See http://www.boost.org/doc/libs/1_58_0/libs/graph/doc/undirected_dfs.html
 */
@@ -269,9 +297,8 @@ struct LoopDetector : public boost::dfs_visitor<>
 		template <class Edge, class Graph>
 		void back_edge( Edge e, const Graph& g )     // is invoked on the back edges in the graph.
 		{
-	#if 1
+	#if 0
 			typedef typename boost::graph_traits < Graph >::vertex_descriptor Vertex;
-
 			Vertex v1 = source(e, g);
 			Vertex v2 = target(e, g);
 			std::cout << " => CYCLE DETECTED! v1=" << v1 << " v2=" << v2 << "\n";
@@ -283,6 +310,7 @@ struct LoopDetector : public boost::dfs_visitor<>
 };
 
 //-------------------------------------------------------------------------------------------
+/// Some typedefs
 typedef boost::adjacency_list<
 	boost::vecS,
 	boost::vecS,
@@ -298,5 +326,25 @@ typedef boost::adjacency_list<
 	typedef boost::graph_traits<my_graph>::edge_descriptor edge_t;
 
 //-------------------------------------------------------------------------------------------
+/// Main user interface: just call this function to get the loops inside your graph
+/**
+Returns a vector of loops that have been found in the graph
+*/
+template<typename Graph>
+std::vector<std::vector<vertex_t>>
+Process( Graph& g )
+{
+	LoopDetector ld;
+	boost::undirected_dfs( g, boost::root_vertex( vertex_t(0) ).visitor(ld).edge_color_map( get(boost::edge_color, g) ) );
+
+	if( ld.cycleDetected )
+		return FindLoops<vertex_t,Graph>( g );
+	else
+		return std::vector<std::vector<vertex_t>>(); // return empty vector, no loops found
+}
+
+//-------------------------------------------------------------------------------------------
+
+} // namespace end
 
 #endif // HG_UNDIR_GRAPH_HPP
