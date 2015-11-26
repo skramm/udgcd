@@ -22,6 +22,11 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
+		<Unit filename="README.md" />
+		<Unit filename="doxyfile" />
+		<Unit filename="makefile" />
+		<Unit filename="sample_1.cpp" />
+		<Unit filename="undir_graph.hpp" />
 		<Extensions>
 			<envvars />
 			<code_completion />

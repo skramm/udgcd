@@ -1,11 +1,12 @@
-# undir_graph_loops
-Wrapper over BGL, provides a mean to detect loops in an undirected graph
+# udgld (UnDirected Graph Loop Detection)
+
+C++ wrapper over Boost Graph Library (aka as BGL), provides a mean to detect loops in undirected graphs
 
 Released under the Boost licence
 
-Not tested, but provides sample application code (that works)
+Not extensively tested, but provides sample application code (that works)
 
-To build sample, just run provided makefile, no other dependency than BGL.
+To build the provided sample code, just run makefile, no other dependency than BGL.
 (tested with 1.54)
 
 
