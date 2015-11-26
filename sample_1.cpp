@@ -5,7 +5,7 @@
 
 #include <iostream>
 #include <string>
-#include "undir_graph.hpp"
+#include "udgld.hpp"
 #include <boost/version.hpp>
 
 #include "boost/graph/graphviz.hpp"
@@ -75,7 +75,7 @@ int main(int, char*[])
 
 	std::vector<std::vector<udgld::vertex_t>> loops;
 
-	loops = udgld::FindLoops( g );         // no cycles
+	loops = udgld::FindLoops( g );          // no cycles
 	udgld::PrintPaths( std::cout, loops );
 
 	add_edge( 1, 6, g );                     // cycle !

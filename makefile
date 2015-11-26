@@ -1,4 +1,4 @@
-# makefile for building sample(s)
+# makefile for building sample(s) for udgld
 # author: S. Kramm, 2015
 
 COLOR_1=-e "\e[1;33m"
@@ -21,7 +21,7 @@ CFLAGS = -std=c++0x -Wall -O2 -Iinclude
 
 SHELL=/bin/bash
 
-LIB_FILE=undir_graph.hpp
+LIB_FILE=udgld.hpp
 BIN_DIR=.
 SRC_DIR=.
 OBJ_DIR=obj
