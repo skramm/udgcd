@@ -35,12 +35,15 @@ EXEC_FILES = $(patsubst $(SRC_DIR)/%.cpp,$(BIN_DIR)/%,$(SRC_FILES))
 all: $(EXEC_FILES)
 	@echo "- Done target $@"
 
+run: all
+	./sample_1
+
 show: $(SRC_FILES)
 	@echo SRC_FILES=$(SRC_FILES)
 	@echo OBJ_FILES=$(OBJ_FILES)
 	@echo EXEC_FILES=$(EXEC_FILES)
 
-doc: $(SRC_FILES) $(LIB_FILE)
+doc: run
 	doxygen doxyfile 1>$(OBJ_DIR)/doxygen_stdout.txt 2>$(OBJ_DIR)/doxygen_stderr.txt
 
 clean:

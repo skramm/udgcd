@@ -4,11 +4,13 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 
 /**
-\file undir_graph.hpp
-\brief UnDirected Graph Loop Detection (UDGLD)
+\file udgld.hpp
+\brief UnDirected Graph Loop Detection. Finds all the loops inside an undirected graph.
 
 This code is a wrapper abode BGL (Boost Graph Library) and provides a solution to get the
-inner loops of undirected graph.
+inner loops of an undirected graph.
+
+For details on BGL, see http://www.boost.org/doc/libs/1_58_0/libs/graph/doc
 
 - Usage:
  -# Include this file in your application.
@@ -19,7 +21,7 @@ inner loops of undirected graph.
 
 See \ref sample_1.cpp as example.
 
-- Options:
+- Build options:
  - if UDGLD_PRINT_STEPS is defined, then different steps will be printed on \c std::cout (useful only for debugging purposes). See makefile
 
 - Issues:
@@ -28,8 +30,8 @@ See \ref sample_1.cpp as example.
 
 */
 
-#ifndef HG_UNDIR_GRAPH_HPP
-#define HG_UNDIR_GRAPH_HPP
+#ifndef HG_UDGLD_HPP
+#define HG_UDGLD_HPP
 
 #include <vector>
 
@@ -382,4 +384,4 @@ FindLoops( Graph& g )
 
 } // namespace end
 
-#endif // HG_UNDIR_GRAPH_HPP
+#endif // HG_UDGLD_HPP

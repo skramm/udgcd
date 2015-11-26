@@ -1,6 +1,11 @@
+// Copyright Sebastien Kramm 2015
+// Distributed under the Boost Software License, Version 1.0.
+// (See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt)
+
 /**
 \file sample_1.cpp
-\brief Finds all the loops inside an undirected graph
+\brief Sample code showing usage of udgld.hpp
 */
 
 #include <iostream>
@@ -40,11 +45,11 @@ void RenderGraph( const Graphtype& g, int idx )
 {
 	std::string idx_str( std::to_string(idx) );
 	{
-		std::ofstream f ( "sample_" + idx_str + ".dot" );
+		std::ofstream f ( "obj/sample1_" + idx_str + ".dot" );
 		assert( f.is_open() );
 		boost::write_graphviz( f, g );
 	}
-	std::system( std::string( "dot -Tpng sample_" + idx_str + ".dot > sample_" + idx_str + ".png").c_str() );
+	std::system( std::string( "dot -Tpng obj/sample1_" + idx_str + ".dot > obj/sample1_" + idx_str + ".png").c_str() );
 }
 
 //-------------------------------------------------------------------
@@ -101,3 +106,15 @@ int main(int, char*[])
 	return 0;
 }
 //-------------------------------------------------------------------
+
+/**
+\page sample_graph_1 Sample graph
+
+This page shows what is done in sample_1.cpp
+
+\image html sample1_0.png "Original graph, without loops"
+\image html "sample1_1.png"
+\image html "sample1_2.png"
+\image html "sample1_3.png"
+
+*/
