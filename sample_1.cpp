@@ -39,6 +39,8 @@ std::vector<std::string> name = {
 	"H8", "H9", "H10", "H11", "H12", "H13", "H14", "H15"};
 
 
+std::string dot_command( "dot -Tpng -Gsize=\"6,6\" -Grankdir=LR -Nfontsize=24 obj/sample1_" );
+
 //-------------------------------------------------------------------------------------------
 /// Some typedefs for readability... ;-)
 typedef boost::adjacency_list<
@@ -67,7 +69,7 @@ void RenderGraph( const Graphtype& g, int idx, const std::vector<std::vector<ver
 		assert( f.is_open() );
 		boost::write_graphviz( f, g );
 	}
-	std::system( std::string( "dot -Tpng obj/sample1_" + idx_str + ".dot > obj/sample1_" + idx_str + ".png").c_str() );
+	std::system( std::string( dot_command + idx_str + ".dot > obj/sample1_" + idx_str + ".png").c_str() );
 }
 //-------------------------------------------------------------------
 /// Generates a dot file from graph \c g and calls the renderer to produce a png image of the graph.
