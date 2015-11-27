@@ -61,7 +61,7 @@ typedef boost::adjacency_list<
 //-------------------------------------------------------------------
 /// Generates a dot file from graph \c g and calls the renderer to produce a png image of the graph
 template<typename Graphtype>
-void RenderGraph( const Graphtype& g, int idx, const std::vector<std::vector<vertex_t>>& loops )
+void RenderGraph( const Graphtype& g, int idx )
 {
 	std::string idx_str( std::to_string(idx) );
 	{
@@ -70,15 +70,6 @@ void RenderGraph( const Graphtype& g, int idx, const std::vector<std::vector<ver
 		boost::write_graphviz( f, g );
 	}
 	std::system( std::string( dot_command + idx_str + ".dot > obj/sample1_" + idx_str + ".png").c_str() );
-}
-//-------------------------------------------------------------------
-/// Generates a dot file from graph \c g and calls the renderer to produce a png image of the graph.
-/// Version with 2 args only, calls other version with an empty vector.
-template<typename Graphtype>
-void RenderGraph( const Graphtype& g, int idx )
-{
-	const std::vector<std::vector<vertex_t>> loops;
-	RenderGraph( g, idx, loops );
 }
 
 //-------------------------------------------------------------------
