@@ -1,5 +1,6 @@
 # makefile for building sample(s) for udgld
 # author: S. Kramm, 2015
+# Linux only, probably...
 
 COLOR_1=-e "\e[1;33m"
 COLOR_2=-e "\e[1;34m"
@@ -26,7 +27,6 @@ BIN_DIR=.
 SRC_DIR=.
 OBJ_DIR=obj
 
-
 SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)
 OBJ_FILES = $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRC_FILES))
 EXEC_FILES = $(patsubst $(SRC_DIR)/%.cpp,$(BIN_DIR)/%,$(SRC_FILES))
@@ -49,6 +49,10 @@ doc: run
 clean:
 	-rm $(OBJ_DIR)/*
 	-rm *.layout
+
+cleandoc:
+	-rm -r html/*
+	-rmdir html
 
 # generic compile rule
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(LIB_FILE)

@@ -38,10 +38,28 @@ std::vector<std::string> name = {
 	"C0", "C1", "C2", "C3", "C4", "C5", "C6", "O7",
 	"H8", "H9", "H10", "H11", "H12", "H13", "H14", "H15"};
 
+
+//-------------------------------------------------------------------------------------------
+/// Some typedefs for readability... ;-)
+typedef boost::adjacency_list<
+	boost::vecS,
+	boost::vecS,
+	boost::undirectedS,
+	boost::no_property,
+	boost::property<
+		boost::edge_color_t,
+		boost::default_color_type
+		>
+	> graph_t;
+
+	typedef boost::graph_traits<graph_t>::vertex_descriptor vertex_t;
+	typedef boost::graph_traits<graph_t>::edge_descriptor   edge_t;
+
+
 //-------------------------------------------------------------------
-/// Generates a dot file from grah \c g and calls the renderer to produce a png image of the graph
+/// Generates a dot file from graph \c g and calls the renderer to produce a png image of the graph
 template<typename Graphtype>
-void RenderGraph( const Graphtype& g, int idx )
+void RenderGraph( const Graphtype& g, int idx, const std::vector<std::vector<vertex_t>>& loops )
 {
 	std::string idx_str( std::to_string(idx) );
 	{
@@ -51,12 +69,21 @@ void RenderGraph( const Graphtype& g, int idx )
 	}
 	std::system( std::string( "dot -Tpng obj/sample1_" + idx_str + ".dot > obj/sample1_" + idx_str + ".png").c_str() );
 }
+//-------------------------------------------------------------------
+/// Generates a dot file from graph \c g and calls the renderer to produce a png image of the graph.
+/// Version with 2 args only, calls other version with an empty vector.
+template<typename Graphtype>
+void RenderGraph( const Graphtype& g, int idx )
+{
+	const std::vector<std::vector<vertex_t>> loops;
+	RenderGraph( g, idx, loops );
+}
 
 //-------------------------------------------------------------------
 int main(int, char*[])
 {
 	std::cout << "-built with Boost " << BOOST_LIB_VERSION << '\n';
-	udgld::graph_t g( name.size() );
+	graph_t g( name.size() );
 
 	add_edge(0, 1, g);
 	add_edge(0, 8, g);
@@ -78,29 +105,29 @@ int main(int, char*[])
 	int i=0;
 	RenderGraph( g, i++ );
 
-	std::vector<std::vector<udgld::vertex_t>> loops;
+	std::vector<std::vector<vertex_t>> loops;
 
-	loops = udgld::FindLoops( g );          // no cycles
+	loops = udgld::FindLoops<graph_t,vertex_t>( g );          // no cycles
 	udgld::PrintPaths( std::cout, loops );
 
 	add_edge( 1, 6, g );                     // cycle !
-	RenderGraph( g, i++ );
-	loops = udgld::FindLoops( g );
+	loops = udgld::FindLoops<graph_t,vertex_t>( g );
+	RenderGraph( g, i++, loops );
 	udgld::PrintPaths( std::cout, loops );
 
 	add_edge( 13, 14, g );                  // another cycle !
-	RenderGraph( g, i++ );
-	loops = udgld::FindLoops( g );
+	RenderGraph( g, i++, loops );
+	loops = udgld::FindLoops<graph_t,vertex_t>( g );
 	udgld::PrintPaths( std::cout, loops );
 
 	add_edge( 15, 8, g );                   // another cycle !
-	RenderGraph( g, i++ );
-	loops = udgld::FindLoops( g );
+	RenderGraph( g, i++, loops );
+	loops = udgld::FindLoops<graph_t,vertex_t>( g );
 	udgld::PrintPaths( std::cout, loops );
 
 	add_edge( 15, 8, g );                 // add a second arc between same vertices, does not add a path
-	RenderGraph( g, i++ );
-	loops = udgld::FindLoops( g );
+	RenderGraph( g, i++, loops );
+	loops = udgld::FindLoops<graph_t,vertex_t>( g );
 	udgld::PrintPaths( std::cout, loops );
 
 	return 0;
