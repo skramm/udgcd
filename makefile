@@ -50,6 +50,9 @@ clean:
 	-rm $(OBJ_DIR)/*
 	-rm *.layout
 
+cleanall: clean cleandoc
+	-rm $(EXEC_FILES)
+
 cleandoc:
 	-rm -r html/*
 	-rmdir html
