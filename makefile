@@ -37,6 +37,7 @@ all: $(EXEC_FILES)
 
 run: all
 	./sample_1
+	./sample_2
 
 show: $(SRC_FILES)
 	@echo SRC_FILES=$(SRC_FILES)
@@ -56,6 +57,10 @@ cleanall: clean cleandoc
 cleandoc:
 	-rm -r html/*
 	-rmdir html
+
+# needs 'sudo'
+install:
+	-cp $(LIB_FILE) /usr/local/include/$(LIB_FILE)
 
 # generic compile rule
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(LIB_FILE)

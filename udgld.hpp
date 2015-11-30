@@ -95,6 +95,7 @@ bool explore(
 	}
 	return found;
 }
+
 //-------------------------------------------------------------------------------------------
 /// Additional helper function, can be used to print the loops found
 template<typename T>
