@@ -22,7 +22,9 @@ See file README.md
 /**
 Needed to allocate memory for a static boolean
 */
-#define UDGLD_INIT bool udgld::LoopDetector::cycleDetected = false;
+#define UDGLD_INIT ;
+
+//#define UDGLD_INIT bool udgld::LoopDetector::cycleDetected = false;
 
 /// all the codes is in this namespace
 namespace udgld {
@@ -232,6 +234,7 @@ Passed by value as visitor to \c boost::undirected_dfs()
 
 See http://www.boost.org/doc/libs/1_58_0/libs/graph/doc/undirected_dfs.html
 */
+template <typename vertex_t>
 struct LoopDetector : public boost::dfs_visitor<>
 {
 	public:
@@ -250,10 +253,18 @@ struct LoopDetector : public boost::dfs_visitor<>
 			std::cout << " => CYCLE DETECTED! v1=" << v1 << " v2=" << v2 << "\n";
 	#endif
 			LoopDetector::cycleDetected = true;
+			vertex_t v = boost::source(e, g);
+			v_vertex_involved.push_back( v );
 		}
 //	private:
 		static bool cycleDetected;
+		static std::vector<vertex_t> v_vertex_involved;
 };
+
+template<class T>
+bool LoopDetector<T>::cycleDetected = 0;
+template<class T>
+std::vector<T> LoopDetector<T>::v_vertex_involved;
 
 //-------------------------------------------------------------------------------------------
 /// Main user interface: just call this function to get the loops inside your graph
@@ -264,7 +275,7 @@ template<typename Graph, typename vertex_t>
 std::vector<std::vector<vertex_t>>
 FindLoops( Graph& g )
 {
-	LoopDetector ld;
+	LoopDetector<vertex_t> ld;
 	boost::undirected_dfs( g, boost::root_vertex( vertex_t(0) ).visitor(ld).edge_color_map( get(boost::edge_color, g) ) );
 
 	if( !ld.cycleDetected )
@@ -272,11 +283,16 @@ FindLoops( Graph& g )
 
 // else, get the loops.
 	{
+		std::cout << "nb of involved vertices: " << ld.v_vertex_involved.size() << "\n";
 		std::vector<std::vector<vertex_t>> v_loops;
-		std::vector<std::vector<vertex_t>> v_paths;
-		std::vector<vertex_t> newv(1, vertex_t(0) ); // start by first vertex (index 0)
-		v_paths.push_back( newv );
-		explore( vertex_t(0), g, v_paths, v_loops );    // call of recursive function
+
+		for( const auto& vi: ld.v_vertex_involved )
+		{
+			std::vector<std::vector<vertex_t>> v_paths;
+			std::vector<vertex_t> newv(1, vi ); // start by first vertex (index 0)
+			v_paths.push_back( newv );
+			explore( vi, g, v_paths, v_loops );    // call of recursive function
+		}
 
 	#ifdef UDGLD_PRINT_STEPS
 		PrintPaths( std::cout, v_loops, "Raw loops" );

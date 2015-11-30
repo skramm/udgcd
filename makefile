@@ -12,7 +12,7 @@ COLOR_OFF="\e[0m"
 CFLAGS = -std=c++0x -Wall -O2 -Iinclude
 
 # uncomment this line to print out the different steps
-#CFLAGS += -DUDGLD_PRINT_STEPS
+CFLAGS += -DUDGLD_PRINT_STEPS
 
 # don't delete intermediate files
 .SECONDARY:
@@ -36,8 +36,7 @@ all: $(EXEC_FILES)
 	@echo "- Done target $@"
 
 run: all
-	./sample_1
-	./sample_2
+	$(addsuffix && ,$(EXEC_FILES)) true
 
 show: $(SRC_FILES)
 	@echo SRC_FILES=$(SRC_FILES)

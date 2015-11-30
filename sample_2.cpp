@@ -68,7 +68,6 @@ void RenderGraph( const Graphtype& g, int idx )
 //-------------------------------------------------------------------
 int main(int, char*[])
 {
-
 	std::cout << "-built with Boost " << BOOST_LIB_VERSION << '\n';
 	graph_t g( name.size() );
 

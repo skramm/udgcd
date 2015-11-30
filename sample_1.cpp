@@ -58,7 +58,6 @@ typedef boost::adjacency_list<
 	typedef boost::graph_traits<graph_t>::vertex_descriptor vertex_t;
 	typedef boost::graph_traits<graph_t>::edge_descriptor   edge_t;
 
-
 //-------------------------------------------------------------------
 /// Generates a dot file from graph \c g and calls the renderer (dot/Graphviz) to produce a png image of the graph
 template<typename Graphtype>
