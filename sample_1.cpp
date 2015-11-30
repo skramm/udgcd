@@ -11,7 +11,8 @@
 #include <iostream>
 #include <string>
 #include "udgld.hpp"
-#include <boost/version.hpp>
+
+#include "common_sample.h"
 
 #include "boost/graph/graphviz.hpp"
 
@@ -76,7 +77,8 @@ void RenderGraph( const Graphtype& g, int idx )
 //-------------------------------------------------------------------
 int main(int, char*[])
 {
-	std::cout << "-built with Boost " << BOOST_LIB_VERSION << '\n';
+	SHOW_INFO;
+
 	graph_t g( name.size() );
 
 	add_edge(0, 1, g);
@@ -126,14 +128,3 @@ int main(int, char*[])
 }
 //-------------------------------------------------------------------
 
-/**
-\page sample_graph_1 Sample graph
-
-This page shows what is done in sample_1.cpp
-
-\image html sample1_0.png "Original graph, without loops"
-\image html "sample1_1.png"
-\image html "sample1_2.png"
-\image html "sample1_3.png"
-
-*/

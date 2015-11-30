@@ -13,7 +13,8 @@ In some situations, we can have a loop but explore can fail if the starting node
 #include <iostream>
 #include <string>
 #include "udgld.hpp"
-#include <boost/version.hpp>
+
+#include "common_sample.h"
 
 #include "boost/graph/graphviz.hpp"
 
@@ -23,13 +24,13 @@ UDGLD_INIT;
 /*
   test graph
 
-  N0  N1-N2
-       \ /
-       N3
+ N0   N1-N2  N4-N5  N6-N7
+       \ /           \ /
+        N3            N8
 */
 
 /// the nodes
-std::vector<std::string> name = { "N0", "N1", "N2", "N3" };
+std::vector<std::string> name = { "N0", "N1", "N2", "N3", "N4", "N5", "N6", "N6", "N7", "N8" };
 
 std::string dot_command( "dot -Tpng -Gsize=\"6,6\" -Grankdir=LR -Nfontsize=24 obj/sample1_" );
 
@@ -68,12 +69,19 @@ void RenderGraph( const Graphtype& g, int idx )
 //-------------------------------------------------------------------
 int main(int, char*[])
 {
-	std::cout << "-built with Boost " << BOOST_LIB_VERSION << '\n';
+	SHOW_INFO;
+
 	graph_t g( name.size() );
 
 	add_edge(2, 1, g);
 	add_edge(2, 3, g);
 	add_edge(3, 1, g);
+
+	add_edge(4, 5, g);
+
+	add_edge(6, 7, g);
+	add_edge(8, 7, g);
+	add_edge(8, 6, g);
 
 	int i=0;
 	RenderGraph( g, i++ );
@@ -84,15 +92,3 @@ int main(int, char*[])
 	return 0;
 }
 //-------------------------------------------------------------------
-
-/**
-\page sample_graph_1 Sample graph
-
-This page shows what is done in sample_1.cpp
-
-\image html sample1_0.png "Original graph, without loops"
-\image html "sample1_1.png"
-\image html "sample1_2.png"
-\image html "sample1_3.png"
-
-*/

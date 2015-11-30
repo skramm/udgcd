@@ -288,6 +288,7 @@ FindLoops( Graph& g )
 
 		for( const auto& vi: ld.v_vertex_involved )
 		{
+			std::cout << " - exploring vertex " << vi << "\n";
 			std::vector<std::vector<vertex_t>> v_paths;
 			std::vector<vertex_t> newv(1, vi ); // start by first vertex (index 0)
 			v_paths.push_back( newv );
@@ -298,6 +299,7 @@ FindLoops( Graph& g )
 		PrintPaths( std::cout, v_loops, "Raw loops" );
 	#endif
 
+// TODO this is probably not needed anymore with v2, as we start from nodes identified as part of the loop
 	// post process 1: extract loop segments from whole path
 		std::vector<std::vector<vertex_t>> loops2 = ExtractRelevantPart( v_loops );
 	#ifdef UDGLD_PRINT_STEPS
