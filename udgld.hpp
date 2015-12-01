@@ -241,17 +241,18 @@ See http://www.boost.org/doc/libs/1_58_0/libs/graph/doc/undirected_dfs.html
 template <typename vertex_t>
 struct LoopDetector : public boost::dfs_visitor<>
 {
+	template<typename T1, typename T2>
+	friend std::vector<std::vector<T2>> FindLoops( T1& g );
+
 	public:
 		LoopDetector()
 		{
-			LoopDetector::cycleDetected = false;
 			v_source_vertex.clear();
 		}
-
+		bool cycleDetected() const { return !v_source_vertex.empty(); }
 		template <class Edge, class Graph>
 		void back_edge( Edge e, const Graph& g )     // is invoked on the back edges in the graph.
 		{
-			LoopDetector::cycleDetected = true;
 			vertex_t vs = boost::source(e, g);
 			vertex_t vt = boost::target(e, g);
 	#ifdef UDGLD_PRINT_STEPS
@@ -264,14 +265,11 @@ struct LoopDetector : public boost::dfs_visitor<>
 			)
 				v_source_vertex.push_back( vs );
 		}
-//	private:
-		static bool cycleDetected;
+	private:
 		static std::vector<vertex_t> v_source_vertex;
 };
 
 /// static var instanciation
-template<class T>
-bool LoopDetector<T>::cycleDetected = 0;
 template<class T>
 std::vector<T> LoopDetector<T>::v_source_vertex;
 
@@ -284,11 +282,11 @@ template<typename graph_t, typename vertex_t>
 std::vector<std::vector<vertex_t>>
 FindLoops( graph_t& g )
 {
-	std::cout << "\n - START " << __FUNCTION__ << "\n";
+//	std::cout << "\n - START " << __FUNCTION__ << "\n";
 	LoopDetector<vertex_t> ld;
 	boost::undirected_dfs( g, boost::root_vertex( vertex_t(0) ).visitor(ld).edge_color_map( get(boost::edge_color, g) ) );
 
-	if( !ld.cycleDetected )
+	if( !ld.cycleDetected() )
 		return std::vector<std::vector<vertex_t>>(); // return empty vector, no loops found
 
 // else, get the loops.
@@ -313,7 +311,7 @@ FindLoops( graph_t& g )
 		PrintPaths( std::cout, loops2, "loops2" );
 	#endif
 
-	// post process 3: remove twin paths
+	// post process 2: remove twin paths
 		std::vector<std::vector<vertex_t>> loops3 = RemoveIdentical( loops2 );
 	#ifdef UDGLD_PRINT_STEPS
 		PrintPaths( std::cout, loops3, "loops3" );

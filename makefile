@@ -38,7 +38,6 @@ all: $(EXEC_FILES)
 
 run: all
 	$(addsuffix ;,$(EXEC_FILES))
-#	$(foreach t,$(EXEC_FILES),$t;)
 
 show: $(SRC_FILES)
 	@echo SRC_FILES=$(SRC_FILES)

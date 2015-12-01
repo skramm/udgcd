@@ -6,7 +6,7 @@
 #include <string>
 
 #define SHOW_INFO \
-	std::cout << "START: " << __FILE__ \
+	std::cout << "\n-START: " << __FILE__ \
 		<< "\n-built with Boost " << BOOST_LIB_VERSION << '\n'
 
 //-------------------------------------------------------------------
@@ -20,8 +20,7 @@ void RenderGraph( const Graphtype& g, int app_idx, int idx )
 		assert( f.is_open() );
 		boost::write_graphviz( f, g );
 	}
-	// the cast to void is there to avoid a warning about "unused return value".
-	(void)std::system(
+	std::system(
 		std::string(
 			"dot -Tpng -Gsize=\"6,6\" -Grankdir=LR -Nfontsize=24 "
 			+ id_str
