@@ -301,13 +301,14 @@ FindLoops( Graph& g )
 
 // TODO this is probably not needed anymore with v2, as we start from nodes identified as part of the loop
 	// post process 1: extract loop segments from whole path
-		std::vector<std::vector<vertex_t>> loops2 = ExtractRelevantPart( v_loops );
+//		std::vector<std::vector<vertex_t>> loops2 = ExtractRelevantPart( v_loops );
 	#ifdef UDGLD_PRINT_STEPS
-		PrintPaths( std::cout, loops2, "loops2" );
+//		PrintPaths( std::cout, loops2, "loops2" );
 	#endif
 
 	// post process 2: remove the paths that are identical but reversed
-		std::vector<std::vector<vertex_t>> loops3 = RemoveOppositePairs( loops2 );
+//		std::vector<std::vector<vertex_t>> loops3 = RemoveOppositePairs( loops2 );
+		std::vector<std::vector<vertex_t>> loops3 = RemoveOppositePairs( v_loops );
 	#ifdef UDGLD_PRINT_STEPS
 		PrintPaths( std::cout, loops3, "loops3" );
 	#endif

@@ -22,7 +22,8 @@ CFLAGS += -DUDGLD_PRINT_STEPS
 
 SHELL=/bin/bash
 
-LIB_FILE=udgld.hpp
+APP=udgld.hpp
+HEADERS=$(wildcard $(SRC_DIR)/*.h*)
 BIN_DIR=.
 SRC_DIR=.
 OBJ_DIR=obj
@@ -36,7 +37,8 @@ all: $(EXEC_FILES)
 	@echo "- Done target $@"
 
 run: all
-	$(addsuffix && ,$(EXEC_FILES)) true
+	$(addsuffix ;,$(EXEC_FILES))
+#	$(foreach t,$(EXEC_FILES),$t;)
 
 show: $(SRC_FILES)
 	@echo SRC_FILES=$(SRC_FILES)
@@ -59,10 +61,10 @@ cleandoc:
 
 # needs 'sudo'
 install:
-	-cp $(LIB_FILE) /usr/local/include/$(LIB_FILE)
+	-cp $(APP) /usr/local/include/$(APP)
 
 # generic compile rule
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(LIB_FILE)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(HEADERS)
 	@echo $(COLOR_2) " - Compiling app file $<." $(COLOR_OFF)
 	$(L)$(CXX) -o $@ -c $< $(CFLAGS)
 

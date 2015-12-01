@@ -9,15 +9,10 @@
 */
 
 #include <iostream>
-#include <string>
 #include "udgld.hpp"
 
 #include "common_sample.h"
 
-#include "boost/graph/graphviz.hpp"
-
-/// memory allocation
-UDGLD_INIT;
 
 /*
   Example graph from Tarjei Knapstad.
@@ -41,8 +36,6 @@ std::vector<std::string> name = {
 	"H8", "H9", "H10", "H11", "H12", "H13", "H14", "H15"};
 
 
-std::string dot_command( "dot -Tpng -Gsize=\"6,6\" -Grankdir=LR -Nfontsize=24 obj/sample1_" );
-
 //-------------------------------------------------------------------------------------------
 /// Some typedefs for readability... ;-)
 typedef boost::adjacency_list<
@@ -58,21 +51,6 @@ typedef boost::adjacency_list<
 
 	typedef boost::graph_traits<graph_t>::vertex_descriptor vertex_t;
 	typedef boost::graph_traits<graph_t>::edge_descriptor   edge_t;
-
-//-------------------------------------------------------------------
-/// Generates a dot file from graph \c g and calls the renderer (dot/Graphviz) to produce a png image of the graph
-template<typename Graphtype>
-void RenderGraph( const Graphtype& g, int idx )
-{
-	std::string idx_str( std::to_string(idx) );
-	{
-		std::ofstream f ( "obj/sample1_" + idx_str + ".dot" );
-		assert( f.is_open() );
-		boost::write_graphviz( f, g );
-	}
-	// the cast to void is there to avoid a warning about "unused return value".
-	(void)std::system( std::string( dot_command + idx_str + ".dot > obj/sample1_" + idx_str + ".png").c_str() );
-}
 
 //-------------------------------------------------------------------
 int main(int, char*[])
@@ -99,32 +77,33 @@ int main(int, char*[])
 	add_edge(7, 14, g);
 
 	int i=0;
-	RenderGraph( g, i++ );
+	RenderGraph( g, 1, i++ );
 
 	std::vector<std::vector<vertex_t>> loops = udgld::FindLoops<graph_t,vertex_t>( g );      // no cycles at first
 	udgld::PrintPaths( std::cout, loops );
 
 	add_edge( 1, 6, g );                                 // cycle !
 	loops = udgld::FindLoops<graph_t,vertex_t>( g );
-	RenderGraph( g, i++ );
+	RenderGraph( g, 1, i++ );
 	udgld::PrintPaths( std::cout, loops );
 
 	add_edge( 13, 14, g );                              // another cycle !
-	RenderGraph( g, i++ );
+	RenderGraph( g, 1, i++ );
 	loops = udgld::FindLoops<graph_t,vertex_t>( g );
 	udgld::PrintPaths( std::cout, loops );
 
 	add_edge( 15, 8, g );                               // another cycle !
-	RenderGraph( g, i++ );
+	RenderGraph( g, 1, i++ );
 	loops = udgld::FindLoops<graph_t,vertex_t>( g );
 	udgld::PrintPaths( std::cout, loops );
 
 	add_edge( 15, 8, g );                               // add a second arc between same vertices, does not add a path
-	RenderGraph( g, i++ );
+	RenderGraph( g, 1, i++ );
 	loops = udgld::FindLoops<graph_t,vertex_t>( g );
 	udgld::PrintPaths( std::cout, loops );
 
 	return 0;
 }
+
 //-------------------------------------------------------------------
 
