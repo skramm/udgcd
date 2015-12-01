@@ -12,14 +12,26 @@ This code will give you the two loops, as two paths:
 1-2-3-4-5-6
 3-7-14-13-4
 ```
+### Summary
+- [Status](#s_stat)
+- [Usage](#s_usage)
+- [Building & installing](#s_build)
+- [Issues](#s_issues)
+- [Insides](#s_inside)
+- [References](#s_ref)
+
 
 ### Status
+ <a name="s_stat"></a>
+
 - Not extensively tested, but provides sample application code (that works).
 - Modern C++ design'ed (RAII).
 - Fairly generic, should be suited for pretty much all types of undirected graphs.
 - Released under the Boost licence.
 
 ### Usage:
+ <a name="s_usage"></a>
+
  - Include the file `udgld.hpp` in your application.
  - Call the `UDGLD_INIT` macro (outside of `main()` )
  - Build your graph (add vertices and edges, see BGL manual)
@@ -32,6 +44,8 @@ See `sample_1.cpp` as example.
 
 
 ### Building & installing:
+ <a name="s_build"></a>
+
 - header only, no build.
 - To build & run the provided sample code, just use `make run`, no other dependency than BGL.
 (tested with 1.54)
@@ -47,11 +61,14 @@ Just copy the file `udgld.hpp` where you want, or use the provided `install` tar
  - if UDGLD_PRINT_STEPS is defined, then different steps will be printed on `std::cout` (useful only for debugging purposes). See makefile.
 
 ### Issues:
+ <a name="s_issues"></a>
+
  - At present, this code requires a static member that you need to allocate memory for (see macro UDGLD_INIT).
  Thus it is not thread safe, neither can it handle multiple graphs simultaneously.
 
 
 ### How does it work ?
+ <a name="s_inside"></a>
 
 Two steps are involved: first we need to check if there **is** at least one loop. Is this is true, we explore the graph to find it/them.
 
@@ -65,5 +82,7 @@ This means that a loop has been encountered.
 
 
 ### References
+ <a name="s_ref"></a>
+
  - BGL: http://www.boost.org/doc/libs/1_59_0/libs/graph/doc
  - [wikipedia.org Graph page](https://en.wikipedia.org/wiki/Graph_%28mathematics%29#Undirected_graph)
