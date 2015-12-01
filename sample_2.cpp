@@ -59,6 +59,8 @@ int main(int, char*[])
 	add_edge(8, 7, g);
 	add_edge(8, 6, g);
 
+	add_edge(9, 4, g);
+
 	int i=0;
 	RenderGraph( g, 2, i++ );
 

@@ -80,27 +80,27 @@ int main(int, char*[])
 	RenderGraph( g, 1, i++ );
 
 	std::vector<std::vector<vertex_t>> loops = udgld::FindLoops<graph_t,vertex_t>( g );      // no cycles at first
-	udgld::PrintPaths( std::cout, loops );
+	udgld::PrintPaths( std::cout, loops, "final-0" );
 
 	add_edge( 1, 6, g );                                 // cycle !
 	loops = udgld::FindLoops<graph_t,vertex_t>( g );
 	RenderGraph( g, 1, i++ );
-	udgld::PrintPaths( std::cout, loops );
+	udgld::PrintPaths( std::cout, loops, "final-1" );
 
 	add_edge( 13, 14, g );                              // another cycle !
 	RenderGraph( g, 1, i++ );
 	loops = udgld::FindLoops<graph_t,vertex_t>( g );
-	udgld::PrintPaths( std::cout, loops );
+	udgld::PrintPaths( std::cout, loops, "final-2" );
 
 	add_edge( 15, 8, g );                               // another cycle !
 	RenderGraph( g, 1, i++ );
 	loops = udgld::FindLoops<graph_t,vertex_t>( g );
-	udgld::PrintPaths( std::cout, loops );
+	udgld::PrintPaths( std::cout, loops, "final-3" );
 
 	add_edge( 15, 8, g );                               // add a second arc between same vertices, does not add a path
 	RenderGraph( g, 1, i++ );
 	loops = udgld::FindLoops<graph_t,vertex_t>( g );
-	udgld::PrintPaths( std::cout, loops );
+	udgld::PrintPaths( std::cout, loops, "final-4" );
 
 	return 0;
 }

@@ -12,7 +12,7 @@ COLOR_OFF="\e[0m"
 CFLAGS = -std=c++0x -Wall -O2 -Iinclude
 
 # uncomment this line to print out the different steps
-CFLAGS += -DUDGLD_PRINT_STEPS
+#CFLAGS += -DUDGLD_PRINT_STEPS
 
 # don't delete intermediate files
 .SECONDARY:
