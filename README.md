@@ -58,7 +58,9 @@ Just copy the file `udgld.hpp` where you want, or use the provided `install` tar
  ```
 
 ##### Build options:
- - if UDGLD_PRINT_STEPS is defined, then different steps will be printed on `std::cout` (useful only for debugging purposes). See makefile.
+ - if UDGLD_PRINT_STEPS is defined, then different steps will be printed on `std::cout` (useful only for debugging purposes).
+ For the provided samples, this can be done by passing option `PRINT_STEPS=Y` to make.
+
 
 ### Issues:
  <a name="s_issues"></a>

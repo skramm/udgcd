@@ -9,7 +9,9 @@ COLOR_OFF="\e[0m"
 
 #--------------------------------
 # general compiler flags
-CFLAGS = -std=c++0x -Wall -O2 -Iinclude
+# -Wno-unused-result is to avoid the warning on call to std::system()
+CFLAGS = -std=c++0x -Wall -O2 -Iinclude -Wno-unused-result
+
 
 # uncomment this line to print out the different steps
 #CFLAGS += -DUDGLD_PRINT_STEPS
@@ -19,6 +21,18 @@ CFLAGS = -std=c++0x -Wall -O2 -Iinclude
 
 # disable implicit rules
 .SUFFIXES:
+
+
+#----------------------------------------------
+# print out runtime steps
+ifeq "$(PRINT_STEPS)" ""
+	PRINT_STEPS=N
+endif
+
+ifeq "$(PRINT_STEPS)" "Y"
+	CFLAGS += -DUDGLD_PRINT_STEPS
+endif
+
 
 SHELL=/bin/bash
 
@@ -34,6 +48,8 @@ EXEC_FILES = $(patsubst $(SRC_DIR)/%.cpp,$(BIN_DIR)/%,$(SRC_FILES))
 
 # default target
 all: $(EXEC_FILES)
+	$(info PRINT_STEPS = $(PRINT_STEPS))
+	$(info CFLAGS = $(CFLAGS))
 	@echo "- Done target $@"
 
 run: all
@@ -58,12 +74,16 @@ cleandoc:
 	-rm -r html/*
 	-rmdir html
 
+diff:
+	git diff --color-words | aha > obj/diff.html
+	xdg-open obj/diff.html
+
 # needs 'sudo'
 install:
 	-cp $(APP) /usr/local/include/$(APP)
 
 # generic compile rule
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(HEADERS)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(HEADERS) makefile
 	@echo $(COLOR_2) " - Compiling app file $<." $(COLOR_OFF)
 	$(L)$(CXX) -o $@ -c $< $(CFLAGS)
 

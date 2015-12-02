@@ -28,6 +28,7 @@
 		<Unit filename="makefile" />
 		<Unit filename="sample_1.cpp" />
 		<Unit filename="sample_2.cpp" />
+		<Unit filename="sample_3.cpp" />
 		<Unit filename="udgld.hpp" />
 		<Extensions>
 			<envvars />

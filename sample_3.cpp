@@ -4,7 +4,7 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 
 /**
-\file sample_2.cpp
+\file sample_3.cpp
 \brief Sample code demonstrating when some nodes are NOT connected
 
 In some situations, we can have a loop but explore can fail if the starting node DOES NOT lead to that loop
@@ -47,26 +47,30 @@ int main(int, char*[])
 {
 	SHOW_INFO;
 
-//	graph_t g( name.size() );
+	int i=0;
+
 	graph_t g;
 
+	add_edge(0, 1, g);
+	add_edge(0, 2, g);
 	add_edge(2, 1, g);
-	add_edge(2, 3, g);
+
 	add_edge(3, 1, g);
+	add_edge(2, 3, g);
 
-	add_edge(4, 5, g);
+	RenderGraph( g, 3, i++ );
+	{
+		std::vector<std::vector<vertex_t>> loops = udgld::FindLoops<graph_t,vertex_t>( g );
+		udgld::PrintPaths( std::cout, loops );
+	}
+	add_edge( 2, 4, g);
+	add_edge( 3, 4, g);
 
-	add_edge(6, 7, g);
-	add_edge(8, 7, g);
-	add_edge(8, 6, g);
-
-	add_edge(9, 4, g);
-
-	int i=0;
-	RenderGraph( g, 2, i++ );
-
-	std::vector<std::vector<vertex_t>> loops = udgld::FindLoops<graph_t,vertex_t>( g );
-	udgld::PrintPaths( std::cout, loops );
+	RenderGraph( g, 3, i++ );
+	{
+		std::vector<std::vector<vertex_t>> loops = udgld::FindLoops<graph_t,vertex_t>( g );
+		udgld::PrintPaths( std::cout, loops );
+	}
 
 	return 0;
 }

@@ -15,7 +15,7 @@
 
 
 /*
-  Example graph from Tarjei Knapstad.
+  Modified example graph from Tarjei Knapstad.
 
                    H15
                    |
@@ -24,8 +24,8 @@
           H9-C0-C1    C3-O7-H14
             /   |     |
           H10   C6    C4
-               /  \  /  \
-              H11  C5    H13
+               /  \  /
+              H11  C5---H13
                    |
                    H12
 */
@@ -69,7 +69,7 @@ int main(int, char*[])
 	add_edge(2, 3, g);
 	add_edge(3, 7, g);
 	add_edge(3, 4, g);
-	add_edge(4, 13, g);
+	add_edge(5, 13, g);
 	add_edge(4, 5, g);
 	add_edge(5, 12, g);
 	add_edge(5, 6, g);
@@ -91,7 +91,7 @@ int main(int, char*[])
 	RenderGraph( g, 1, i++ );
 	loops = udgld::FindLoops<graph_t,vertex_t>( g );
 	udgld::PrintPaths( std::cout, loops, "final-2" );
-
+/*
 	add_edge( 15, 8, g );                               // another cycle !
 	RenderGraph( g, 1, i++ );
 	loops = udgld::FindLoops<graph_t,vertex_t>( g );
@@ -101,7 +101,7 @@ int main(int, char*[])
 	RenderGraph( g, 1, i++ );
 	loops = udgld::FindLoops<graph_t,vertex_t>( g );
 	udgld::PrintPaths( std::cout, loops, "final-4" );
-
+*/
 	return 0;
 }
 

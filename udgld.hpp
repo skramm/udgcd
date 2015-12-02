@@ -18,8 +18,6 @@ See file README.md
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/undirected_dfs.hpp>
 
-// typedef typename boost::graph_traits < Graph >::vertex_descriptor Vertex;
-
 
 /// all the codes is in this namespace
 namespace udgld {
@@ -178,6 +176,13 @@ RemoveOppositePairs( const std::vector<std::vector<T>>& loops )
 }
 
 //-------------------------------------------------------------------------------------------
+template<typename T>
+void PutSmallestElemFirst( std::vector<T>& vec )
+{
+	auto it = std::min_element( vec.begin(), vec.end() );     // rotate so that smallest is first
+	std::rotate( vec.begin(), it, vec.end() );
+}
+//-------------------------------------------------------------------------------------------
 /// Private, don't use.
 /**
 Helper function for RemoveIdentical()
@@ -188,15 +193,25 @@ template<typename T>
 std::vector<T>
 GetSortedTrimmed( const std::vector<T>& v_in )
 {
+//	std::cout << __FUNCTION__ << "(): in="; PrintPath( std::cout, v_in );
+
 	assert( v_in.front() == v_in.back() );
-	assert( v_in.size() > 1 );
+	assert( v_in.size() > 2 );  // a loop needs to be at least 3 nodes long
 
-	std::vector<T> v_out( v_in.size() - 1 );
-	std::copy( v_in.cbegin(), v_in.cend()-1, v_out.begin() );
+	std::vector<T> v_out( v_in.size() - 1 );                      // Trim: remove
+	std::copy( v_in.cbegin(), v_in.cend()-1, v_out.begin() );     // last element
 
-	auto it = std::min_element( v_out.begin(), v_out.end() );
-	std::rotate( v_out.begin(), it, v_out.end() );
+//	std::cout << __FUNCTION__ << "(): after trim="; PrintPath( std::cout, v_out );
 
+	PutSmallestElemFirst( v_out );
+//	std::cout << __FUNCTION__ << "(): after PSF="; PrintPath( std::cout, v_out );
+
+	if( v_out.back() < v_out[1] )                         // if we have 1-4-3-2, then
+	{
+		std::reverse( v_out.begin(), v_out.end() );   // we transform it into 2-3-4-1
+		PutSmallestElemFirst( v_out );                // and put smallest first: 1-2-3-4
+	}
+//	std::cout << __FUNCTION__ << "(): out="; PrintPath( std::cout, v_out );
 	return v_out;
 }
 
