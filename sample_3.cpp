@@ -13,18 +13,18 @@ In some situations, we can have a loop but explore can fail if the starting node
 #include <iostream>
 #include "udgld.hpp"
 
+int prog_id = 3;
 #include "common_sample.h"
 
 /*
   test graph
-
- N0   N1-N2  N4-N5  N6-N7
-       \ /           \ /
-        N3            N8
+        N3
+       / \
+      N1-N2
+       \ /
+        N0
 */
 
-/// the nodes
-std::vector<std::string> name = { "N0", "N1", "N2", "N3", "N4", "N5", "N6", "N6", "N7", "N8" };
 
 //-------------------------------------------------------------------------------------------
 /// Some typedefs for readability... ;-)
@@ -58,7 +58,7 @@ int main(int, char*[])
 	add_edge(3, 1, g);
 	add_edge(2, 3, g);
 
-	RenderGraph( g, 3, i++ );
+	RenderGraph( g );
 	{
 		std::vector<std::vector<vertex_t>> loops = udgld::FindLoops<graph_t,vertex_t>( g );
 		udgld::PrintPaths( std::cout, loops );
@@ -66,7 +66,7 @@ int main(int, char*[])
 	add_edge( 2, 4, g);
 	add_edge( 3, 4, g);
 
-	RenderGraph( g, 3, i++ );
+	RenderGraph( g );
 	{
 		std::vector<std::vector<vertex_t>> loops = udgld::FindLoops<graph_t,vertex_t>( g );
 		udgld::PrintPaths( std::cout, loops );

@@ -107,9 +107,12 @@ template<typename T>
 void
 PrintPaths( std::ostream& f, const std::vector<std::vector<T>>& v_paths, const char* msg=0 )
 {
+	static int iter=0;
+	f << "Paths (" << iter++ << "): nb=" << v_paths.size();
 	if( msg )
-		f << msg << ": ";
-	f <<  "\n-Found " << v_paths.size() << " loops:\n";
+		f << ": " << msg;
+	f << "\n";
+
 	for( size_t i=0; i<v_paths.size(); i++ )
 	{
 		f << " - " << i << ": ";

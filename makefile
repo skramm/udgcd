@@ -55,6 +55,9 @@ all: $(EXEC_FILES)
 run: all
 	$(addsuffix ;,$(EXEC_FILES))
 
+run4: all
+	./sample_1bis
+
 show: $(SRC_FILES)
 	@echo SRC_FILES=$(SRC_FILES)
 	@echo OBJ_FILES=$(OBJ_FILES)
