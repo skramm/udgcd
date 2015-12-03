@@ -12,7 +12,7 @@
 extern int prog_id;
 
 //-------------------------------------------------------------------
-/// Generates a dot file from graph \c g and calls the renderer (dot/Graphviz) to produce a png image of the graph
+/// Generates a dot file from graph \c g and calls the renderer (dot/Graphviz) to produce a svg image of the graph
 template<typename Graphtype>
 void RenderGraph( const Graphtype& g )
 {
@@ -26,13 +26,14 @@ void RenderGraph( const Graphtype& g )
 	}
 	std::system(
 		std::string(
-			"dot -Tpng -Gsize=\"6,6\" -Grankdir=LR -Nfontsize=24 "
+			"dot -Tsvg -Grankdir=LR -Nfontsize=24 "
 			+ id_str
 			+ ".dot > "
 			+ id_str
-			+ ".png"
+			+ ".svg"
 		).c_str()
 	);
+
 	idx++;
 }
 //-------------------------------------------------------------------

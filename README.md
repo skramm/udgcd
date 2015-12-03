@@ -59,7 +59,7 @@ Just copy the file `udgcd.hpp` where you want, or use the provided target of mak
  - if UDGCD_PRINT_STEPS is defined, then different steps will be printed on `std::cout` (useful only for debugging purposes).
  For the provided samples, this can be done by passing option `PRINT_STEPS=Y` to make.
 
-If Graphviz/dot is installed, the demo samples will render the generated graphs into png images in the `obj` folder.
+If Graphviz/dot is installed, the demo samples will render the generated graphs into svg images in the `obj` folder.
 
 ### Issues:
  <a name="s_issues"></a>
@@ -74,7 +74,7 @@ If Graphviz/dot is installed, the demo samples will render the generated graphs 
 Three steps are involved: first we need to check if there **is** at least one cycle. Is this is true, we explore the graph to find it/them.
 
 - The first step is done by calling [boost::undirected_dfs()](http://www.boost.org/doc/libs/1_59_0/libs/graph/doc/undirected_dfs.html)
-with passing a visitor of class `LoopDetector`, inherited from
+with passing a visitor of class `CycleDetector`, inherited from
 [boost::dfs_visitor](http://www.boost.org/doc/libs/1_59_0/libs/graph/doc/dfs_visitor.html).
 This object holds a set of vertices that are part of an edge on which `back_edge()` is called.
 This means that a cycle has been encountered.
@@ -110,5 +110,5 @@ This means that a cycle has been encountered.
  - The smallest element is in first position;
  - The element in second position is smaller than the last one.
 
- As an example, say you have a raw loop expressed as
+ As an example, say you have a raw cycle expressed as
    `6-2-1-4`, it is released as `1-2-6-4` (and not `1-4-6-2`).

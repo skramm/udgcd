@@ -2,7 +2,7 @@
 <CodeBlocks_project_file>
 	<FileVersion major="1" minor="6" />
 	<Project>
-		<Option title="udgld" />
+		<Option title="udgcd" />
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
 		<Build>
@@ -29,7 +29,8 @@
 		<Unit filename="sample_1.cpp" />
 		<Unit filename="sample_2.cpp" />
 		<Unit filename="sample_3.cpp" />
-		<Unit filename="udgld.hpp" />
+		<Unit filename="sample_4.cpp" />
+		<Unit filename="udgcd.hpp" />
 		<Extensions>
 			<envvars />
 			<code_completion />

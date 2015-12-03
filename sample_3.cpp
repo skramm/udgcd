@@ -7,7 +7,6 @@
 \file sample_3.cpp
 \brief Sample code demonstrating when some nodes are NOT connected
 
-In some situations, we can have a loop but explore can fail if the starting node DOES NOT lead to that loop
 */
 
 #include <iostream>
@@ -58,16 +57,16 @@ int main(int, char*[])
 
 	RenderGraph( g );
 	{
-		std::vector<std::vector<vertex_t>> loops = udgcd::FindCycles<graph_t,vertex_t>( g );
-		udgcd::PrintPaths( std::cout, loops );
+		std::vector<std::vector<vertex_t>> cycles = udgcd::FindCycles<graph_t,vertex_t>( g );
+		udgcd::PrintPaths( std::cout, cycles );
 	}
 	add_edge( 2, 4, g);
 	add_edge( 3, 4, g);
 
 	RenderGraph( g );
 	{
-		std::vector<std::vector<vertex_t>> loops = udgcd::FindCycles<graph_t,vertex_t>( g );
-		udgcd::PrintPaths( std::cout, loops );
+		std::vector<std::vector<vertex_t>> cycles = udgcd::FindCycles<graph_t,vertex_t>( g );
+		udgcd::PrintPaths( std::cout, cycles );
 	}
 
 	return 0;

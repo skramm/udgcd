@@ -5,13 +5,13 @@
 
 /**
 \file udgcd.hpp
-\brief UnDirected Graph Loop Detection. Finds all the loops inside an undirected graph.
+\brief UnDirected Graph Cycle Detection. Finds all the cycles inside an undirected graph.
 
 See file README.md
 */
 
-#ifndef HG_UDGLD_HPP
-#define HG_UDGLD_HPP
+#ifndef HG_UDGCD_HPP
+#define HG_UDGCD_HPP
 
 #include <vector>
 
@@ -25,9 +25,9 @@ namespace udgcd {
 //-------------------------------------------------------------------------------------------
 /// Private, don't use.
 /**
-Recursive function, explores edges connected to \c v1 until we find a loop
+Recursive function, explores edges connected to \c v1 until we find a cycle
 
-\warning Have to be sure there \b is a loop, else infinite recursion !
+\warning Have to be sure there \b is a cycle, else infinite recursion !
 */
 template <class Vertex, class Graph>
 bool
@@ -35,7 +35,7 @@ explore(
 	const Vertex& v1,                            ///< the starting vertex we want to explore
 	const Graph&  g,
 	std::vector<std::vector<Vertex>>& vv_paths,
-	std::vector<std::vector<Vertex>>& vv_loops, ///< this is where we store the paths that have loops
+	std::vector<std::vector<Vertex>>& v_cycles, ///< this is where we store the paths that have cycles
 	int depth = 0
 ) {
 	++depth;
@@ -75,7 +75,7 @@ explore(
 			{
 				newv.push_back( v2b );
 //				COUTP << "*** FOUND LOOP!\n";
-				vv_loops.push_back( newv );
+				v_cycles.push_back( newv );
 				return true;
 			}
 			else
@@ -83,7 +83,7 @@ explore(
 				newv.push_back( v2b );         // else add'em and continue
 //				COUTP << "  -adding vector ";  for( const auto& vv:newv )	cout << vv << "-"; cout << "\n";
 				vv_paths.push_back( newv );
-				b = explore( v2b, g, vv_paths, vv_loops, depth );
+				b = explore( v2b, g, vv_paths, v_cycles, depth );
 			}
 		}
 		if( b )
@@ -102,7 +102,7 @@ PrintPath( std::ostream& f, const std::vector<T>& path )
 	f << "\n";
 }
 
-/// Additional helper function, can be used to print the loops found
+/// Additional helper function, can be used to print the cycles found
 template<typename T>
 void
 PrintPaths( std::ostream& f, const std::vector<std::vector<T>>& v_paths, const char* msg=0 )
@@ -121,18 +121,19 @@ PrintPaths( std::ostream& f, const std::vector<std::vector<T>>& v_paths, const c
 }
 
 //-------------------------------------------------------------------------------------------
+#if 0
 /// Private, don't use.
 /**
-Extract loop segment from whole path.
+Extract cycle segment from whole path.
 
 If an input string is "ABCDEFCXY" then the output string will be "CDEFC"
 */
 template<typename T>
 std::vector<std::vector<T>>
-ExtractRelevantPart( const std::vector<std::vector<T>>& loops )
+ExtractRelevantPart( const std::vector<std::vector<T>>& v_paths )
 {
-	std::vector<std::vector<T>> out;
-	for( const auto& path: loops )
+	std::vector<std::vector<T>> v_out;
+	for( const auto& path: v_paths )
 	{
 		for( auto it = path.cbegin(); it != path.cend()-1; ++it )
 		{
@@ -142,14 +143,14 @@ ExtractRelevantPart( const std::vector<std::vector<T>>& loops )
 //				cout << "Found dupe: " << *it_second << "\nNew=";
 				std::vector<T> newv( it_second - it + 1 );         // output vector will have the common element at both sides
 				std::copy( it, it_second+1, newv.begin() );
-				out.push_back( newv );
+				v_out.push_back( newv );
 				break;
 			}
 		}
 	}
-	return out;
+	return v_out;
 }
-
+#endif
 //-------------------------------------------------------------------------------------------
 /// Private, don't use.
 /**
@@ -157,21 +158,21 @@ ExtractRelevantPart( const std::vector<std::vector<T>>& loops )
 */
 template<typename T>
 std::vector<std::vector<T>>
-RemoveOppositePairs( const std::vector<std::vector<T>>& loops )
+RemoveOppositePairs( const std::vector<std::vector<T>>& v_cycles )
 {
-	assert( loops.size() );
+	assert( v_cycles.size() );
 	std::vector<std::vector<T>> out;      // output vector
-	std::vector<bool> flags( loops.size(), true ); // some flags to keep track of which elements are reversed
+	std::vector<bool> flags( v_cycles.size(), true ); // some flags to keep track of which elements are reversed
 
-	for( size_t i=0; i<loops.size()-1; ++i )
+	for( size_t i=0; i<v_cycles.size()-1; ++i )
 		if( flags[i] )
 		{
-			std::vector<T> rev = loops[i];                       // step 1: build a reversed copy of the current vector
+			std::vector<T> rev = v_cycles[i];                       // step 1: build a reversed copy of the current vector
 			std::reverse( rev.begin(), rev.end() );
-			for( size_t j=i+1; j<loops.size(); ++j )                  // step 2: parse the rest of the list, and check
-				if( flags[j] && rev == loops[j] )                     // if similar, then
+			for( size_t j=i+1; j<v_cycles.size(); ++j )                  // step 2: parse the rest of the list, and check
+				if( flags[j] && rev == v_cycles[j] )                     // if similar, then
 				{
-					out.push_back( loops[i] );                        //  1 - add current vector into output
+					out.push_back( v_cycles[i] );                        //  1 - add current vector into output
 					flags[j] = false;                                 //  2 -  invalidate the reversed one
 				}
 		}
@@ -199,7 +200,7 @@ GetSortedTrimmed( const std::vector<T>& v_in )
 //	std::cout << __FUNCTION__ << "(): in="; PrintPath( std::cout, v_in );
 
 	assert( v_in.front() == v_in.back() );
-	assert( v_in.size() > 2 );  // a loop needs to be at least 3 nodes long
+	assert( v_in.size() > 2 );            // a (complete) cycle needs to be at least 3 vertices long
 
 	std::vector<T> v_out( v_in.size() - 1 );                      // Trim: remove
 	std::copy( v_in.cbegin(), v_in.cend()-1, v_out.begin() );     // last element
@@ -226,19 +227,19 @@ It also sorts the paths by rotating them so that the node of smallest index is f
 */
 template<typename T>
 std::vector<std::vector<T>>
-RemoveIdentical( const std::vector<std::vector<T>>& loops )
+RemoveIdentical( const std::vector<std::vector<T>>& v_cycles )
 {
-	assert( loops.size() );
+	assert( v_cycles.size() );
 
-	if( loops.size() == 1 )                                   // if single path in input, then we justs add it, after trimming/sorting
+	if( v_cycles.size() == 1 )                                   // if single path in input, then we justs add it, after trimming/sorting
 	{
-		std::vector<std::vector<T>> out( 1, GetSortedTrimmed( loops[0] ) );
+		std::vector<std::vector<T>> out( 1, GetSortedTrimmed( v_cycles[0] ) );
 		return out;
 	}
 
-	std::vector<std::vector<T>> out( loops.size() );
-	for( size_t i=0; i<loops.size(); i++ )               // 1 - fill output vector with sorted/trimmed paths
-		out[i] = GetSortedTrimmed( loops[i] );
+	std::vector<std::vector<T>> out( v_cycles.size() );
+	for( size_t i=0; i<v_cycles.size(); i++ )               // 1 - fill output vector with sorted/trimmed paths
+		out[i] = GetSortedTrimmed( v_cycles[i] );
 
 	std::sort( out.begin(), out.end() );                 // 2 - sort
 	out.erase(                                           // 3 - erase the ones that are
@@ -257,13 +258,13 @@ Passed by value as visitor to \c boost::undirected_dfs()
 See http://www.boost.org/doc/libs/1_58_0/libs/graph/doc/undirected_dfs.html
 */
 template <typename vertex_t>
-struct LoopDetector : public boost::dfs_visitor<>
+struct CycleDetector : public boost::dfs_visitor<>
 {
 	template<typename T1, typename T2>
 	friend std::vector<std::vector<T2>> FindCycles( T1& g );
 
 	public:
-		LoopDetector()
+		CycleDetector()
 		{
 			v_source_vertex.clear();
 		}
@@ -273,7 +274,7 @@ struct LoopDetector : public boost::dfs_visitor<>
 		{
 			vertex_t vs = boost::source(e, g);
 			vertex_t vt = boost::target(e, g);
-	#ifdef UDGLD_PRINT_STEPS
+	#ifdef UDGCD_PRINT_STEPS
 			std::cout << " => CYCLE DETECTED! vs=" << vs << " vt=" << vt << "\n";
 	#endif
 			if(                                                                                                // add vertex to
@@ -289,52 +290,52 @@ struct LoopDetector : public boost::dfs_visitor<>
 
 /// static var instanciation
 template<class T>
-std::vector<T> LoopDetector<T>::v_source_vertex;
+std::vector<T> CycleDetector<T>::v_source_vertex;
 
 //-------------------------------------------------------------------------------------------
-/// Main user interface: just call this function to get the loops inside your graph
+/// Main user interface: just call this function to get the cycles inside your graph
 /**
-Returns a vector of loops that have been found in the graph
+Returns a vector of cycles that have been found in the graph
 */
 template<typename graph_t, typename vertex_t>
 std::vector<std::vector<vertex_t>>
 FindCycles( graph_t& g )
 {
 //	std::cout << "\n - START " << __FUNCTION__ << "\n";
-	LoopDetector<vertex_t> ld;
+	CycleDetector<vertex_t> ld;
 	boost::undirected_dfs( g, boost::root_vertex( vertex_t(0) ).visitor(ld).edge_color_map( get(boost::edge_color, g) ) );
 
 	if( !ld.cycleDetected() )
-		return std::vector<std::vector<vertex_t>>(); // return empty vector, no loops found
+		return std::vector<std::vector<vertex_t>>(); // return empty vector, no cycles found
 
-// else, get the loops.
+// else, get the cycles.
 	{
-		std::vector<std::vector<vertex_t>> v_loops;
+		std::vector<std::vector<vertex_t>> v_cycles;
 
 		for( const auto& vi: ld.v_source_vertex )
 		{
 			std::vector<std::vector<vertex_t>> v_paths;
 			std::vector<vertex_t> newv(1, vi ); // start by one of the filed source vertex
 			v_paths.push_back( newv );
-			explore( vi, g, v_paths, v_loops );    // call of recursive function
+			explore( vi, g, v_paths, v_cycles );    // call of recursive function
 		}
 
-	#ifdef UDGLD_PRINT_STEPS
-		PrintPaths( std::cout, v_loops, "Raw loops" );
+	#ifdef UDGCD_PRINT_STEPS
+		PrintPaths( std::cout, v_cycles, "Raw cycles" );
 	#endif
 
 // post process 1: remove the paths that are identical but reversed
-		std::vector<std::vector<vertex_t>> loops2 = RemoveOppositePairs( v_loops );
-	#ifdef UDGLD_PRINT_STEPS
-		PrintPaths( std::cout, loops2, "loops2" );
+		std::vector<std::vector<vertex_t>> v_cycles2 = RemoveOppositePairs( v_cycles );
+	#ifdef UDGCD_PRINT_STEPS
+		PrintPaths( std::cout, v_cycles2, "cycles2" );
 	#endif
 
 	// post process 2: remove twin paths
-		std::vector<std::vector<vertex_t>> loops3 = RemoveIdentical( loops2 );
-	#ifdef UDGLD_PRINT_STEPS
-		PrintPaths( std::cout, loops3, "loops3" );
+		std::vector<std::vector<vertex_t>> v_cycles3 = RemoveIdentical( v_cycles2 );
+	#ifdef UDGCD_PRINT_STEPS
+		PrintPaths( std::cout, v_cycles3, "cycles3" );
 	#endif
-		return loops3;
+		return v_cycles3;
 	}
 }
 
@@ -342,4 +343,4 @@ FindCycles( graph_t& g )
 
 } // namespace end
 
-#endif // HG_UDGLD_HPP
+#endif // HG_UDGCD_HPP
