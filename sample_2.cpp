@@ -11,7 +11,7 @@ In some situations, we can have a loop but explore can fail if the starting node
 */
 
 #include <iostream>
-#include "udgld.hpp"
+#include "udgcd.hpp"
 
 int prog_id = 2;
 #include "common_sample.h"
@@ -63,11 +63,10 @@ int main(int, char*[])
 
 	add_edge(9, 4, g);
 
-	int i=0;
 	RenderGraph( g );
 
-	std::vector<std::vector<vertex_t>> loops = udgld::FindLoops<graph_t,vertex_t>( g );
-	udgld::PrintPaths( std::cout, loops );
+	std::vector<std::vector<vertex_t>> loops = udgcd::FindCycles<graph_t,vertex_t>( g );
+	udgcd::PrintPaths( std::cout, loops );
 
 	return 0;
 }

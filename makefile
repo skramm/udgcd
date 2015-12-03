@@ -1,4 +1,4 @@
-# makefile for building sample(s) for udgld
+# makefile for building sample(s) for udgcd
 # author: S. Kramm, 2015
 # Linux only, probably...
 
@@ -14,7 +14,7 @@ CFLAGS = -std=c++0x -Wall -O2 -Iinclude -Wno-unused-result
 
 
 # uncomment this line to print out the different steps
-#CFLAGS += -DUDGLD_PRINT_STEPS
+#CFLAGS += -DUDGCD_PRINT_STEPS
 
 # don't delete intermediate files
 .SECONDARY:
@@ -30,13 +30,13 @@ ifeq "$(PRINT_STEPS)" ""
 endif
 
 ifeq "$(PRINT_STEPS)" "Y"
-	CFLAGS += -DUDGLD_PRINT_STEPS
+	CFLAGS += -DUDGCD_PRINT_STEPS
 endif
 
 
 SHELL=/bin/bash
 
-APP=udgld.hpp
+APP=udgcd.hpp
 HEADERS=$(wildcard $(SRC_DIR)/*.h*)
 BIN_DIR=.
 SRC_DIR=.
@@ -56,7 +56,7 @@ run: all
 	$(addsuffix ;,$(EXEC_FILES))
 
 run4: all
-	./sample_1bis
+	./sample_4
 
 show: $(SRC_FILES)
 	@echo SRC_FILES=$(SRC_FILES)

@@ -4,7 +4,7 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 
 /**
-\file udgld.hpp
+\file udgcd.hpp
 \brief UnDirected Graph Loop Detection. Finds all the loops inside an undirected graph.
 
 See file README.md
@@ -20,7 +20,7 @@ See file README.md
 
 
 /// all the codes is in this namespace
-namespace udgld {
+namespace udgcd {
 
 //-------------------------------------------------------------------------------------------
 /// Private, don't use.
@@ -260,7 +260,7 @@ template <typename vertex_t>
 struct LoopDetector : public boost::dfs_visitor<>
 {
 	template<typename T1, typename T2>
-	friend std::vector<std::vector<T2>> FindLoops( T1& g );
+	friend std::vector<std::vector<T2>> FindCycles( T1& g );
 
 	public:
 		LoopDetector()
@@ -298,7 +298,7 @@ Returns a vector of loops that have been found in the graph
 */
 template<typename graph_t, typename vertex_t>
 std::vector<std::vector<vertex_t>>
-FindLoops( graph_t& g )
+FindCycles( graph_t& g )
 {
 //	std::cout << "\n - START " << __FUNCTION__ << "\n";
 	LoopDetector<vertex_t> ld;
