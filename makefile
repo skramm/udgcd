@@ -14,7 +14,7 @@ CFLAGS = -std=c++0x -Wall -O2 -Iinclude -Wno-unused-result
 
 
 # uncomment this line to print out the different steps
-#CFLAGS += -DUDGCD_PRINT_STEPS
+CFLAGS += -DUDGCD_PRINT_STEPS
 
 # don't delete intermediate files
 .SECONDARY:
@@ -55,7 +55,7 @@ all: $(EXEC_FILES)
 run: all
 	$(addsuffix ;,$(EXEC_FILES))
 
-run4: all
+run4: ./sample_4
 	./sample_4
 
 show: $(SRC_FILES)
@@ -63,7 +63,7 @@ show: $(SRC_FILES)
 	@echo OBJ_FILES=$(OBJ_FILES)
 	@echo EXEC_FILES=$(EXEC_FILES)
 
-doc: run
+doc:
 	doxygen doxyfile 1>$(OBJ_DIR)/doxygen_stdout.txt 2>$(OBJ_DIR)/doxygen_stderr.txt
 
 clean:

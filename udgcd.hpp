@@ -74,7 +74,7 @@ explore(
 			if( std::find( newv.cbegin(), newv.cend(), v2b ) != newv.cend() )
 			{
 				newv.push_back( v2b );
-//				COUTP << "*** FOUND LOOP!\n";
+//				COUTP << "*** FOUND CYCLE!\n";
 				v_cycles.push_back( newv );
 				return true;
 			}
@@ -238,7 +238,7 @@ RemoveIdentical( const std::vector<std::vector<T>>& v_cycles )
 	}
 
 	std::vector<std::vector<T>> out( v_cycles.size() );
-	for( size_t i=0; i<v_cycles.size(); i++ )               // 1 - fill output vector with sorted/trimmed paths
+	for( size_t i=0; i<v_cycles.size(); i++ )            // 1 - fill output vector with sorted/trimmed paths
 		out[i] = GetSortedTrimmed( v_cycles[i] );
 
 	std::sort( out.begin(), out.end() );                 // 2 - sort
@@ -251,7 +251,71 @@ RemoveIdentical( const std::vector<std::vector<T>>& v_cycles )
 }
 
 //-------------------------------------------------------------------------------------------
-/// Loop detector for an undirected graph
+/// Returns true if vertices \c v1 and \c v2 are connected
+/**
+http://www.boost.org/doc/libs/1_59_0/libs/graph/doc/IncidenceGraph.html#sec:out-edges
+*/
+template<typename vertex_t, typename graph_t>
+bool AreConnected( const vertex_t& v1, const vertex_t& v2, const graph_t& g )
+{
+	std::cout << "AreConnected(): considering " << v1 << " and " << v2 << "\n";
+	auto pair_edge = boost::out_edges( v1, g ); // get iterator range on edges
+	for( auto it = pair_edge.first; it != pair_edge.second; ++it )
+	{
+		std::cout << " - edge: s=" << boost::source( *it, g ) << " t=" << boost::target( *it, g ) << ": ";
+
+		if( v2 == boost::target( *it, g ) )
+		{
+			std::cout << "connected\n";
+			return true;
+		}
+		else
+			std::cout << "NOT connected\n";
+	}
+	return false;
+}
+
+//-------------------------------------------------------------------------------------------
+/// Return true if cycle is chordless
+/**
+See
+- https://en.wikipedia.org/wiki/Cycle_(graph_theory)#Chordless_cycles
+
+Quote:
+"A chordless cycle in a graph, also called a hole or an induced cycle, is a cycle such that
+no two vertices of the cycle are connected by an edge that does not itself belong to the cycle."
+*/
+template<typename vertex_t, typename graph_t>
+bool IsChordless( const std::vector<vertex_t>& path, const graph_t& g )
+{
+	if( path.size() < 4 ) // else, no need to test
+		return true;
+
+	for( size_t i=0; i<path.size()-3; ++i )
+	{
+		for( size_t j=i+2; j<path.size()-1; ++j )
+
+		if( AreConnected( path[i], path[j], g ) )
+			return false;
+	}
+	return true;
+}
+
+//-------------------------------------------------------------------------------------------
+template<typename vertex_t, typename graph_t>
+std::vector<std::vector<vertex_t>>
+RemoveNonChordless( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
+{
+	std::vector<std::vector<vertex_t>> v_out;
+	v_out.reserve( v_in.size() ); // to avoid unnecessary memory reallocations and copies
+    for( const auto& cycle: v_in )
+		if( IsChordless( cycle, g ) )
+			v_out.push_back( cycle );
+	return v_out;
+}
+
+//-------------------------------------------------------------------------------------------
+/// Cycle detector for an undirected graph
 /**
 Passed by value as visitor to \c boost::undirected_dfs()
 
@@ -335,7 +399,14 @@ FindCycles( graph_t& g )
 	#ifdef UDGCD_PRINT_STEPS
 		PrintPaths( std::cout, v_cycles3, "cycles3" );
 	#endif
-		return v_cycles3;
+
+	// post process 3: remove non-chordless cycles
+		std::vector<std::vector<vertex_t>> v_cycles4 = RemoveNonChordless( v_cycles3, g );
+	#ifdef UDGCD_PRINT_STEPS
+		PrintPaths( std::cout, v_cycles4, "cycles4" );
+	#endif
+
+		return v_cycles4;
 	}
 }
 
