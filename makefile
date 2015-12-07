@@ -27,7 +27,7 @@ SHELL=/bin/bash
 # files and folders
 APP=udgcd.hpp
 HEADERS=$(wildcard $(SRC_DIR)/*.h*)
-BIN_DIR=.
+BIN_DIR=bin
 SRC_DIR=.
 OBJ_DIR=obj
 
@@ -37,8 +37,6 @@ EXEC_FILES = $(patsubst $(SRC_DIR)/%.cpp,$(BIN_DIR)/%,$(SRC_FILES))
 
 # default target
 all: $(EXEC_FILES)
-	$(info PRINT_STEPS = $(PRINT_STEPS))
-	$(info CFLAGS = $(CFLAGS))
 	@echo "- Done target $@"
 
 run: all
@@ -78,7 +76,6 @@ install:
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(HEADERS) makefile
 	@echo $(COLOR_2) " - Compiling app file $<." $(COLOR_OFF)
 	$(L)$(CXX) -o $@ -c $< $(CFLAGS)
-
 
 # linking
 $(BIN_DIR)/%: $(OBJ_DIR)/%.o
