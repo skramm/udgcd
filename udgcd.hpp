@@ -1,4 +1,4 @@
-// Copyright Sebastien Kramm 2015
+// Copyright Sebastien Kramm - 2015
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -6,6 +6,8 @@
 /**
 \file udgcd.hpp
 \brief UnDirected Graph Cycle Detection. Finds all the cycles inside an undirected graph.
+
+Home page: https://github.com/skramm/udgcd
 
 See file README.md
 */
@@ -197,25 +199,19 @@ template<typename T>
 std::vector<T>
 GetSortedTrimmed( const std::vector<T>& v_in )
 {
-//	std::cout << __FUNCTION__ << "(): in="; PrintPath( std::cout, v_in );
-
-	assert( v_in.front() == v_in.back() );
+	assert( v_in.front() == v_in.back() ); // check this is a cycle
 	assert( v_in.size() > 2 );            // a (complete) cycle needs to be at least 3 vertices long
 
 	std::vector<T> v_out( v_in.size() - 1 );                      // Trim: remove
 	std::copy( v_in.cbegin(), v_in.cend()-1, v_out.begin() );     // last element
 
-//	std::cout << __FUNCTION__ << "(): after trim="; PrintPath( std::cout, v_out );
-
 	PutSmallestElemFirst( v_out );
-//	std::cout << __FUNCTION__ << "(): after PSF="; PrintPath( std::cout, v_out );
 
-	if( v_out.back() < v_out[1] )                         // if we have 1-4-3-2, then
+	if( v_out.back() < v_out[1] )                     // if we have 1-4-3-2, then
 	{
 		std::reverse( v_out.begin(), v_out.end() );   // we transform it into 2-3-4-1
 		PutSmallestElemFirst( v_out );                // and put smallest first: 1-2-3-4
 	}
-//	std::cout << __FUNCTION__ << "(): out="; PrintPath( std::cout, v_out );
 	return v_out;
 }
 
@@ -258,20 +254,10 @@ http://www.boost.org/doc/libs/1_59_0/libs/graph/doc/IncidenceGraph.html#sec:out-
 template<typename vertex_t, typename graph_t>
 bool AreConnected( const vertex_t& v1, const vertex_t& v2, const graph_t& g )
 {
-	std::cout << "AreConnected(): considering " << v1 << " and " << v2 << "\n";
 	auto pair_edge = boost::out_edges( v1, g ); // get iterator range on edges
 	for( auto it = pair_edge.first; it != pair_edge.second; ++it )
-	{
-		std::cout << " - edge: s=" << boost::source( *it, g ) << " t=" << boost::target( *it, g ) << ": ";
-
 		if( v2 == boost::target( *it, g ) )
-		{
-			std::cout << "connected\n";
 			return true;
-		}
-		else
-			std::cout << "NOT connected\n";
-	}
 	return false;
 }
 
@@ -302,6 +288,7 @@ bool IsChordless( const std::vector<vertex_t>& path, const graph_t& g )
 }
 
 //-------------------------------------------------------------------------------------------
+/// Third step, remove non-chordless cycles
 template<typename vertex_t, typename graph_t>
 std::vector<std::vector<vertex_t>>
 RemoveNonChordless( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )

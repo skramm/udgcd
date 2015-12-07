@@ -1,20 +1,11 @@
 # makefile for building sample(s) for udgcd
 # author: S. Kramm, 2015
-# Linux only, probably...
+# see https://github.com/skramm/udgcd
+# Linux only, probably.
 
 COLOR_1=-e "\e[1;33m"
 COLOR_2=-e "\e[1;34m"
-COLOR_3=-e "\e[1;35m"
 COLOR_OFF="\e[0m"
-
-#--------------------------------
-# general compiler flags
-# -Wno-unused-result is to avoid the warning on call to std::system()
-CFLAGS = -std=c++0x -Wall -O2 -Iinclude -Wno-unused-result
-
-
-# uncomment this line to print out the different steps
-CFLAGS += -DUDGCD_PRINT_STEPS
 
 # don't delete intermediate files
 .SECONDARY:
@@ -22,20 +13,18 @@ CFLAGS += -DUDGCD_PRINT_STEPS
 # disable implicit rules
 .SUFFIXES:
 
-
-#----------------------------------------------
-# print out runtime steps
-ifeq "$(PRINT_STEPS)" ""
-	PRINT_STEPS=N
-endif
+#--------------------------------
+# general compiler flags
+# -Wno-unused-result is to avoid the warning on call to std::system()
+CFLAGS = -std=c++0x -Wall -O2 -Iinclude -Wno-unused-result
 
 ifeq "$(PRINT_STEPS)" "Y"
 	CFLAGS += -DUDGCD_PRINT_STEPS
 endif
 
-
 SHELL=/bin/bash
 
+# files and folders
 APP=udgcd.hpp
 HEADERS=$(wildcard $(SRC_DIR)/*.h*)
 BIN_DIR=.
@@ -78,8 +67,8 @@ cleandoc:
 	-rmdir html
 
 diff:
-	git diff --color-words | aha > obj/diff.html
-	xdg-open obj/diff.html
+	git diff --color-words | aha > $(OBJ_DIR)/diff.html
+	xdg-open $(OBJ_DIR)/diff.html
 
 # needs 'sudo'
 install:
@@ -93,6 +82,6 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(HEADERS) makefile
 
 # linking
 $(BIN_DIR)/%: $(OBJ_DIR)/%.o
-	@echo $(COLOR_3) " - Link demo $@." $(COLOR_OFF)
+	@echo $(COLOR_1) " - Link demo $@." $(COLOR_OFF)
 	$(L)$(CXX) -o $@ -s $<  $(LDFLAGS)
 

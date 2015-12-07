@@ -26,7 +26,7 @@ This code will give you the three cycles as three sets of vertices. These are so
 ### Status
  <a name="s_stat"></a>
 
-- Alpha : CURRENTLY IN DEVELOPMENT. Not extensively tested, but provides sample application code.
+- beta. Not extensively tested, but provides sample application code.
 - Works for graphs holding unconnected sub-graphs.
 - Modern C++ design'ed (RAII).
 - Fairly generic, should be suited for pretty much all types of undirected graphs, as long as you can [order the vertices](#s_notes).
@@ -81,7 +81,7 @@ This means that a cycle has been encountered.
 
 - The second step is done once the DFS has been done. We explore recursively the graph, by starting from each of the vertices that have been identified as part of a "back edge".
 
-- The third steps makes sure no cycle are duplicate in the output set.
+- The third steps removes non-chordless cycles.
 
 ### References
  <a name="s_ref"></a>

@@ -1,3 +1,15 @@
+// Copyright Sebastien Kramm - 2015
+// Distributed under the Boost Software License, Version 1.0.
+// (See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt)
+
+/**
+\file
+\brief This file is used only to build the provided samples
+
+Home page: https://github.com/skramm/udgcd
+
+*/
 
 
 #include <boost/version.hpp>
