@@ -30,13 +30,16 @@ This code will give you the three cycles as three sets of vertices. These are so
 - Works for graphs holding unconnected sub-graphs.
 - Modern C++ design'ed (RAII).
 - Fairly generic, should be suited for pretty much all types of undirected graphs, as long as you can [order the vertices](#s_notes).
+Another requirement from the DFS algorithm is that edges need to have a color property associated.
 - Build upon [example](http://www.boost.org/doc/libs/1_58_0/libs/graph/example/undirected_dfs.cpp) taken from BGL manual
+(also check [this page](http://www.boost.org/doc/libs/1_59_0/libs/graph/doc/undirected_dfs.html).)
 - Released under the Boost licence.
 
 ### Usage:
  <a name="s_usage"></a>
 
  - Include the file `udgcd.hpp` in your application.
+ - Create your graph ([check this](#s_notes)).
  - Build your graph (add vertices and edges, see BGL manual)
  - Call `udgcd::FindCycles<your_graph_type,your_vertex_type>( graph )`.
  It will return a set of paths that are cycles.
@@ -113,3 +116,18 @@ This means that a cycle has been encountered.
 
  As an example, say you have a raw cycle expressed as
    `6-2-1-4`, it is released as `1-2-6-4` (and not `1-4-6-2`).
+
+- The graph type needs to have a color property for edges, but vertices can be any type. Thus your graph definition must look
+
+```
+	typedef boost::adjacency_list<
+		boost::vecS,                   // edge container
+		boost::vecS,                   // vertex container
+		boost::undirectedS,            // type of graph
+		boost::no_property,            // vertex properties
+		boost::property<               // edge properties
+			boost::edge_color_t,             // color for edges
+			boost::default_color_type        // enum, holds 5 colors
+			>
+		> graph_t;
+```
