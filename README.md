@@ -30,6 +30,7 @@ This code will give you the three cycles as three sets of vertices. These are so
 - Works for graphs holding unconnected sub-graphs.
 - Modern C++ design'ed (RAII).
 - Fairly generic, should be suited for pretty much all types of undirected graphs, as long as you can [order the vertices](#s_notes).
+- Build upon [example](http://www.boost.org/doc/libs/1_58_0/libs/graph/example/undirected_dfs.cpp) taken from BGL manual
 - Released under the Boost licence.
 
 ### Usage:
@@ -64,7 +65,7 @@ If Graphviz/dot is installed, the demo samples will render the generated graphs 
 ### Issues:
  <a name="s_issues"></a>
 
- - At present, this code requires a static allocated variable (done automatically by compiler, as it is templated)
+ - At present, this code requires a static allocated variable (done automatically by compiler, as it is templated).
  Thus it is not thread safe, neither can it handle multiple graphs simultaneously.
 
 
