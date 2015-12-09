@@ -32,21 +32,25 @@ int prog_id = 1;
 */
 
 /// the nodes
-std::vector<std::string> name = {
+std::vector<std::string> names = {
 	"C0", "C1", "C2", "C3", "C4", "C5", "C6", "O7",
 	"H8", "H9", "H10", "H11", "H12", "H13", "H14", "H15"};
 
+struct myVertex_t {
+	std::string color_str;
+	std::string node_name;
+};
 
 //-------------------------------------------------------------------------------------------
 /// Some typedefs for readability... ;-)
 typedef boost::adjacency_list<
-	boost::vecS,
-	boost::vecS,
-	boost::undirectedS,
-	boost::no_property,
-	boost::property<
-		boost::edge_color_t,
-		boost::default_color_type
+	boost::vecS,                   // edge container
+	boost::vecS,                   // vertex container
+	boost::undirectedS,            // type of graph
+	myVertex_t,                  // vertex properties
+	boost::property<               // edge properties
+		boost::edge_color_t,             // ???
+		boost::default_color_type        // enum, holds 5 colors
 		>
 	> graph_t;
 
@@ -54,11 +58,39 @@ typedef boost::adjacency_list<
 	typedef boost::graph_traits<graph_t>::edge_descriptor   edge_t;
 
 //-------------------------------------------------------------------
-int main(int, char*[])
+template<typename graph_t>
+void
+AssignRandomColors( graph_t& g )
+{
+	auto it_pair = vertices( g );              // get iterator range
+	for( ; it_pair.first != it_pair.second; ++it_pair.first ) // we iterate using the first iterator
+	{
+		std::ostringstream oss;
+		oss << '#' << std::hex;
+		for( int i=0; i<3; i++ )
+			oss << static_cast<int>(255.0 * std::rand() / RAND_MAX );
+		g[*it_pair.first].color_str = oss.str();
+	}
+}
+//-------------------------------------------------------------------
+template<typename graph_t>
+void
+AssignNodeNames( graph_t& g, const std::vector<std::string>& names )
+{
+	assert( boost::num_vertices( g ) == names.size() );
+
+	auto it_str = names.cbegin();
+	auto it_pair = boost::vertices( g );              // get iterator range
+	for( ; it_pair.first != it_pair.second; ++it_pair.first ) // we iterate using the first iterator
+		g[*it_pair.first].node_name = *it_str++;
+}
+
+//-------------------------------------------------------------------
+int main()
 {
 	SHOW_INFO;
 
-	graph_t g( name.size() );
+	graph_t g( names.size() );
 
 	add_edge(0, 1, g);
 	add_edge(0, 8, g);
@@ -77,6 +109,8 @@ int main(int, char*[])
 	add_edge(6, 11, g);
 	add_edge(7, 14, g);
 
+	AssignRandomColors( g );
+	AssignNodeNames( g, names );
 	RenderGraph( g );
 
 	std::vector<std::vector<vertex_t>> cycles = udgcd::FindCycles<graph_t,vertex_t>( g );      // no cycles at first
@@ -84,7 +118,9 @@ int main(int, char*[])
 
 	add_edge( 1, 6, g );                                 // cycle !
 	cycles = udgcd::FindCycles<graph_t,vertex_t>( g );
-	RenderGraph( g );
+
+	RenderGraph3<graph_t,myVertex_t>( g );
+
 	udgcd::PrintPaths( std::cout, cycles, "final-1" );
 
 	add_edge( 13, 14, g );                              // another cycle !

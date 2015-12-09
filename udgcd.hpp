@@ -9,6 +9,9 @@
 
 Home page: https://github.com/skramm/udgcd
 
+Inspired from http://www.boost.org/doc/libs/1_58_0/libs/graph/example/undirected_dfs.cpp
+
+
 See file README.md
 */
 
@@ -21,7 +24,7 @@ See file README.md
 #include <boost/graph/undirected_dfs.hpp>
 
 
-/// all the codes is in this namespace
+/// All the provided code is in this namespace
 namespace udgcd {
 
 //-------------------------------------------------------------------------------------------
@@ -122,37 +125,6 @@ PrintPaths( std::ostream& f, const std::vector<std::vector<T>>& v_paths, const c
 	}
 }
 
-//-------------------------------------------------------------------------------------------
-#if 0
-/// Private, don't use.
-/**
-Extract cycle segment from whole path.
-
-If an input string is "ABCDEFCXY" then the output string will be "CDEFC"
-*/
-template<typename T>
-std::vector<std::vector<T>>
-ExtractRelevantPart( const std::vector<std::vector<T>>& v_paths )
-{
-	std::vector<std::vector<T>> v_out;
-	for( const auto& path: v_paths )
-	{
-		for( auto it = path.cbegin(); it != path.cend()-1; ++it )
-		{
-			auto it_second = std::find( it+1, path.cend(), *it );
-			if( it_second != path.cend() )
-			{
-//				cout << "Found dupe: " << *it_second << "\nNew=";
-				std::vector<T> newv( it_second - it + 1 );         // output vector will have the common element at both sides
-				std::copy( it, it_second+1, newv.begin() );
-				v_out.push_back( newv );
-				break;
-			}
-		}
-	}
-	return v_out;
-}
-#endif
 //-------------------------------------------------------------------------------------------
 /// Private, don't use.
 /**
