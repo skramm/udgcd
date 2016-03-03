@@ -1,4 +1,4 @@
-# makefile for building sample(s) for udgcd
+# makefile for building samples for udgcd
 # author: S. Kramm, 2015
 # see https://github.com/skramm/udgcd
 # Linux only, probably.
@@ -42,8 +42,9 @@ all: $(EXEC_FILES)
 run: all
 	$(addsuffix ;,$(EXEC_FILES))
 
-run4: ./sample_4
-	./sample_4
+run4: bin/sample_4
+	@echo "running $<"
+	$<
 
 show: $(SRC_FILES)
 	@echo SRC_FILES=$(SRC_FILES)
