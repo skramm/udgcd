@@ -42,7 +42,7 @@ all: $(EXEC_FILES)
 run: all
 	$(addsuffix ;,$(EXEC_FILES))
 
-run4: bin/sample_4
+run5: bin/sample_5
 	@echo "running $<"
 	$<
 
