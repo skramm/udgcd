@@ -42,34 +42,22 @@ int main(int, char*[])
 	graph_t g;
 
 	add_edge(0, 1, g);
-	add_edge(0, 2, g);
+add_edge(0, 2, g);
+add_edge(0, 3, g);
+add_edge(1, 2, g);
+add_edge(2, 3, g);
+add_edge(1, 5, g);
+add_edge(3, 5, g);
+add_edge(6, 7, g);
+add_edge(7, 8, g);
+add_edge(8, 6, g);
 
-	add_edge(1, 2, g);
-	//  add_edge(1, 6, g); // remove the initial cycle
-
-//	add_edge(2, 15, g);
-//	add_edge(2, 8, g);
-
-	add_edge(2, 3, g);
-	add_edge(3, 4, g);
-
-	add_edge(3, 5, g);
-//	add_edge(4, 5, g);
-
-	add_edge(5, 4, g);
-//	add_edge(5, 9, g);
-//	add_edge(7, 9, g);
-
-//	add_edge(5, 12, g);
-	add_edge(5, 6, g);
-//	add_edge(6, 11, g);
-
-	RenderGraph( g );
+//	RenderGraph( g );
 
 	std::vector<std::vector<vertex_t>> cycles = udgcd::FindCycles<graph_t,vertex_t>( g );      // no cycles at first
 	udgcd::PrintPaths( std::cout, cycles, "final-0" );
 
-	add_edge( 1, 6, g );                                 // cycle !
+//	add_edge( 1, 6, g );                                 // cycle !
 	cycles = udgcd::FindCycles<graph_t,vertex_t>( g );
 	RenderGraph( g );
 	udgcd::PrintPaths( std::cout, cycles, "final-1" );

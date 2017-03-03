@@ -113,7 +113,8 @@ int main()
 	AssignNodeNames( g, names );
 	RenderGraph( g );
 
-	std::vector<std::vector<vertex_t>> cycles = udgcd::FindCycles<graph_t,vertex_t>( g );      // no cycles at first
+	//std::vector<std::vector<vertex_t>> cycles = udgcd::FindCycles<graph_t,vertex_t>( g );      // no cycles at first
+	auto cycles = udgcd::FindCycles<graph_t,vertex_t>( g );      // no cycles at first
 	udgcd::PrintPaths( std::cout, cycles, "final-0" );
 
 	add_edge( 1, 6, g );                                 // cycle !

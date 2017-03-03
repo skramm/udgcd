@@ -41,10 +41,17 @@ Another requirement from the DFS algorithm is that edges need to have a color pr
  - Include the file `udgcd.hpp` in your application.
  - Create your graph ([check this](#s_notes)).
  - Build your graph (add vertices and edges, see BGL manual)
- - Call `udgcd::FindCycles<your_graph_type,your_vertex_type>( graph )`.
- It will return a set of paths that are cycles.
- - Just to check, you may call `udgcd::PrintPaths()` to print out the cycles.
+ - Call `udgcd::FindCycles()`.
+ It will return a set of paths that are cycles (1):
+
+ `auto cycles = udgcd::FindCycles<my_graph_type,my_vertex_type>( graph );`
+ - Just to check, you may call `udgcd::PrintPaths()` to print out the cycles:
+
+   `udgcd::PrintPaths( std::cout, cycles, "cycles" );`
  - Done !
+
+(1) FYI, the type of the returned value is actually
+`std::vector<std::vector<my_vertex_t>>` but with C+11, you don't really need that information...
 
 See included samples.
 
@@ -53,11 +60,12 @@ See included samples.
 
 - header only, no build.
 - To build & run the provided sample code, just use `make run`, no other dependency than BGL.
-(tested with 1.54)
+(tested with boost 1.54, let me know if you discover any inconsistency with later releases.)
 
 ##### Installing
 Just copy the file `udgcd.hpp` where you want, or use the provided target of makefile:
-`sudo make install`
+`sudo make install` (might require `sudo`).
+This will copy the file in `/usr/local/include/`
 
 ##### Build options:
  - if UDGCD_PRINT_STEPS is defined, then different steps will be printed on `std::cout` (useful only for debugging purposes).
