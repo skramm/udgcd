@@ -23,12 +23,7 @@ int prog_id = 5;
 typedef boost::adjacency_list<
 	boost::vecS,
 	boost::vecS,
-	boost::undirectedS,
-	boost::no_property,
-	boost::property<
-		boost::edge_color_t,
-		boost::default_color_type
-		>
+	boost::undirectedS
 	> graph_t;
 
 	typedef boost::graph_traits<graph_t>::vertex_descriptor vertex_t;

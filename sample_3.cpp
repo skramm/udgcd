@@ -38,11 +38,7 @@ typedef boost::adjacency_list<
 	boost::vecS,
 	boost::vecS,
 	boost::undirectedS,
-	vertex_data,
-	boost::property<
-		boost::edge_color_t,
-		boost::default_color_type
-		>
+	vertex_data
 	> graph_t;
 
 	typedef boost::graph_traits<graph_t>::vertex_descriptor vertex_t;
