@@ -125,17 +125,43 @@ This means that a cycle has been encountered.
  As an example, say you have a raw cycle expressed as
    `6-2-1-4`, it is released as `1-2-6-4` (and not `1-4-6-2`).
 
-- The graph type needs to have a color property for edges, but vertices can be any type. Thus your graph definition must be something close to this:
+- The graph type needs to have a color property for edges (needed by the DFS algorithm), but vertices can be any type.
+Thus your graph definition must be something close to this:
 
 ```
 	typedef boost::adjacency_list<
 		boost::vecS,                   // edge container
 		boost::vecS,                   // vertex container
 		boost::undirectedS,            // type of graph
-		boost::no_property,            // vertex properties
+		boost::no_property,            // vertex type. Put there any type you define
 		boost::property<               // edge properties
 			boost::edge_color_t,             // color for edges
 			boost::default_color_type        // enum, holds 5 colors
 			>
 		> graph_t;
 ```
+
+The vertex type can be personalized using the "bundled properties" technique. For example:
+
+```
+struct my_vertex_t
+{
+	int value1;
+	std::string value2;
+	float value3;
+};
+```
+Then the graph type definition will become:
+```
+	typedef boost::adjacency_list<
+		boost::vecS,                   // edge container
+		boost::vecS,                   // vertex container
+		boost::undirectedS,            // type of graph
+		my_vertex_t,                   // vertex type
+		boost::property<               // edge properties
+			boost::edge_color_t,             // color for edges
+			boost::default_color_type        // enum, holds 5 colors
+			>
+		> graph_t;
+```
+
