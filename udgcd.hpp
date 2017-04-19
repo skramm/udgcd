@@ -326,7 +326,18 @@ FindCycles( graph_t& g )
 {
 //	std::cout << "\n - START " << __FUNCTION__ << "\n";
 	CycleDetector<vertex_t> ld;
-	boost::undirected_dfs( g, boost::root_vertex( vertex_t(0) ).visitor(ld).edge_color_map( get(boost::edge_color, g) ) );
+
+// vertex color map
+	std::vector<boost::default_color_type> vertex_color( boost::num_vertices(g) );
+	auto idmap = boost::get( boost::vertex_index, g );
+	auto vcmap = make_iterator_property_map( vertex_color.begin(), idmap );
+
+// edge color map
+	std::map<typename graph_t::edge_descriptor, boost::default_color_type> edge_color;
+	auto ecmap = boost::make_assoc_property_map( edge_color );
+
+	boost::undirected_dfs( g, ld, vcmap, ecmap, 0 );
+	//	boost::root_vertex( vertex_t(0) ).visitor(ld).edge_color_map( get(boost::edge_color, g) ) ); // old call
 
 	if( !ld.cycleDetected() )
 		return std::vector<std::vector<vertex_t>>(); // return empty vector, no cycles found

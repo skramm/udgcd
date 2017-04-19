@@ -25,7 +25,7 @@ This code will give you the three cycles as three sets of vertices. These are so
 
 ### Status
  <a name="s_stat"></a>
-
+- UPDATE 2017/04: now works with user bundled properties for the edges, [see here](#note_bp).
 - beta. Not extensively tested, but provides sample application code.
 - Works for graphs holding unconnected sub-graphs.
 - Modern C++ design'ed (RAII).
@@ -114,6 +114,7 @@ This means that a cycle has been encountered.
 - http://www.lamsade.dauphine.fr/~poc/IMG/pdf/Amaldi.pdf
 - https://people.mpi-inf.mpg.de/~mehlhorn/ftp/CycleBasisImpl.pdf
 - https://www.euro-online.org/gom2008/abstracts/gom08-amaldi.pdf
+- https://stackoverflow.com/a/43481372/193789
 
  ### Notes
   <a name="s_notes"></a>
@@ -125,43 +126,37 @@ This means that a cycle has been encountered.
  As an example, say you have a raw cycle expressed as
    `6-2-1-4`, it is released as `1-2-6-4` (and not `1-4-6-2`).
 
-- The graph type needs to have a color property for edges (needed by the DFS algorithm), but vertices can be any type.
-Thus your graph definition must be something close to this:
+<a name="note_bp"></a>
+ ** User properties & graph type **
 
+You can use whatever edge and vertices types, the coloring needed by the algorithm is handled by providing color maps as external properties. So if you have no special needs on vertices and edge properties, you can use something as trivial as this:
 ```
-	typedef boost::adjacency_list<
-		boost::vecS,                   // edge container
-		boost::vecS,                   // vertex container
-		boost::undirectedS,            // type of graph
-		boost::no_property,            // vertex type. Put there any type you define
-		boost::property<               // edge properties
-			boost::edge_color_t,             // color for edges
-			boost::default_color_type        // enum, holds 5 colors
-			>
-		> graph_t;
+    typedef boost::adjacency_list<
+	   boost::vecS,
+	   boost::vecS,
+	   boost::undirectedS
+	> graph_t;
 ```
-
-The vertex type can be personalized using the "bundled properties" technique. For example:
-
+But you can also have some user properties, defines as bundled properties. For example:
 ```
-struct my_vertex_t
+struct my_Vertex
 {
-	int value1;
-	std::string value2;
-	float value3;
+	int v1;	std::string v2;	float value3;
+};
+struct my_Edge
+{
+		int e1; std::string e2;
 };
 ```
-Then the graph type definition will become:
+Then your graph type definition will become:
 ```
 	typedef boost::adjacency_list<
 		boost::vecS,                   // edge container
 		boost::vecS,                   // vertex container
 		boost::undirectedS,            // type of graph
-		my_vertex_t,                   // vertex type
-		boost::property<               // edge properties
-			boost::edge_color_t,             // color for edges
-			boost::default_color_type        // enum, holds 5 colors
-			>
+		my_Vertex,                   // vertex type
+		my_Edge
 		> graph_t;
 ```
 
+Thanks to [sehe](http://stackoverflow.com/a/43481372/193789) for this trick!

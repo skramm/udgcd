@@ -41,6 +41,11 @@ struct myVertex_t {
 	std::string node_name;
 };
 
+struct myEdge {
+	int e1;
+	std::string e2;
+};
+
 //-------------------------------------------------------------------------------------------
 /// Some typedefs for readability... ;-)
 typedef boost::adjacency_list<
@@ -48,10 +53,11 @@ typedef boost::adjacency_list<
 	boost::vecS,                   // vertex container
 	boost::undirectedS,            // type of graph
 	myVertex_t,                  // vertex properties
-	boost::property<               // edge properties
+	myEdge
+/*	boost::property<               // edge properties
 		boost::edge_color_t,             // ???
 		boost::default_color_type        // enum, holds 5 colors
-		>
+		>*/
 	> graph_t;
 
 	typedef boost::graph_traits<graph_t>::vertex_descriptor vertex_t;
