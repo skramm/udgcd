@@ -30,19 +30,18 @@ This code will give you the three cycles as three sets of vertices. These are so
 - Works for graphs holding unconnected sub-graphs.
 - Modern C++ design'ed (RAII).
 - Fairly generic, should be suited for pretty much all types of undirected graphs, as long as you can [order the vertices](#s_notes).
-Another requirement from the DFS algorithm is that edges need to have a color property associated.
 - Build upon [example](http://www.boost.org/doc/libs/1_58_0/libs/graph/example/undirected_dfs.cpp) taken from BGL manual
-(also check [this page](http://www.boost.org/doc/libs/1_59_0/libs/graph/doc/undirected_dfs.html).)
+(also check [this page](http://www.boost.org/doc/libs/1_59_0/libs/graph/doc/undirected_dfs.html)).
+Got some help from [sehe](http://stackoverflow.com/a/43481372/193789).
 - Released under the Boost licence.
 
 ### Usage:
  <a name="s_usage"></a>
 
- - Include the file `udgcd.hpp` in your application.
- - Create your graph ([check this](#s_notes)).
- - Build your graph (add vertices and edges, see BGL manual)
- - Call `udgcd::FindCycles()`.
- It will return a set of paths that are cycles (1):
+ 1. Include the file `udgcd.hpp` in your application.
+ 1. Create your graph ([check this](#s_notes)).
+ 1. Build your graph (add vertices and edges, see BGL manual or the provided samples).
+ 1. Call `udgcd::FindCycles()`. It will return a set of paths that are cycles (1):
 
  `auto cycles = udgcd::FindCycles<my_graph_type,my_vertex_type>( graph );`
  - Just to check, you may call `udgcd::PrintPaths()` to print out the cycles:
@@ -64,11 +63,11 @@ See included samples.
 
 ##### Installing
 Just copy the file `udgcd.hpp` where you want, or use the provided target of makefile:
-`sudo make install` (might require `sudo`).
+`make install` (might require `sudo`).
 This will copy the file in `/usr/local/include/`
 
 ##### Build options:
- - if UDGCD_PRINT_STEPS is defined, then different steps will be printed on `std::cout` (useful only for debugging purposes).
+ - If the symbol UDGCD_PRINT_STEPS is defined at build time, then different steps will be printed on `std::cout` (useful only for debugging purposes).
  For the provided samples, this can be done by passing option `PRINT_STEPS=Y` to make.
 
 If Graphviz/dot is installed, the demo samples will render the generated graphs into svg images in the `obj` folder.
@@ -85,13 +84,13 @@ If Graphviz/dot is installed, the demo samples will render the generated graphs 
 
 Three steps are involved: first we need to check if there **is** at least one cycle. Is this is true, we explore the graph to find it/them.
 
-- The first step is done by calling [boost::undirected_dfs()](http://www.boost.org/doc/libs/1_59_0/libs/graph/doc/undirected_dfs.html)
+- The first step is done by a Depth First Search (DFS), with  [boost::undirected_dfs()](http://www.boost.org/doc/libs/1_59_0/libs/graph/doc/undirected_dfs.html)
 with passing a visitor of class `CycleDetector`, inherited from
 [boost::dfs_visitor](http://www.boost.org/doc/libs/1_59_0/libs/graph/doc/dfs_visitor.html).
 This object holds a set of vertices that are part of an edge on which `back_edge()` is called.
 This means that a cycle has been encountered.
 
-- The second step is done once the DFS has been done. We explore recursively the graph, by starting from each of the vertices that have been identified as part of a "back edge".
+- The second step is done by exploring recursively the graph, by starting from each of the vertices that have been identified as part of a "back edge".
 
 - The third steps removes non-chordless cycles.
 
@@ -127,7 +126,7 @@ This means that a cycle has been encountered.
    `6-2-1-4`, it is released as `1-2-6-4` (and not `1-4-6-2`).
 
 <a name="note_bp"></a>
- ** User properties & graph type **
+  #### User properties & graph type
 
 You can use whatever edge and vertices types, the coloring needed by the algorithm is handled by providing color maps as external properties. So if you have no special needs on vertices and edge properties, you can use something as trivial as this:
 ```
@@ -158,5 +157,3 @@ Then your graph type definition will become:
 		my_Edge
 		> graph_t;
 ```
-
-Thanks to [sehe](http://stackoverflow.com/a/43481372/193789) for this trick!
