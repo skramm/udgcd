@@ -34,11 +34,12 @@ This code will give you the three cycles as three sets of vertices. These are so
 (also check [this page](http://www.boost.org/doc/libs/1_59_0/libs/graph/doc/undirected_dfs.html)).
 Got some help from [sehe](http://stackoverflow.com/a/43481372/193789).
 - Released under the Boost licence.
+- Intended audience: Any C++ app having a graph cycle detection issue and whose licence is compatible with the Boost licence.
 
 ### Usage:
  <a name="s_usage"></a>
 
- 1. Include the file `udgcd.hpp` in your application.
+ 1. Add `#include "udgcd.hpp"` in your application (all-in-one file).
  1. Create your graph ([check this](#s_notes)).
  1. Build your graph (add vertices and edges, see BGL manual or the provided samples).
  1. Call `udgcd::FindCycles()`. It will return a set of paths that are cycles (1):
@@ -57,12 +58,12 @@ See included samples.
 ### Building & installing:
  <a name="s_build"></a>
 
-- header only, no build.
+- header only, no build. Provided as a single file (the other files are useless for basic user).
 - To build & run the provided sample code, just use `make run`, no other dependency than BGL.
 (tested with boost 1.54, let me know if you discover any inconsistency with later releases.)
 
 ##### Installing
-Just copy the file `udgcd.hpp` where you want, or use the provided target of makefile:
+Just fetch the file `udgcd.hpp` above and store it where you want. Or use the provided target of makefile (if you clone the whole repo):
 `make install` (might require `sudo`).
 This will copy the file in `/usr/local/include/`
 
@@ -76,7 +77,7 @@ If Graphviz/dot is installed, the demo samples will render the generated graphs 
  <a name="s_issues"></a>
 
  - At present, this code requires a static allocated variable (done automatically by compiler, as it is templated).
- Thus it is not thread safe, neither can it handle multiple graphs simultaneously.
+ Thus it is **not** thread safe, neither can it handle multiple graphs simultaneously.
 
 
 ### How does it work ?
