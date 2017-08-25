@@ -337,7 +337,7 @@ and their edges get added to the set      */
 			v_tmp.push_back( cycle );
 		else
 		{
-			std::cout << " adding cycle: "; PrintPath( std::cout, cycle );
+//			std::cout << " adding cycle: "; PrintPath( std::cout, cycle );
 			v_out.push_back( cycle );
 			for( size_t i=0; i<cycle.size(); ++i )
 			{

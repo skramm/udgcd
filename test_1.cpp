@@ -34,17 +34,19 @@ int main(int, char*[])
 
 	graph_t g;
 	std::srand(time(0));
-	int nb_egdes = 100;
-	int max_vertex = 50;
+	int nb_egdes = 50;
+	int max_vertex = 30;
 
 	for( size_t i=0;i<nb_egdes; i++ )
 	{
 		int v1 = static_cast<int>(std::rand()*1.0/RAND_MAX*max_vertex );
 		int v2 = static_cast<int>(std::rand()*1.0/RAND_MAX*max_vertex );
 		if( v1 != v2 )
-			add_edge( v1, v2, g );
+			/// \todo: add checking if the edge is not already there
+			boost::add_edge( v1, v2, g );
 	}
 
+	PrintGraphInfo( g );
 	RenderGraph( g );
 
 	std::vector<std::vector<vertex_t>> cycles = udgcd::FindCycles<graph_t,vertex_t>( g );

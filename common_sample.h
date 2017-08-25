@@ -14,6 +14,7 @@ Home page: https://github.com/skramm/udgcd
 
 #include <boost/version.hpp>
 #include "boost/graph/graphviz.hpp"
+#include <boost/graph/connected_components.hpp>
 
 #include <string>
 
@@ -23,6 +24,22 @@ Home page: https://github.com/skramm/udgcd
 
 extern int prog_id; // allocated in samples files
 int g_idx = 0;
+
+//-------------------------------------------------------------------
+template<typename graph_t>
+void PrintGraphInfo( const graph_t& g )
+{
+	std::cout << "Graph info:";
+	std::cout << "\n -nb of vertices=" << boost::num_vertices(g);
+	std::cout << "\n -nb of edges=" << boost::num_edges(g);
+//	std::cout << "\n -nb of connected components=" << boost::con(g);
+
+	std::vector<size_t> component( boost::num_vertices( g ) );
+	std::cout  << "\n -nb graphs="<< boost::connected_components( g, &component[0] );
+
+	std::cout << '\n';
+
+}
 
 //-------------------------------------------------------------------
 void CallDot( std::string id_str )

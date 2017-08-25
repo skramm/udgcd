@@ -15,9 +15,6 @@ int prog_id = 4;
 #include "common_sample.h"
 
 
-/// the nodes
-
-
 //-------------------------------------------------------------------------------------------
 /// Some typedefs for readability... ;-)
 typedef boost::adjacency_list<
@@ -41,11 +38,20 @@ add_edge(0, 2, g);
 add_edge(0, 3, g);
 add_edge(1, 2, g);
 add_edge(2, 3, g);
+
+
 add_edge(1, 5, g);
 add_edge(3, 5, g);
+
+add_edge(3, 4, g);
+add_edge(1, 4, g);
+add_edge(1, 4, g);
+
+/*
 add_edge(6, 7, g);
 add_edge(7, 8, g);
 add_edge(8, 6, g);
+*/
 
 //	RenderGraph( g );
 
@@ -53,9 +59,11 @@ add_edge(8, 6, g);
 	udgcd::PrintPaths( std::cout, cycles, "final-0" );
 
 //	add_edge( 1, 6, g );                                 // cycle !
+/*
 	cycles = udgcd::FindCycles<graph_t,vertex_t>( g );
 	RenderGraph( g );
 	udgcd::PrintPaths( std::cout, cycles, "final-1" );
+*/
 
 /*	add_edge( 13, 14, g );                              // another cycle !
 	RenderGraph( g );
