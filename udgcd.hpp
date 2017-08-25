@@ -96,7 +96,6 @@ explore(
 	}
 	return found;
 }
-
 //-------------------------------------------------------------------------------------------
 template<typename T>
 void
@@ -124,7 +123,6 @@ PrintPaths( std::ostream& f, const std::vector<std::vector<T>>& v_paths, const c
 		PrintPath( f, v_paths[i] );
 	}
 }
-
 //-------------------------------------------------------------------------------------------
 /// Private, don't use.
 /**
@@ -155,7 +153,8 @@ RemoveOppositePairs( const std::vector<std::vector<T>>& v_cycles )
 
 //-------------------------------------------------------------------------------------------
 template<typename T>
-void PutSmallestElemFirst( std::vector<T>& vec )
+void
+PutSmallestElemFirst( std::vector<T>& vec )
 {
 	auto it = std::min_element( vec.begin(), vec.end() );     // rotate so that smallest is first
 	std::rotate( vec.begin(), it, vec.end() );
@@ -224,15 +223,15 @@ RemoveIdentical( const std::vector<std::vector<T>>& v_cycles )
 http://www.boost.org/doc/libs/1_59_0/libs/graph/doc/IncidenceGraph.html#sec:out-edges
 */
 template<typename vertex_t, typename graph_t>
-bool AreConnected( const vertex_t& v1, const vertex_t& v2, const graph_t& g )
+bool
+AreConnected( const vertex_t& v1, const vertex_t& v2, const graph_t& g )
 {
-	auto pair_edge = boost::out_edges( v1, g ); // get iterator range on edges
+	auto pair_edge = boost::out_edges( v1, g );                      // get iterator range on edges
 	for( auto it = pair_edge.first; it != pair_edge.second; ++it )
 		if( v2 == boost::target( *it, g ) )
 			return true;
 	return false;
 }
-
 //-------------------------------------------------------------------------------------------
 /// Return true if cycle is chordless
 /**
@@ -244,7 +243,8 @@ Quote:
 no two vertices of the cycle are connected by an edge that does not itself belong to the cycle."
 */
 template<typename vertex_t, typename graph_t>
-bool IsChordless( const std::vector<vertex_t>& path, const graph_t& g )
+bool
+IsChordless( const std::vector<vertex_t>& path, const graph_t& g )
 {
 	if( path.size() < 4 ) // else, no need to test
 		return true;
@@ -258,7 +258,6 @@ bool IsChordless( const std::vector<vertex_t>& path, const graph_t& g )
 	}
 	return true;
 }
-
 //-------------------------------------------------------------------------------------------
 /// Third step, remove non-chordless cycles
 template<typename vertex_t, typename graph_t>
@@ -273,6 +272,103 @@ RemoveNonChordless( const std::vector<std::vector<vertex_t>>& v_in, const graph_
 	return v_out;
 }
 
+//-------------------------------------------------------------------------------------------
+template <typename vertex_t>
+struct VertexPair
+{
+	vertex_t v1,v2;
+	VertexPair( vertex_t va, vertex_t vb ): v1(va), v2(vb)
+	{
+		if( v2<v1 )
+			std::swap( v1, v2 );
+	}
+	// 2-3 is smaller than 2-4
+	friend bool operator < ( const VertexPair& vp_a, const VertexPair& vp_b )
+	{
+		assert( vp_a.v1 < vp_a.v2 );
+		if( vp_a.v1 < vp_b.v1 )
+			if( vp_a.v2 < vp_b.v2 )
+				return true;
+		return false;
+	}
+#if 1 // not needed in production code
+	friend std::ostream& operator << ( std::ostream& s, const VertexPair& vp )
+	{
+		s << '(' << vp.v1 << '-' << vp.v2 << ')';
+		return s;
+	}
+#endif
+};
+//-------------------------------------------------------------------------------------------
+template<typename vertex_t>
+void
+PrintSet( const std::set<VertexPair<vertex_t>>& set_edges )
+{
+	std::cout << "set:\n";
+	for( const auto& e: set_edges )
+		std::cout << e << '-';
+	std::cout << '\n';
+}
+//-------------------------------------------------------------------------------------------
+template<typename vertex_t, typename graph_t>
+std::vector<std::vector<vertex_t>>
+RemoveComposed( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
+{
+	std::vector<std::vector<vertex_t>> v_out;
+	v_out.reserve( v_in.size() ); // to avoid unnecessary memory reallocations and copies
+
+	std::vector<std::vector<vertex_t>> v_tmp;
+	v_tmp.reserve( v_in.size() ); // to avoid unnecessary memory reallocations and copies
+
+	std::set<VertexPair<vertex_t>> set_edges;
+
+/// \todo: replace with max_element and a lambda ?
+	size_t max_size(0);
+    for( const auto& cycle: v_in )
+		max_size = std::max( max_size, cycle.size() );
+
+/**
+Separate input set into 2 sets:
+- those that have a length equal to max_size get stored into v_tmp
+- those that have a length less than max_size. These get directly added into the output vector
+and their edges get added to the set      */
+    for( const auto& cycle: v_in )
+		if( cycle.size() == max_size )
+			v_tmp.push_back( cycle );
+		else
+		{
+			std::cout << " adding cycle: "; PrintPath( std::cout, cycle );
+			v_out.push_back( cycle );
+			for( size_t i=0; i<cycle.size(); ++i )
+			{
+				VertexPair<vertex_t> vp( (i==0?cycle.size()-1:cycle[i-1]), cycle[i] );
+				std::cout << "   - i=" << i << " adding vp: " << vp << '\n';
+				set_edges.insert( vp );
+			}
+		}
+	PrintSet( set_edges );
+	std::cout << "nb element with max_size=" << max_size << " is " << v_tmp.size() << '\n';
+
+/// consider all the longest paths
+    for( const auto& cycle: v_tmp )
+    {
+		PrintPath( std::cout, cycle );
+		PrintSet( set_edges );
+		bool newEdgeFound(false);
+		for( size_t i=0; i<cycle.size(); ++i )
+		{
+			VertexPair<vertex_t> vp( (i==0?cycle.size()-1:cycle[i-1]), cycle[i] );
+			auto rv = set_edges.insert( vp );
+			if( rv.second == true )  // if insertion took place, it means the edge wasn't already there
+				newEdgeFound = true;
+			std::cout << "i=" << i << " vp=" << vp << " found=" << newEdgeFound << '\n';
+		}
+		if( newEdgeFound )
+			v_out.push_back( cycle );
+	}
+	return v_out;
+
+}
 //-------------------------------------------------------------------------------------------
 /// Cycle detector for an undirected graph
 /**
@@ -343,43 +439,46 @@ FindCycles( graph_t& g )
 		return std::vector<std::vector<vertex_t>>(); // return empty vector, no cycles found
 
 // else, get the cycles.
+	std::vector<std::vector<vertex_t>> v_cycles;
+
+	for( const auto& vi: ld.v_source_vertex )
 	{
-		std::vector<std::vector<vertex_t>> v_cycles;
+		std::vector<std::vector<vertex_t>> v_paths;
+		std::vector<vertex_t> newv(1, vi ); // start by one of the filed source vertex
+		v_paths.push_back( newv );
+		explore( vi, g, v_paths, v_cycles );    // call of recursive function
+	}
 
-		for( const auto& vi: ld.v_source_vertex )
-		{
-			std::vector<std::vector<vertex_t>> v_paths;
-			std::vector<vertex_t> newv(1, vi ); // start by one of the filed source vertex
-			v_paths.push_back( newv );
-			explore( vi, g, v_paths, v_cycles );    // call of recursive function
-		}
-
-	#ifdef UDGCD_PRINT_STEPS
-		PrintPaths( std::cout, v_cycles, "Raw cycles" );
-	#endif
+#ifdef UDGCD_PRINT_STEPS
+	PrintPaths( std::cout, v_cycles, "Raw cycles" );
+#endif
 
 // post process 1: remove the paths that are identical but reversed
-		std::vector<std::vector<vertex_t>> v_cycles2 = RemoveOppositePairs( v_cycles );
-	#ifdef UDGCD_PRINT_STEPS
-		PrintPaths( std::cout, v_cycles2, "cycles2" );
-	#endif
+	std::vector<std::vector<vertex_t>> v_cycles2 = RemoveOppositePairs( v_cycles );
+#ifdef UDGCD_PRINT_STEPS
+	PrintPaths( std::cout, v_cycles2, "After removal of symmetrical cycles" );
+#endif
 
-	// post process 2: remove twin paths
-		std::vector<std::vector<vertex_t>> v_cycles3 = RemoveIdentical( v_cycles2 );
-	#ifdef UDGCD_PRINT_STEPS
-		PrintPaths( std::cout, v_cycles3, "cycles3" );
-	#endif
+// post process 2: remove twin paths
+	std::vector<std::vector<vertex_t>> v_cycles3 = RemoveIdentical( v_cycles2 );
+#ifdef UDGCD_PRINT_STEPS
+	PrintPaths( std::cout, v_cycles3, "After removal of identical cycles" );
+#endif
 
-	// post process 3: remove non-chordless cycles
-		std::vector<std::vector<vertex_t>> v_cycles4 = RemoveNonChordless( v_cycles3, g );
-	#ifdef UDGCD_PRINT_STEPS
-		PrintPaths( std::cout, v_cycles4, "cycles4" );
-	#endif
+// post process 3: remove non-chordless cycles
+	std::vector<std::vector<vertex_t>> v_cycles4 = RemoveNonChordless( v_cycles3, g );
+#ifdef UDGCD_PRINT_STEPS
+	PrintPaths( std::cout, v_cycles4, "After removal of non-chordless cycles" );
+#endif
 
-		return v_cycles4;
-	}
+// post process 4: (\todo need to find another name...)
+	std::vector<std::vector<vertex_t>> v_cycles5 = RemoveComposed( v_cycles4, g );
+#ifdef UDGCD_PRINT_STEPS
+	PrintPaths( std::cout, v_cycles5, "After removal of composed cycles" );
+#endif
+
+	return v_cycles5;
 }
-
 //-------------------------------------------------------------------------------------------
 
 } // namespace end
