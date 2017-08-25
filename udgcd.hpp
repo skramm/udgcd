@@ -286,8 +286,8 @@ struct VertexPair
 	friend bool operator < ( const VertexPair& vp_a, const VertexPair& vp_b )
 	{
 		assert( vp_a.v1 < vp_a.v2 );
-		if( vp_a.v1 < vp_b.v1 )
-			if( vp_a.v2 < vp_b.v2 )
+		if( vp_a.v1 < vp_b.v1 || vp_a.v2 < vp_b.v2 )
+//			if( vp_a.v2 < vp_b.v2 )
 				return true;
 		return false;
 	}
@@ -302,9 +302,9 @@ struct VertexPair
 //-------------------------------------------------------------------------------------------
 template<typename vertex_t>
 void
-PrintSet( const std::set<VertexPair<vertex_t>>& set_edges )
+PrintSet( const std::set<VertexPair<vertex_t>>& set_edges, std::string msg )
 {
-	std::cout << "set:\n";
+	std::cout << "set: " << msg << '\n';
 	for( const auto& e: set_edges )
 		std::cout << e << '-';
 	std::cout << '\n';
@@ -342,18 +342,21 @@ and their edges get added to the set      */
 			for( size_t i=0; i<cycle.size(); ++i )
 			{
 				VertexPair<vertex_t> vp( (i==0?cycle.size()-1:cycle[i-1]), cycle[i] );
-				std::cout << "   - i=" << i << " adding vp: " << vp << '\n';
+//				std::cout << "   - i=" << i << " adding vp: " << vp << '\n';
 				set_edges.insert( vp );
+//				PrintSet( set_edges, "after insert single" );
 			}
+//			PrintSet( set_edges, "after insertion" );
+
 		}
-	PrintSet( set_edges );
+	PrintSet( set_edges, "step1: final" );
 	std::cout << "nb element with max_size=" << max_size << " is " << v_tmp.size() << '\n';
 
 /// consider all the longest paths
     for( const auto& cycle: v_tmp )
     {
 		PrintPath( std::cout, cycle );
-		PrintSet( set_edges );
+		PrintSet( set_edges, "start" );
 		bool newEdgeFound(false);
 		for( size_t i=0; i<cycle.size(); ++i )
 		{
@@ -364,7 +367,10 @@ and their edges get added to the set      */
 			std::cout << "i=" << i << " vp=" << vp << " found=" << newEdgeFound << '\n';
 		}
 		if( newEdgeFound )
+		{
+			std::cout << " -Adding cycle to output vector\n";
 			v_out.push_back( cycle );
+		}
 	}
 	return v_out;
 
