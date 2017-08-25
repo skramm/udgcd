@@ -15,7 +15,7 @@ COLOR_OFF="\e[0m"
 
 #--------------------------------
 # general compiler flags
-# -Wno-unused-result is to avoid the warning on call to std::system()
+# -Wno-unused-result is to avoid the warning on call to std::system() when calling dot (see void CallDot() )
 CFLAGS = -std=c++0x -Wall -O2 -Iinclude -Wno-unused-result
 
 ifeq "$(PRINT_STEPS)" "Y"

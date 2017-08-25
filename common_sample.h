@@ -59,7 +59,7 @@ void RenderGraph( const graph_t& g )
 
 //-------------------------------------------------------------------
 /// Generates a dot file from graph \c g and calls the renderer (dot/Graphviz) to produce a svg image of the graph,
-/// with names of vertices in an external vector ( "external properties" )
+/// with names of vertices in a provided external vector \c v_names ("external properties")
 template<typename graph_t>
 void RenderGraph2( const graph_t& g, std::vector<std::string>& v_names )
 {
