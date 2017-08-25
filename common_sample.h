@@ -35,10 +35,10 @@ void PrintGraphInfo( const graph_t& g )
 //	std::cout << "\n -nb of connected components=" << boost::con(g);
 
 	std::vector<size_t> component( boost::num_vertices( g ) );
-	std::cout  << "\n -nb graphs="<< boost::connected_components( g, &component[0] );
-
+	auto nb_cc = boost::connected_components( g, &component[0] );
+	std::cout  << "\n -nb graphs=" << nb_cc;
+	std::cout  << "\n -nb cycles expected=" << boost::num_edges(g) -  boost::num_vertices(g) + nb_cc;
 	std::cout << '\n';
-
 }
 
 //-------------------------------------------------------------------

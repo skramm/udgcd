@@ -356,8 +356,8 @@ and their edges get added to the set      */
 /// consider all the longest paths
     for( const auto& cycle: v_tmp )
     {
-		PrintPath( std::cout, cycle );
-		PrintSet( set_edges, "start" );
+//		PrintPath( std::cout, cycle );
+//		PrintSet( set_edges, "start" );
 		bool newEdgeFound(false);
 		for( size_t i=0; i<cycle.size(); ++i )
 		{

@@ -14,8 +14,6 @@
 int prog_id = 10;
 #include "common_sample.h"
 
-
-
 //-------------------------------------------------------------------------------------------
 /// Some typedefs for readability... ;-)
 typedef boost::adjacency_list<
@@ -34,16 +32,23 @@ int main(int, char*[])
 
 	graph_t g;
 	std::srand(time(0));
-	int nb_egdes = 50;
-	int max_vertex = 30;
+	int nb_egdes = 15;
+	int nb_vertices = 8;
+
+	for( size_t i=0;i<nb_vertices; i++ )
+		auto v = add_vertex(g);
 
 	for( size_t i=0;i<nb_egdes; i++ )
 	{
-		int v1 = static_cast<int>(std::rand()*1.0/RAND_MAX*max_vertex );
-		int v2 = static_cast<int>(std::rand()*1.0/RAND_MAX*max_vertex );
+		int v1 = static_cast<int>(std::rand()*1.0/RAND_MAX*nb_vertices );
+		int v2 = static_cast<int>(std::rand()*1.0/RAND_MAX*nb_vertices );
 		if( v1 != v2 )
-			/// \todo: add checking if the edge is not already there
-			boost::add_edge( v1, v2, g );
+		{
+			auto p = boost::edge( v1, v2, g );  // returns a pair<edge_descriptor, bool>
+			if( !p.second )
+//			if( !boost::edge( v1, v2, g ).second )  // returns a pair<edge_descriptor, bool>
+				boost::add_edge( v1, v2, g );
+		}
 	}
 
 	PrintGraphInfo( g );
