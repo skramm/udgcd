@@ -341,7 +341,8 @@ and their edges get added to the set      */
 			v_out.push_back( cycle );
 			for( size_t i=0; i<cycle.size(); ++i )
 			{
-				VertexPair<vertex_t> vp( (i==0?cycle.size()-1:cycle[i-1]), cycle[i] );
+//				std::cout << "i=" << i << ": " << (i==0?cycle[cycle.size()-1]:cycle[i-1]) << "-" << cycle[i] << '\n';
+				VertexPair<vertex_t> vp( (i==0?cycle[cycle.size()-1]:cycle[i-1]), cycle[i] );
 //				std::cout << "   - i=" << i << " adding vp: " << vp << '\n';
 				set_edges.insert( vp );
 //				PrintSet( set_edges, "after insert single" );
@@ -349,8 +350,8 @@ and their edges get added to the set      */
 //			PrintSet( set_edges, "after insertion" );
 
 		}
-	PrintSet( set_edges, "step1: final" );
-	std::cout << "nb element with max_size=" << max_size << " is " << v_tmp.size() << '\n';
+//	PrintSet( set_edges, "step1: final" );
+//	std::cout << "nb element with max_size=" << max_size << " is " << v_tmp.size() << '\n';
 
 /// consider all the longest paths
     for( const auto& cycle: v_tmp )
@@ -360,15 +361,15 @@ and their edges get added to the set      */
 		bool newEdgeFound(false);
 		for( size_t i=0; i<cycle.size(); ++i )
 		{
-			VertexPair<vertex_t> vp( (i==0?cycle.size()-1:cycle[i-1]), cycle[i] );
+			VertexPair<vertex_t> vp( (i==0?cycle[cycle.size()-1]:cycle[i-1]), cycle[i] );
 			auto rv = set_edges.insert( vp );
 			if( rv.second == true )  // if insertion took place, it means the edge wasn't already there
 				newEdgeFound = true;
-			std::cout << "i=" << i << " vp=" << vp << " found=" << newEdgeFound << '\n';
+//			std::cout << "i=" << i << " vp=" << vp << " found=" << newEdgeFound << '\n';
 		}
 		if( newEdgeFound )
 		{
-			std::cout << " -Adding cycle to output vector\n";
+//			std::cout << " -Adding cycle to output vector\n";
 			v_out.push_back( cycle );
 		}
 	}
