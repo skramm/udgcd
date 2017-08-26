@@ -28,7 +28,7 @@ int g_idx = 0;
 //-------------------------------------------------------------------
 /// Prints some details on graph and returns nb of expected cycles
 /**
-(assumes that no two vertices have two edges joing them...)
+(assumes that no two vertices have two edges join them...)
 */
 template<typename graph_t>
 size_t

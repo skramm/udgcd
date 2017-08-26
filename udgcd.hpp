@@ -23,6 +23,7 @@ See file README.md
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/undirected_dfs.hpp>
 
+//#define DEV_MODE
 
 /// All the provided code is in this namespace
 namespace udgcd {
@@ -286,13 +287,20 @@ struct VertexPair
 	// 2-3 is smaller than 2-4
 	friend bool operator < ( const VertexPair& vp_a, const VertexPair& vp_b )
 	{
-		assert( vp_a.v1 < vp_a.v2 );
-		if( vp_a.v1 < vp_b.v1 || vp_a.v2 < vp_b.v2 )
-//			if( vp_a.v2 < vp_b.v2 )
+//		assert( vp_a.v1 < vp_a.v2 );
+		if( vp_a.v1 < vp_b.v1 ) //&& vp_a.v2 < vp_b.v2 )
 				return true;
+		else
+		{
+			if( vp_a.v1 == vp_b.v1 )
+				return ( vp_a.v2 < vp_b.v2 );
+		}
+//			if( vp_a.v2 < vp_b.v2 )
+//				return true;
 		return false;
 	}
-#if 1 // not needed in production code
+
+#ifndef DEV_MODE
 	friend std::ostream& operator << ( std::ostream& s, const VertexPair& vp )
 	{
 		s << '(' << vp.v1 << '-' << vp.v2 << ')';
@@ -374,7 +382,7 @@ and their edges get added to the set      */
 //	std::cout << "nb element with max_size=" << max_size << " is " << v_tmp.size() << '\n';
 #endif
 
-/// consider all the longest paths
+/// considers all the longest paths
     for( const auto& cycle: v_in )
     {
 //		PrintPath( std::cout, cycle );
@@ -390,7 +398,7 @@ and their edges get added to the set      */
 		}
 		if( newEdgeFound )
 		{
-//			std::cout << " -Adding cycle to output vector\n";
+//			std::cout << " => Adding current cycle to output vector\n";
 			v_out.push_back( cycle );
 		}
 	}
