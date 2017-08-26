@@ -59,7 +59,7 @@ Got some help from [sehe](http://stackoverflow.com/a/43481372/193789).
 
 See included samples.
 
-### Building & installing:
+### Building & installing & content:
  <a name="s_build"></a>
 
 - header only, no build. Provided as a single file (the other files are useless for basic user).
@@ -71,9 +71,16 @@ Just fetch the file `udgcd.hpp` above and store it where you want. Or use the pr
 `make install` (might require `sudo`).
 This will copy the file in `/usr/local/include/`
 
+#### What's in there beside that single header file ?
+Some additional apps are included:
+ - `read_graph.cpp`: reads graph from a text file given as argument and computes its cycles.
+ - `random_test.cpp`: generates a random graph and computes its cycles.
+ - `sample_?.cpp`: c++ apps that build a graph and computes its cycles.
+
+
 ##### Build options:
  - The provided makefile is not requested to use the library, as it is "header-only", but might help. It has the following targets:
-  - `make` (no targets) : builds the included demos
+  - `make` (no targets) : builds the included demos apps
   - `make run` : builds and runs all the included demos
   - `make dox` : builds the doxygen reference file (needs doxygen installed...)
 
