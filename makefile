@@ -55,16 +55,16 @@ doc:
 	doxygen doxyfile 1>$(OBJ_DIR)/doxygen_stdout.txt 2>$(OBJ_DIR)/doxygen_stderr.txt
 
 clean:
-	-rm $(OBJ_DIR)/*
-	-rm *.layout
-	-rm out/*
+	@-rm $(OBJ_DIR)/*
+	@-rm *.layout
+	@-rm out/*
 
 cleanall: clean cleandoc
-	-rm $(EXEC_FILES)
+	@-rm $(EXEC_FILES)
 
 cleandoc:
-	-rm -r html/*
-	-rmdir html
+	@-rm -r html/*
+	@-rmdir html
 
 diff:
 	git diff --color-words | aha > $(OBJ_DIR)/diff.html

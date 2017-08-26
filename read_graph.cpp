@@ -11,7 +11,7 @@
 #include <iostream>
 #include "udgcd.hpp"
 
-int prog_id = 11;
+std::string prog_id = "read_graph";
 #include "common_sample.h"
 
 //-------------------------------------------------------------------------------------------

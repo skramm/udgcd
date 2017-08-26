@@ -318,7 +318,7 @@ RemoveRedundant( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& 
 {
 	std::vector<std::vector<vertex_t>> v_out;
 	v_out.reserve( v_in.size() ); // to avoid unnecessary memory reallocations and copies
-
+#if 0
 	auto minpos = std::min_element(
 		std::begin(v_in),
 		std::end(v_in),
@@ -328,7 +328,7 @@ RemoveRedundant( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& 
 	);
 	size_t min_size = minpos->size();
 
-/*	auto maxpos = std::max_element(
+	auto maxpos = std::max_element(
 		std::begin(v_in),
 		std::end(v_in),
 		[]
@@ -339,6 +339,7 @@ RemoveRedundant( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& 
 
 //	std::cout << "min_size=" << min_size << '\n';
 //	std::cout << "max_size=" << max_size << '\n';
+#endif
 
 //	std::vector<std::vector<vertex_t>> v_tmp;
 //	v_tmp.reserve( v_in.size() ); // to avoid unnecessary memory reallocations and copies

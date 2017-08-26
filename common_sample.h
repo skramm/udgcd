@@ -22,26 +22,32 @@ Home page: https://github.com/skramm/udgcd
 	std::cout << "\n-START: " << __FILE__ \
 		<< "\n-built with Boost " << BOOST_LIB_VERSION << '\n'
 
-extern int prog_id; // allocated in samples files
+extern std::string prog_id; // allocated in samples files
 int g_idx = 0;
 
 //-------------------------------------------------------------------
+/// Prints some details on graph and returns nb of expected cycles
+/**
+(assumes that no two vertices have two edges joing them...)
+*/
 template<typename graph_t>
-void PrintGraphInfo( const graph_t& g )
+size_t
+PrintGraphInfo( const graph_t& g )
 {
-	std::cout << "Graph info:";
-	std::cout << "\n -nb of vertices=" << boost::num_vertices(g);
-	std::cout << "\n -nb of edges=" << boost::num_edges(g);
+	std::cout << "Graph info:"
+		<< "\n -nb of vertices=" << boost::num_vertices(g)
+		<< "\n -nb of edges=" << boost::num_edges(g);
 
 	std::vector<size_t> component( boost::num_vertices( g ) );
 	auto nb_cc = boost::connected_components( g, &component[0] );
-	std::cout  << "\n -nb graphs=" << nb_cc;
-	std::cout  << "\n  =>nb cycles expected=" << boost::num_edges(g) -  boost::num_vertices(g) + nb_cc;
-	std::cout << '\n';
+	auto nb_cycles = boost::num_edges(g) -  boost::num_vertices(g) + nb_cc;
+	std::cout  << "\n -nb graphs=" << nb_cc
+		<< "\n  => nb cycles expected=" << nb_cycles << '\n';
+	return nb_cycles;
 }
-
 //-------------------------------------------------------------------
-void CallDot( std::string id_str )
+void
+CallDot( std::string id_str )
 {
 	std::system(
 		std::string(
@@ -53,17 +59,19 @@ void CallDot( std::string id_str )
 		).c_str()
 	);
 }
-std::string BuildIdString()
+//-------------------------------------------------------------------
+std::string
+BuildDotFileName()
 {
-	return "obj/sample" + std::to_string(prog_id) + "_" + std::to_string(g_idx);
+	return "out/sample_" + prog_id + "_" + std::to_string(g_idx);
 }
-
 //-------------------------------------------------------------------
 /// Generates a dot file from graph \c g and calls the renderer (dot/Graphviz) to produce a svg image of the graph
 template<typename graph_t>
-void RenderGraph( const graph_t& g )
+void
+RenderGraph( const graph_t& g )
 {
-	std::string id_str = BuildIdString();
+	std::string id_str = BuildDotFileName();
 	{
 		std::ofstream f ( id_str + ".dot" );
 		assert( f.is_open() );
@@ -72,14 +80,14 @@ void RenderGraph( const graph_t& g )
 	CallDot( id_str );
 	g_idx++;
 }
-
 //-------------------------------------------------------------------
 /// Generates a dot file from graph \c g and calls the renderer (dot/Graphviz) to produce a svg image of the graph,
 /// with names of vertices in a provided external vector \c v_names ("external properties")
 template<typename graph_t>
-void RenderGraph2( const graph_t& g, std::vector<std::string>& v_names )
+void
+RenderGraph2( const graph_t& g, std::vector<std::string>& v_names )
 {
-	std::string id_str = BuildIdString();
+	std::string id_str = BuildDotFileName();
 	{
 		std::ofstream f ( id_str + ".dot" );
 		assert( f.is_open() );
@@ -95,7 +103,8 @@ Note: involving dynamic properties implies that the graph is modified at present
 See http://stackoverflow.com/questions/34160290/
 */
 template<typename graph_t, typename vertex_t>
-void RenderGraph3( graph_t& g )
+void
+RenderGraph3( graph_t& g )
 {
 
 	boost::dynamic_properties dp;
@@ -104,7 +113,7 @@ void RenderGraph3( graph_t& g )
 //	dp.property( "node_id", boost::get( boost::vertex_index, g ) );
 	dp.property( "node_id", boost::get( &vertex_t::node_name, g ) );
 
-	std::string id_str = BuildIdString();
+	std::string id_str = BuildDotFileName();
 	{
 		std::ofstream f ( id_str + ".dot" );
 		assert( f.is_open() );
