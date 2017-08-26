@@ -13,7 +13,7 @@
 #include <algorithm>
 #include "udgcd.hpp"
 
-int prog_id = 3;
+std::string prog_id = "s3";
 #include "common_sample.h"
 
 /*

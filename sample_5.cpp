@@ -11,7 +11,7 @@
 #include <iostream>
 #include "udgcd.hpp"
 
-int prog_id = 5;
+std::string prog_id = "s5";
 #include "common_sample.h"
 
 
