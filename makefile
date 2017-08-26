@@ -34,6 +34,7 @@ OBJ_DIR=obj
 SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)
 OBJ_FILES = $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRC_FILES))
 EXEC_FILES = $(patsubst $(SRC_DIR)/%.cpp,$(BIN_DIR)/%,$(SRC_FILES))
+SAMPLE_FILES = $(wildcard samples/*.txt)
 
 # default target
 all: $(EXEC_FILES)
@@ -42,14 +43,16 @@ all: $(EXEC_FILES)
 run: all
 	$(addsuffix ;,$(EXEC_FILES))
 
-run5: bin/sample_5
-	@echo "running $<"
-	$<
+#run5: bin/sample_5
+#	@echo "running $<"
+#	$<
+
 
 show: $(SRC_FILES)
 	@echo SRC_FILES=$(SRC_FILES)
 	@echo OBJ_FILES=$(OBJ_FILES)
 	@echo EXEC_FILES=$(EXEC_FILES)
+	@echo SAMPLE_FILES=$(SAMPLE_FILES)
 
 doc:
 	doxygen doxyfile 1>$(OBJ_DIR)/doxygen_stdout.txt 2>$(OBJ_DIR)/doxygen_stderr.txt

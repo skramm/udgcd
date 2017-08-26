@@ -33,6 +33,7 @@ typedef boost::graph_traits<graph_t>::vertex_descriptor vertex_t;
 typedef boost::graph_traits<graph_t>::edge_descriptor   edge_t;
 
 //-------------------------------------------------------------------
+/// saves grah \c g in a text file, in folder \c out
 void
 SaveGraph( graph_t g, std::string id )
 {

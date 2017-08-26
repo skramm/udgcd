@@ -72,11 +72,11 @@ Just fetch the file `udgcd.hpp` above and store it where you want. Or use the pr
 This will copy the file in `/usr/local/include/`
 
 #### What's in there beside that single header file ?
-Some additional apps are included:
+
+Some additional apps are included, that are build by the makefile:
  - `read_graph.cpp`: reads graph from a text file given as argument and computes its cycles.
  - `random_test.cpp`: generates a random graph and computes its cycles.
  - `sample_?.cpp`: c++ apps that build a graph and computes its cycles.
-
 
 ##### Build options:
  - The provided makefile is not requested to use the library, as it is "header-only", but might help. It has the following targets:

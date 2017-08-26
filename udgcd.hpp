@@ -320,9 +320,12 @@ PrintSet( const std::set<VertexPair<vertex_t>>& set_edges, std::string msg )
 }
 //-------------------------------------------------------------------------------------------
 /// Post-process step: removes paths (cycles) that are redundant (i.e. that can be deduced/build from the others)
+/**
+arg is not const, because it gets sorted here.
+*/
 template<typename vertex_t, typename graph_t>
 std::vector<std::vector<vertex_t>>
-RemoveRedundant( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
+RemoveRedundant( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 {
 	std::vector<std::vector<vertex_t>> v_out;
 	v_out.reserve( v_in.size() ); // to avoid unnecessary memory reallocations and copies
@@ -382,7 +385,16 @@ and their edges get added to the set      */
 //	std::cout << "nb element with max_size=" << max_size << " is " << v_tmp.size() << '\n';
 #endif
 
-/// considers all the longest paths
+/// preliminary sorting by length, so wee keep the shortest paths
+	std::sort(
+		std::begin(v_in),
+		std::end(v_in),
+		[]                                                                       // lambda
+		( const std::vector<vertex_t>& vv1, const std::vector<vertex_t>& vv2 )
+		{ return vv1.size() < vv2.size(); }
+	);
+
+/// enumerate the cycles and store each edge in set. Add cycle to output only if new edge detected
     for( const auto& cycle: v_in )
     {
 //		PrintPath( std::cout, cycle );
