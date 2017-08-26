@@ -57,6 +57,7 @@ doc:
 clean:
 	-rm $(OBJ_DIR)/*
 	-rm *.layout
+	-rm out/*
 
 cleanall: clean cleandoc
 	-rm $(EXEC_FILES)

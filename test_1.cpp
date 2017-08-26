@@ -58,7 +58,7 @@ int main(int, char*[])
 	RenderGraph( g );
 
 	{
-		std::string fname = "gen_graph_" + std::to_string(t) + ".txt";
+		std::string fname = "out/gen_graph_" + std::to_string(t) + ".txt";
 		std::cout << "Graph is saved in file " << fname << '\n';
 		std::ofstream f( fname );
 		assert( f.is_open() );
