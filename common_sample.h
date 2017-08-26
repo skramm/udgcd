@@ -32,12 +32,11 @@ void PrintGraphInfo( const graph_t& g )
 	std::cout << "Graph info:";
 	std::cout << "\n -nb of vertices=" << boost::num_vertices(g);
 	std::cout << "\n -nb of edges=" << boost::num_edges(g);
-//	std::cout << "\n -nb of connected components=" << boost::con(g);
 
 	std::vector<size_t> component( boost::num_vertices( g ) );
 	auto nb_cc = boost::connected_components( g, &component[0] );
 	std::cout  << "\n -nb graphs=" << nb_cc;
-	std::cout  << "\n -nb cycles expected=" << boost::num_edges(g) -  boost::num_vertices(g) + nb_cc;
+	std::cout  << "\n  =>nb cycles expected=" << boost::num_edges(g) -  boost::num_vertices(g) + nb_cc;
 	std::cout << '\n';
 }
 
@@ -113,5 +112,86 @@ void RenderGraph3( graph_t& g )
 	}
 	CallDot( id_str );
 	g_idx++;
+}
+//-------------------------------------------------------------------
+/// General string tokenizer, taken from http://stackoverflow.com/a/236803/193789
+/**
+- see also this one: http://stackoverflow.com/a/53878/193789
+*/
+inline
+std::vector<std::string>
+split_string( const std::string &s, char delim )
+{
+	std::vector<std::string> velems;
+	std::stringstream ss( s );
+    std::string item;
+    while( std::getline( ss, item, delim ) )
+        velems.push_back(item);
+    return velems;
+}
+//-------------------------------------------------------------------
+template<typename graph_t>
+graph_t
+LoadGraph( const char* fname )
+{
+	graph_t g;
+
+	std::ifstream f( fname );
+	if( !f.is_open() )
+	{
+		std::cerr << "Unable to open file\n";
+		throw "Unable to open file";
+	}
+
+	size_t nb_lines     = 0;
+	size_t nb_empty     = 0;
+	size_t nb_comment   = 0;
+
+	{                            // read nb vertices
+		std::string temp;
+		std::getline( f, temp );
+		auto v_tok = split_string( temp, ':' );
+		if( v_tok.size() < 2 )
+			throw "error 1st line";
+		size_t nb = std::atoi( v_tok[1].c_str() );
+//		std::cout << "nb vertices=" << nb << '\n';
+		for( size_t i=0; i<nb; i++ )
+			boost::add_vertex(g);
+	}
+
+	do
+	{
+		std::string temp;
+		std::getline( f, temp );
+		nb_lines++;
+
+		if( temp.empty() )          // if empty
+			nb_empty++;
+		else                        // if NOT empty
+		{
+			if( temp.at(0) == '#' )  // if comment
+				nb_comment++;
+			else                     // if NOT comment
+			{
+				auto v_tok = split_string( temp, '-' );
+				if( v_tok.size() < 2 )
+				{
+					std::cerr << "not enough items on line " << nb_lines << '\n';
+					throw ( "Invalid data on line: " + std::to_string( nb_lines ) );
+				}
+				int v1 = std::atoi( v_tok[0].c_str() );
+				int v2 = std::atoi( v_tok[1].c_str() );
+				boost::add_edge( v1, v2, g );
+			}
+		}
+	}
+	while( !f.eof() );
+
+	std::cerr << " - file info:"
+		<< "\n  - nb lines=" << nb_lines
+		<< "\n  - nb empty=" << nb_empty
+		<< "\n  - nb comment=" << nb_comment << '\n';
+
+	return g;
 }
 //-------------------------------------------------------------------

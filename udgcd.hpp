@@ -218,7 +218,7 @@ RemoveIdentical( const std::vector<std::vector<T>>& v_cycles )
 }
 
 //-------------------------------------------------------------------------------------------
-/// Returns true if vertices \c v1 and \c v2 are connected
+/// Returns true if vertices \c v1 and \c v2 are connected by an edge
 /**
 http://www.boost.org/doc/libs/1_59_0/libs/graph/doc/IncidenceGraph.html#sec:out-edges
 */
@@ -273,6 +273,7 @@ RemoveNonChordless( const std::vector<std::vector<vertex_t>>& v_in, const graph_
 }
 
 //-------------------------------------------------------------------------------------------
+/// holds two vertices, used in RemoveRedundant()
 template <typename vertex_t>
 struct VertexPair
 {
@@ -310,30 +311,48 @@ PrintSet( const std::set<VertexPair<vertex_t>>& set_edges, std::string msg )
 	std::cout << '\n';
 }
 //-------------------------------------------------------------------------------------------
+/// Post-process step: removes paths (cycles) that are redundant (i.e. that can be deduced/build from the others)
 template<typename vertex_t, typename graph_t>
 std::vector<std::vector<vertex_t>>
-RemoveComposed( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
+RemoveRedundant( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 {
 	std::vector<std::vector<vertex_t>> v_out;
 	v_out.reserve( v_in.size() ); // to avoid unnecessary memory reallocations and copies
 
-	std::vector<std::vector<vertex_t>> v_tmp;
-	v_tmp.reserve( v_in.size() ); // to avoid unnecessary memory reallocations and copies
+	auto minpos = std::min_element(
+		std::begin(v_in),
+		std::end(v_in),
+		[]                                                                       // lambda
+		( const std::vector<vertex_t>& v1, const std::vector<vertex_t>& v2 )
+		{ return v1.size() < v2.size(); }
+	);
+	size_t min_size = minpos->size();
+
+/*	auto maxpos = std::max_element(
+		std::begin(v_in),
+		std::end(v_in),
+		[]
+		( const std::vector<vertex_t>& v1, const std::vector<vertex_t>& v2 )
+		{ return v1.size() < v2.size(); }
+	);
+	size_t max_size = maxpos->size();*/
+
+//	std::cout << "min_size=" << min_size << '\n';
+//	std::cout << "max_size=" << max_size << '\n';
+
+//	std::vector<std::vector<vertex_t>> v_tmp;
+//	v_tmp.reserve( v_in.size() ); // to avoid unnecessary memory reallocations and copies
 
 	std::set<VertexPair<vertex_t>> set_edges;
 
-/// \todo: replace with max_element and a lambda ?
-	size_t max_size(0);
-    for( const auto& cycle: v_in )
-		max_size = std::max( max_size, cycle.size() );
-
+#if 0
 /**
 Separate input set into 2 sets:
 - those that have a length equal to max_size get stored into v_tmp
 - those that have a length less than max_size. These get directly added into the output vector
 and their edges get added to the set      */
     for( const auto& cycle: v_in )
-		if( cycle.size() == max_size )
+		if( cycle.size() != min_size )
 			v_tmp.push_back( cycle );
 		else
 		{
@@ -352,9 +371,10 @@ and their edges get added to the set      */
 		}
 //	PrintSet( set_edges, "step1: final" );
 //	std::cout << "nb element with max_size=" << max_size << " is " << v_tmp.size() << '\n';
+#endif
 
 /// consider all the longest paths
-    for( const auto& cycle: v_tmp )
+    for( const auto& cycle: v_in )
     {
 //		PrintPath( std::cout, cycle );
 //		PrintSet( set_edges, "start" );
@@ -479,7 +499,7 @@ FindCycles( graph_t& g )
 #endif
 
 // post process 4: (\todo need to find another name...)
-	std::vector<std::vector<vertex_t>> v_cycles5 = RemoveComposed( v_cycles4, g );
+	std::vector<std::vector<vertex_t>> v_cycles5 = RemoveRedundant( v_cycles4, g );
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles5, "After removal of composed cycles" );
 #endif

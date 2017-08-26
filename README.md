@@ -30,6 +30,7 @@ These are sorted with the smallest vertex in first position, and such as the sec
 - UPDATE 2017/08: at present, output is redundant: in some case, can give more cycles than it actually should. See [here](#s_issues).
 - beta. Not extensively tested, but provides sample application code.
 - WARNING: not selled as being "optimal", a lot of things can probably being optimized.
+   Complexity has not been quantified but should be pretty bad, so I doubt it can be used for large graphs.
 - Works for graphs holding unconnected sub-graphs.
 - Modern C++ design'ed (RAII).
 - Fairly generic, should be suited for pretty much all types of undirected graphs, as long as you can [order the vertices](#s_notes).
