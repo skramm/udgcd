@@ -14,7 +14,7 @@ Home page: https://github.com/skramm/udgcd
 
 #include <boost/version.hpp>
 #include "boost/graph/graphviz.hpp"
-#include <boost/graph/connected_components.hpp>
+//#include <boost/graph/connected_components.hpp>
 
 #include <string>
 
@@ -63,15 +63,20 @@ CallDot( std::string id_str )
 std::string
 BuildDotFileName()
 {
-	return "out/sample_" + prog_id + "_" + std::to_string(g_idx);
+	return "out/plot_" + prog_id + "_" + std::to_string(g_idx);
 }
 //-------------------------------------------------------------------
 /// Generates a dot file from graph \c g and calls the renderer (dot/Graphviz) to produce a svg image of the graph
 template<typename graph_t>
 void
-RenderGraph( const graph_t& g )
+RenderGraph( const graph_t& g ) //, const char* name=0 )
 {
-	std::string id_str = BuildDotFileName();
+	std::string id_str;
+//	if( !name )
+		id_str = BuildDotFileName();
+/*	else
+		id_str=name;
+	std::cout << "id_str=" << id_str << '\n';*/
 	{
 		std::ofstream f ( id_str + ".dot" );
 		assert( f.is_open() );
@@ -205,12 +210,14 @@ LoadGraph( const char* fname )
 	return g;
 }
 //-------------------------------------------------------------------
-/// process the graph to find cycles, called by the two apps
+/// Process the graph to find cycles, and renders the graph in a .dot file.
+/// This function is called by the two apps.
 template<typename graph_t>
 int
 Process( graph_t& g )
 {
 	typedef typename boost::graph_traits<graph_t>::vertex_descriptor vertex_t;
+
 	auto expected = PrintGraphInfo( g );
 
 	std::vector<std::vector<vertex_t>> cycles = udgcd::FindCycles<graph_t,vertex_t>( g );

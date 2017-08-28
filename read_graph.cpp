@@ -5,7 +5,7 @@
 
 /**
 \file read_graph.cpp
-\brief read a graph in simple text format
+\brief read a graph in simple text format and searches for cycles
 */
 
 #include <iostream>
@@ -15,7 +15,7 @@ std::string prog_id = "read_graph";
 #include "common_sample.h"
 
 //-------------------------------------------------------------------------------------------
-/// Some typedefs for readability... ;-)
+/// Some typedefs for readability
 typedef boost::adjacency_list<
 	boost::vecS,
 	boost::vecS,
@@ -36,6 +36,7 @@ int main( int argc, const char** argv )
 		return 1;
 	}
 	graph_t g = LoadGraph<graph_t>( argv[1] );
+	RenderGraph( g );
 
 	return Process( g );
 }

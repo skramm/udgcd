@@ -22,6 +22,7 @@ See file README.md
 
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/undirected_dfs.hpp>
+#include <boost/graph/connected_components.hpp>
 
 //#define DEV_MODE
 
@@ -329,63 +330,10 @@ RemoveRedundant( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 {
 	std::vector<std::vector<vertex_t>> v_out;
 	v_out.reserve( v_in.size() ); // to avoid unnecessary memory reallocations and copies
-#if 0
-	auto minpos = std::min_element(
-		std::begin(v_in),
-		std::end(v_in),
-		[]                                                                       // lambda
-		( const std::vector<vertex_t>& v1, const std::vector<vertex_t>& v2 )
-		{ return v1.size() < v2.size(); }
-	);
-	size_t min_size = minpos->size();
-
-	auto maxpos = std::max_element(
-		std::begin(v_in),
-		std::end(v_in),
-		[]
-		( const std::vector<vertex_t>& v1, const std::vector<vertex_t>& v2 )
-		{ return v1.size() < v2.size(); }
-	);
-	size_t max_size = maxpos->size();*/
-
-//	std::cout << "min_size=" << min_size << '\n';
-//	std::cout << "max_size=" << max_size << '\n';
-#endif
-
-//	std::vector<std::vector<vertex_t>> v_tmp;
-//	v_tmp.reserve( v_in.size() ); // to avoid unnecessary memory reallocations and copies
 
 	std::set<VertexPair<vertex_t>> set_edges;
 
-#if 0
-/**
-Separate input set into 2 sets:
-- those that have a length equal to max_size get stored into v_tmp
-- those that have a length less than max_size. These get directly added into the output vector
-and their edges get added to the set      */
-    for( const auto& cycle: v_in )
-		if( cycle.size() != min_size )
-			v_tmp.push_back( cycle );
-		else
-		{
-//			std::cout << " adding cycle: "; PrintPath( std::cout, cycle );
-			v_out.push_back( cycle );
-			for( size_t i=0; i<cycle.size(); ++i )
-			{
-//				std::cout << "i=" << i << ": " << (i==0?cycle[cycle.size()-1]:cycle[i-1]) << "-" << cycle[i] << '\n';
-				VertexPair<vertex_t> vp( (i==0?cycle[cycle.size()-1]:cycle[i-1]), cycle[i] );
-//				std::cout << "   - i=" << i << " adding vp: " << vp << '\n';
-				set_edges.insert( vp );
-//				PrintSet( set_edges, "after insert single" );
-			}
-//			PrintSet( set_edges, "after insertion" );
-
-		}
-//	PrintSet( set_edges, "step1: final" );
-//	std::cout << "nb element with max_size=" << max_size << " is " << v_tmp.size() << '\n';
-#endif
-
-/// preliminary sorting by length, so wee keep the shortest paths
+/// preliminary sorting by length, so we keep the shortest paths
 	std::sort(
 		std::begin(v_in),
 		std::end(v_in),
@@ -393,6 +341,7 @@ and their edges get added to the set      */
 		( const std::vector<vertex_t>& vv1, const std::vector<vertex_t>& vv2 )
 		{ return vv1.size() < vv2.size(); }
 	);
+	PrintPaths( std::cout, v_in, "After sorting" );
 
 /// enumerate the cycles and store each edge in set. Add cycle to output only if new edge detected
     for( const auto& cycle: v_in )
@@ -471,8 +420,7 @@ FindCycles( graph_t& g )
 	if( boost::num_vertices(g) < 3 || boost::num_edges(g) < 3 )
 		return std::vector<std::vector<vertex_t>>();
 
-//	std::cout << "\n - START " << __FUNCTION__ << "\n";
-	CycleDetector<vertex_t> ld;
+	CycleDetector<vertex_t> cycleDetector;
 
 // vertex color map
 	std::vector<boost::default_color_type> vertex_color( boost::num_vertices(g) );
@@ -483,22 +431,61 @@ FindCycles( graph_t& g )
 	std::map<typename graph_t::edge_descriptor, boost::default_color_type> edge_color;
 	auto ecmap = boost::make_assoc_property_map( edge_color );
 
-	boost::undirected_dfs( g, ld, vcmap, ecmap, 0 );
-	//	boost::root_vertex( vertex_t(0) ).visitor(ld).edge_color_map( get(boost::edge_color, g) ) ); // old call
+	boost::undirected_dfs( g, cycleDetector, vcmap, ecmap, 0 );
 
-	if( !ld.cycleDetected() )
-		return std::vector<std::vector<vertex_t>>(); // return empty vector, no cycles found
+	if( !cycleDetector.cycleDetected() )             // if no detection,
+		return std::vector<std::vector<vertex_t>>(); //  return empty vector, no cycles found
 
-// else, get the cycles.
-	std::vector<std::vector<vertex_t>> v_cycles;
 
-	for( const auto& vi: ld.v_source_vertex )
+	std::vector<std::vector<vertex_t>> v_cycles;     // else, get the cycles.
+
+#if 0
+
+// find a vertex in each of the unconnected graphs
+	std::vector<size_t> component( boost::num_vertices( g ) );
+	auto nb_cc = boost::connected_components( g, &component[0] );
+	std::cout << "nb_cc=" << nb_cc << " vect size=" << component.size() << '\n';
+
+	std::vector<vertex_t> firstVertex( nb_cc );
+	std::vector<bool>     firstVertexFlag( nb_cc, false );
+
+	size_t nbFound = 0;
+	for( size_t i=0; i != component.size() && nbFound != nb_cc; ++i )
 	{
+		std::cout << "Vertex " << i <<" is in component " << component[i] << '\n';
+		if( firstVertexFlag[component[i]] == false )
+		{
+			firstVertex[component[i]] = i;
+			firstVertexFlag[component[i]] = true;
+			nbFound++;
+		}
+	}
+    std::cout << '\n';
+
+	for( const auto& vi: firstVertex )
+	{
+		std::cout << "considering vertex " << vi << ": v_cycle size=" << v_cycles.size() << '\n';
 		std::vector<std::vector<vertex_t>> v_paths;
 		std::vector<vertex_t> newv(1, vi ); // start by one of the filed source vertex
 		v_paths.push_back( newv );
 		explore( vi, g, v_paths, v_cycles );    // call of recursive function
 	}
+
+#else      // old way: search from all
+	for( const auto& vi: cycleDetector.v_source_vertex )
+	{
+		std::vector<std::vector<vertex_t>> v_paths;
+		std::vector<vertex_t> newv(1, vi ); // start by one of the filed source vertex
+		v_paths.push_back( newv );
+		explore( vi, g, v_paths, v_cycles );    // call of recursive function
+
+#ifdef UDGCD_PRINT_STEPS
+//	std::cout << "considering vertex " << vi << ": v_cycle size=" << v_cycles.size() << '\n';
+//	PrintPaths( std::cout, v_cycles, "temp" );
+#endif
+
+	}
+#endif
 
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles, "Raw cycles" );
@@ -522,7 +509,7 @@ FindCycles( graph_t& g )
 	PrintPaths( std::cout, v_cycles4, "After removal of non-chordless cycles" );
 #endif
 
-// post process 4: (\todo need to find another name...)
+// post process 4:
 	std::vector<std::vector<vertex_t>> v_cycles5 = RemoveRedundant( v_cycles4, g );
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles5, "After removal of composed cycles" );

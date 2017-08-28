@@ -50,13 +50,12 @@ run: all
 #	@echo "running $<"
 #	$<
 
-# runs on generated samples
+# runs on all samples
 rungen: $(GEN_SAMPLES_OUTPUT) bin/read_graph
 	@echo "target $@" done
 
  out/stdout_gen_graph_%.txt: out/gen_graph_%.txt
-	bin/read_graph $< > $@
-
+	time bin/read_graph $< > $@
 
 
 test:
