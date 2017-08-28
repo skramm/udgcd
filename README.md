@@ -103,6 +103,7 @@ If Graphviz/dot is installed, the demo samples will render the generated graphs 
 ### How does it work ?
  <a name="s_inside"></a>
 
+ The algorithm involved here is pretty simple, but probably highly inefficient, thus (very) slow for large graphs.
 Three steps are involved: first we need to check if there **is** at least one cycle. Is this is true, we explore the graph to find it/them.
 
 - The first step is done by a Depth First Search (DFS), with  [boost::undirected_dfs()](http://www.boost.org/doc/libs/1_59_0/libs/graph/doc/undirected_dfs.html)
@@ -114,11 +115,11 @@ If this happens, it means that a cycle *has* been encountered.
 - The second step is done by exploring recursively the graph, by starting from each of the vertices that have been identified as part of a "back edge".
 
 - The third steps does a lot of post-processing. At present, we have all the possibles paths and we need to filter-out many of them.
- The steps are:
- 1. remove symmetrical paths (i.e. : 1-2-3 is the same as 1-3-2)
- 1. remove duplicate paths  (i.e. : 1-2-3 is the same as 2-3-1)
- 1. remove non-chordless cycles (see [WP page](https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FCycle_%28graph_theory%29%23Chordless_cycles))
- 1. remove composite cycles (WIP, NOT DONE YET, SEE https://github.com/skramm/udgcd/issues/1)
+ The 4 steps are:
+  1. remove symmetrical paths (i.e. : 1-2-3 is the same as 1-3-2)
+  1. remove duplicate paths  (i.e. : 1-2-3 is the same as 2-3-1)
+  1. remove non-chordless cycles (see [WP page](https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FCycle_%28graph_theory%29%23Chordless_cycles))
+  1. remove redundant cycles, that is the ones that can be deduced from the others.
 
 ### References
  <a name="s_ref"></a>

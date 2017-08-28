@@ -468,6 +468,9 @@ template<typename graph_t, typename vertex_t>
 std::vector<std::vector<vertex_t>>
 FindCycles( graph_t& g )
 {
+	if( boost::num_vertices(g) < 3 || boost::num_edges(g) < 3 )
+		return std::vector<std::vector<vertex_t>>();
+
 //	std::cout << "\n - START " << __FUNCTION__ << "\n";
 	CycleDetector<vertex_t> ld;
 

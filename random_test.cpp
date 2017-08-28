@@ -81,17 +81,20 @@ int main( int argc, const char** argv )
 		}
 	}
 
-	auto expected = PrintGraphInfo( g );
-	RenderGraph( g );
 	SaveGraph( g, std::to_string(t) );
 
-	std::vector<std::vector<vertex_t>> cycles = udgcd::FindCycles<graph_t,vertex_t>( g );
+
+//	auto expected = PrintGraphInfo( g );
+//	RenderGraph( g );
+
+	return Process( g );
+/*	std::vector<std::vector<vertex_t>> cycles = udgcd::FindCycles<graph_t,vertex_t>( g );
 	udgcd::PrintPaths( std::cout, cycles, "final-0" );
 	if( expected != cycles.size() )
 	{
 		std::cout << "ERROR: computed nb of cycles is not what expected...\n";
 		return 1;
-	}
+	}*/
 }
 //-------------------------------------------------------------------
 

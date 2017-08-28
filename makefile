@@ -36,6 +36,9 @@ OBJ_FILES = $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRC_FILES))
 EXEC_FILES = $(patsubst $(SRC_DIR)/%.cpp,$(BIN_DIR)/%,$(SRC_FILES))
 SAMPLE_FILES = $(wildcard samples/*.txt)
 
+GEN_SAMPLE_FILES = $(wildcard out/gen_graph_*.txt)
+GEN_SAMPLES_OUTPUT = $(patsubst out/%.txt,out/stdout_%.txt,$(GEN_SAMPLE_FILES))
+
 # default target
 all: $(EXEC_FILES)
 	@echo "- Done target $@"
@@ -47,12 +50,25 @@ run: all
 #	@echo "running $<"
 #	$<
 
+# runs on generated samples
+rungen: $(GEN_SAMPLES_OUTPUT) bin/read_graph
+	@echo "target $@" done
+
+ out/stdout_gen_graph_%.txt: out/gen_graph_%.txt
+	bin/read_graph $< > $@
+
+
+
+test:
+	echo out/test_{00..99}.txt
 
 show: $(SRC_FILES)
 	@echo SRC_FILES=$(SRC_FILES)
 	@echo OBJ_FILES=$(OBJ_FILES)
 	@echo EXEC_FILES=$(EXEC_FILES)
 	@echo SAMPLE_FILES=$(SAMPLE_FILES)
+	@echo GEN_SAMPLE_FILES=$(GEN_SAMPLE_FILES)
+	@echo GEN_SAMPLES_OUTPUT=$(GEN_SAMPLES_OUTPUT)
 
 doc:
 	doxygen doxyfile 1>$(OBJ_DIR)/doxygen_stdout.txt 2>$(OBJ_DIR)/doxygen_stderr.txt
@@ -60,14 +76,17 @@ doc:
 clean:
 	@-rm $(OBJ_DIR)/*
 	@-rm *.layout
+
+cleanout:
 	@-rm out/*
 
-cleanall: clean cleandoc
+cleanall: clean cleandoc cleanout
 	@-rm $(EXEC_FILES)
 
 cleandoc:
 	@-rm -r html/*
 	@-rmdir html
+
 
 diff:
 	git diff --color-words | aha > $(OBJ_DIR)/diff.html

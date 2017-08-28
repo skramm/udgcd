@@ -36,11 +36,17 @@ int main( int argc, const char** argv )
 		return 1;
 	}
 	graph_t g = LoadGraph<graph_t>( argv[1] );
-	PrintGraphInfo( g );
-	RenderGraph( g );
+
+	return Process( g );
+/*	auto expected = PrintGraphInfo( g );
 
 	std::vector<std::vector<vertex_t>> cycles = udgcd::FindCycles<graph_t,vertex_t>( g );
 	udgcd::PrintPaths( std::cout, cycles, "final" );
+	if( expected != cycles.size() )
+	{
+		std::cout << "ERROR: computed nb of cycles is not what expected...\n";
+		return 1;
+	}*/
 }
 
 //-------------------------------------------------------------------

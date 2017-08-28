@@ -19,7 +19,7 @@ Home page: https://github.com/skramm/udgcd
 #include <string>
 
 #define SHOW_INFO \
-	std::cout << "\n-START: " << __FILE__ \
+	std::cout << "-START: " << __FILE__ \
 		<< "\n-built with Boost " << BOOST_LIB_VERSION << '\n'
 
 extern std::string prog_id; // allocated in samples files
@@ -145,6 +145,7 @@ LoadGraph( const char* fname )
 {
 	graph_t g;
 
+	std::cout<< " - Reading file:" << fname << '\n';
 	std::ifstream f( fname );
 	if( !f.is_open() )
 	{
@@ -196,11 +197,30 @@ LoadGraph( const char* fname )
 	}
 	while( !f.eof() );
 
-	std::cerr << " - file info:"
+	std::cout<< " - file info:"
 		<< "\n  - nb lines=" << nb_lines
 		<< "\n  - nb empty=" << nb_empty
 		<< "\n  - nb comment=" << nb_comment << '\n';
 
 	return g;
+}
+//-------------------------------------------------------------------
+/// process the graph to find cycles, called by the two apps
+//template<typename graph_t, typename vertex_t>
+template<typename graph_t>
+int
+Process( graph_t& g )
+{
+	typedef typename boost::graph_traits<graph_t>::vertex_descriptor vertex_t;
+	auto expected = PrintGraphInfo( g );
+
+	std::vector<std::vector<vertex_t>> cycles = udgcd::FindCycles<graph_t,vertex_t>( g );
+	udgcd::PrintPaths( std::cout, cycles, "final" );
+	if( expected != cycles.size() )
+	{
+		std::cout << "ERROR: computed nb of cycles is not what expected...\n";
+		return 1;
+	}
+	return 0;
 }
 //-------------------------------------------------------------------
