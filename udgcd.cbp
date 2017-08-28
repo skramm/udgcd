@@ -26,12 +26,13 @@
 		<Unit filename="common_sample.h" />
 		<Unit filename="doxyfile" />
 		<Unit filename="makefile" />
+		<Unit filename="random_test.cpp" />
+		<Unit filename="read_graph.cpp" />
 		<Unit filename="sample_1.cpp" />
 		<Unit filename="sample_2.cpp" />
 		<Unit filename="sample_3.cpp" />
 		<Unit filename="sample_4.cpp" />
 		<Unit filename="sample_5.cpp" />
-		<Unit filename="test_1.cpp" />
 		<Unit filename="udgcd.hpp" />
 		<Extensions>
 			<envvars />

@@ -206,7 +206,6 @@ LoadGraph( const char* fname )
 }
 //-------------------------------------------------------------------
 /// process the graph to find cycles, called by the two apps
-//template<typename graph_t, typename vertex_t>
 template<typename graph_t>
 int
 Process( graph_t& g )
