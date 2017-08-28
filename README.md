@@ -26,8 +26,9 @@ These are sorted with the smallest vertex in first position, and such as the sec
 
 ### Status
  <a name="s_stat"></a>
+- UPDATE 2017-08-28: at present, output is redundant: in some case, can give more cycles than it actually should. See [here](#s_issues).
+After some investigating and coding, this issue is actually pretty bad, thus I would recommend *not to use* this code until I find some fix.
 - UPDATE 2017/04: now works with user bundled properties for the edges, [see here](#note_bp).
-- UPDATE 2017/08: at present, output is redundant: in some case, can give more cycles than it actually should. See [here](#s_issues).
 - beta. Not extensively tested, but provides sample application code.
 - WARNING: not selled as being "optimal", a lot of things can probably being optimized.
 - Works for graphs holding unconnected sub-graphs.
