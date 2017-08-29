@@ -36,8 +36,17 @@ int main( int argc, const char** argv )
 		return 1;
 	}
 	graph_t g = LoadGraph<graph_t>( argv[1] );
-	RenderGraph( g );
+	RenderGraph( g, "sample" );
 
+	bool noProcess(false);
+	if( argc > 2 )
+	{
+		std::string a( argv[2] );
+		if( a == "-n" )
+			noProcess = true;
+	}
+	if( noProcess )
+		return 0;
 	return Process( g );
 }
 

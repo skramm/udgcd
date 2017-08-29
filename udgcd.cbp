@@ -32,7 +32,6 @@
 		<Unit filename="sample_2.cpp" />
 		<Unit filename="sample_3.cpp" />
 		<Unit filename="sample_4.cpp" />
-		<Unit filename="sample_5.cpp" />
 		<Unit filename="udgcd.hpp" />
 		<Extensions>
 			<envvars />

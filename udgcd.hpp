@@ -323,6 +323,7 @@ PrintSet( const std::set<VertexPair<vertex_t>>& set_edges, std::string msg )
 /// Post-process step: removes paths (cycles) that are redundant (i.e. that can be deduced/build from the others)
 /**
 arg is not const, because it gets sorted here.
+\bug bug here, see RemoveRedundant2
 */
 template<typename vertex_t, typename graph_t>
 std::vector<std::vector<vertex_t>>
@@ -345,6 +346,89 @@ RemoveRedundant( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 
 /// enumerate the cycles and store each edge in set. Add cycle to output only if new edge detected
     for( const auto& cycle: v_in )
+    {
+//		PrintPath( std::cout, cycle );
+//		PrintSet( set_edges, "start" );
+		bool newEdgeFound(false);
+		for( size_t i=0; i<cycle.size(); ++i )
+		{
+			VertexPair<vertex_t> vp( (i==0?cycle[cycle.size()-1]:cycle[i-1]), cycle[i] );
+			auto rv = set_edges.insert( vp );
+			if( rv.second == true )  // if insertion took place, it means the edge wasn't already there
+				newEdgeFound = true;
+//			std::cout << "i=" << i << " vp=" << vp << " found=" << newEdgeFound << '\n';
+		}
+		if( newEdgeFound )
+		{
+//			std::cout << " => Adding current cycle to output vector\n";
+			v_out.push_back( cycle );
+		}
+	}
+	return v_out;
+}
+//-------------------------------------------------------------------------------------------
+template<typename vertex_t>
+void
+BuildBinaryVector( const std::vector<vertex_t>& v_in, std::vector<bool>& v_binvect )
+{
+	for( size_t i=0; i<v_in.size(); i++ )
+	{
+
+	}
+}
+//-------------------------------------------------------------------------------------------
+template<typename vertex_t>
+void
+BuildBinaryVectors(
+	const std::vector<std::vector<vertex_t>>& v_in,
+	std::vector<std::vector<bool>>&           v_binvect )
+{
+	assert( v_in.size() == v_binvect.size() );
+	for( size_t i=0; i<v_in.size(); i++ )
+		BuildBinaryVector( cycle[i], binvect[i] );
+}
+//-------------------------------------------------------------------------------------------
+/// Post-process step: removes paths (cycles) that are redundant (i.e. that can be deduced/build from the others)
+/**
+arg is not const, because it gets sorted here.
+
+*/
+template<typename vertex_t, typename graph_t>
+std::vector<std::vector<vertex_t>>
+RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
+{
+	std::vector<std::vector<vertex_t>> v_out;
+	v_out.reserve( v_in.size() ); // to avoid unnecessary memory reallocations and copies
+
+/// preliminary sorting by length, so we keep the shortest paths
+	std::sort(
+		std::begin(v_in),
+		std::end(v_in),
+		[]                                                                       // lambda
+		( const std::vector<vertex_t>& vv1, const std::vector<vertex_t>& vv2 )
+		{ return vv1.size() < vv2.size(); }
+	);
+	PrintPaths( std::cout, v_in, "After sorting" );
+
+/// build for each cycle its associated binary vector
+
+	size_t nbvertices = boost::num_vertices(g);
+	size_t nbCombinations = nbvertices * (nbvertices-1) / 2;
+	std::cout << "nbCombinations=" << nbCombinations << '\n';
+	std::vector<std::vector<bool>> v_binvect( v_int.size() );  // one binary vector per cycle
+    for( const auto& binvect: v_binvect )
+		binvect.resize( nbCombinations );
+	BuildBinaryVectors( v_int, v_binvect );
+
+/// build the composed cycle by taking each pair of cycle
+    for( size_t i=0; i<v_in.size()-1; i++ )
+		for( size_t j=i+1; i<v_in.size(); j++ )
+		{
+			std::cout << "i=" << i << " j=" << j << "\n";
+
+		}
+
+    for( const auto& cycle_A: v_in )
     {
 //		PrintPath( std::cout, cycle );
 //		PrintSet( set_edges, "start" );

@@ -51,9 +51,10 @@ CallDot( std::string id_str )
 {
 	std::system(
 		std::string(
-			"dot -Tsvg -Grankdir=LR -Nfontsize=24 "
+//			"dot -Tsvg -Grankdir=LR -Nfontsize=24 "
+			"dot -Tsvg -Nfontsize=24 "
 			+ id_str
-			+ ".dot > "
+			+ ".dot > out/"
 			+ id_str
 			+ ".svg"
 		).c_str()
@@ -69,14 +70,14 @@ BuildDotFileName()
 /// Generates a dot file from graph \c g and calls the renderer (dot/Graphviz) to produce a svg image of the graph
 template<typename graph_t>
 void
-RenderGraph( const graph_t& g ) //, const char* name=0 )
+RenderGraph( const graph_t& g, const char* name=0 )
 {
 	std::string id_str;
-//	if( !name )
+	if( !name )
 		id_str = BuildDotFileName();
-/*	else
+	else
 		id_str=name;
-	std::cout << "id_str=" << id_str << '\n';*/
+	std::cout << "id_str=" << id_str << '\n';
 	{
 		std::ofstream f ( id_str + ".dot" );
 		assert( f.is_open() );
@@ -191,7 +192,7 @@ LoadGraph( const char* fname )
 				auto v_tok = split_string( temp, '-' );
 				if( v_tok.size() < 2 )
 				{
-					std::cerr << "not enough items on line " << nb_lines << '\n';
+					std::cerr << "not enough items on line " << nb_lines << ": -" << temp << "-\n";
 					throw ( "Invalid data on line: " + std::to_string( nb_lines ) );
 				}
 				int v1 = std::atoi( v_tok[0].c_str() );
@@ -210,7 +211,7 @@ LoadGraph( const char* fname )
 	return g;
 }
 //-------------------------------------------------------------------
-/// Process the graph to find cycles, and renders the graph in a .dot file.
+/// Process the graph to find cycles
 /// This function is called by the two apps.
 template<typename graph_t>
 int

@@ -1,7 +1,6 @@
-v:8
+v:10
 
 # see https://en.wikipedia.org/wiki/Petersen_graph
-
 
 0-1
 1-2
