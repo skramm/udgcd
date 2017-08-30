@@ -101,10 +101,10 @@ explore(
 //-------------------------------------------------------------------------------------------
 template<typename T>
 void
-PrintPath( std::ostream& f, const std::vector<T>& path )
+PrintVector( std::ostream& f, const std::vector<T>& vec )
 {
-	for( const auto& node : path )
-		f << node << "-";
+	for( const auto& elem : vec )
+		f << elem << "-";
 	f << "\n";
 }
 
@@ -122,7 +122,7 @@ PrintPaths( std::ostream& f, const std::vector<std::vector<T>>& v_paths, const c
 	for( size_t i=0; i<v_paths.size(); i++ )
 	{
 		f << " - " << i << ": ";
-		PrintPath( f, v_paths[i] );
+		PrintVector( f, v_paths[i] );
 	}
 }
 //-------------------------------------------------------------------------------------------
@@ -367,31 +367,60 @@ RemoveRedundant( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 	return v_out;
 }
 //-------------------------------------------------------------------------------------------
+/// Builds the binary vector \c binvect associated to the cycle \c cycle.
+/// The index map \c idx_map is used to fetch the index from the vertices
 template<typename vertex_t>
 void
-BuildBinaryVector( const std::vector<vertex_t>& v_in, std::vector<bool>& v_binvect )
+BuildBinaryVector( const std::vector<vertex_t>& cycle, std::vector<bool>& binvect, const std::vector<size_t>& idx_map )
 {
-	for( size_t i=0; i<v_in.size(); i++ )
+	for( size_t i=0; i<cycle.size(); ++i )
 	{
-
+		VertexPair<vertex_t> vp( (i==0?cycle[cycle.size()-1]:cycle[i-1]), cycle[i] );
+		size_t idx1 = idx_map[vp.v1];
+		size_t idx2 = idx1 + vp.v2 - 1;
+//		std::cout << "vp: " << vp << " idx1=" << idx1 << " idx2=" << idx2 << std::endl;
+		assert( idx2 < binvect.size() );
+		binvect[idx2] = 1;
 	}
+//	PrintVector( std::cout, binvect );
 }
 //-------------------------------------------------------------------------------------------
+/// builds all the binary vectors for all the cycles
 template<typename vertex_t>
 void
 BuildBinaryVectors(
-	const std::vector<std::vector<vertex_t>>& v_in,
-	std::vector<std::vector<bool>>&           v_binvect )
+	const std::vector<std::vector<vertex_t>>& v_cycles,
+	std::vector<std::vector<bool>>&           v_binvect,
+	size_t                                    nbVertices )
 {
-	assert( v_in.size() == v_binvect.size() );
-	for( size_t i=0; i<v_in.size(); i++ )
-		BuildBinaryVector( cycle[i], binvect[i] );
+	assert( v_cycles.size() == v_binvect.size() );
+
+	size_t nbCombinations = nbVertices * (nbVertices-1) / 2;
+	std::cout << "nbCombinations=" << nbCombinations << '\n';
+
+
+/// build table of series $y_n = y_{n-1}+N-n-1$
+	std::vector<size_t> idx_map( nbVertices-1 );
+	idx_map[0] = 0;
+	for( size_t i=1;i<nbVertices-1; i++ )
+	{
+		idx_map[i] = idx_map[i-1] + nbVertices - i - 1;
+//		std::cout << "i=" << i << " map=" << idx_map[i] << '\n';
+	}
+
+	std::cout << "idx_map:\n";
+	PrintVector( std::cout, idx_map );
+
+    for( auto& binvect: v_binvect )
+		binvect.resize( nbCombinations );
+
+	for( size_t i=0; i<v_cycles.size(); i++ )
+		BuildBinaryVector( v_cycles[i], v_binvect[i], idx_map );
 }
 //-------------------------------------------------------------------------------------------
 /// Post-process step: removes paths (cycles) that are redundant (i.e. that can be deduced/build from the others)
 /**
 arg is not const, because it gets sorted here.
-
 */
 template<typename vertex_t, typename graph_t>
 std::vector<std::vector<vertex_t>>
@@ -412,41 +441,19 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 
 /// build for each cycle its associated binary vector
 
-	size_t nbvertices = boost::num_vertices(g);
-	size_t nbCombinations = nbvertices * (nbvertices-1) / 2;
-	std::cout << "nbCombinations=" << nbCombinations << '\n';
-	std::vector<std::vector<bool>> v_binvect( v_int.size() );  // one binary vector per cycle
-    for( const auto& binvect: v_binvect )
-		binvect.resize( nbCombinations );
-	BuildBinaryVectors( v_int, v_binvect );
+	size_t nbVertices = boost::num_vertices(g);
+	std::vector<std::vector<bool>> v_binvect( v_in.size() );  // one binary vector per cycle
+	BuildBinaryVectors( v_in, v_binvect, nbVertices );
 
 /// build the composed cycle by taking each pair of cycle
-    for( size_t i=0; i<v_in.size()-1; i++ )
+/*    for( size_t i=0; i<v_in.size()-1; i++ )
 		for( size_t j=i+1; i<v_in.size(); j++ )
 		{
 			std::cout << "i=" << i << " j=" << j << "\n";
 
 		}
+*/
 
-    for( const auto& cycle_A: v_in )
-    {
-//		PrintPath( std::cout, cycle );
-//		PrintSet( set_edges, "start" );
-		bool newEdgeFound(false);
-		for( size_t i=0; i<cycle.size(); ++i )
-		{
-			VertexPair<vertex_t> vp( (i==0?cycle[cycle.size()-1]:cycle[i-1]), cycle[i] );
-			auto rv = set_edges.insert( vp );
-			if( rv.second == true )  // if insertion took place, it means the edge wasn't already there
-				newEdgeFound = true;
-//			std::cout << "i=" << i << " vp=" << vp << " found=" << newEdgeFound << '\n';
-		}
-		if( newEdgeFound )
-		{
-//			std::cout << " => Adding current cycle to output vector\n";
-			v_out.push_back( cycle );
-		}
-	}
 	return v_out;
 
 }
@@ -594,7 +601,7 @@ FindCycles( graph_t& g )
 #endif
 
 // post process 4:
-	std::vector<std::vector<vertex_t>> v_cycles5 = RemoveRedundant( v_cycles4, g );
+	std::vector<std::vector<vertex_t>> v_cycles5 = RemoveRedundant2( v_cycles4, g );
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles5, "After removal of composed cycles" );
 #endif
