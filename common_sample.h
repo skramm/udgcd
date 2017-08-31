@@ -79,7 +79,7 @@ RenderGraph( const graph_t& g, const char* name=0 )
 		id_str=name;
 	std::cout << "id_str=" << id_str << '\n';
 	{
-		std::ofstream f ( id_str + ".dot" );
+		std::ofstream f ( "out/" + id_str + ".dot" );
 		assert( f.is_open() );
 		boost::write_graphviz( f, g );
 	}

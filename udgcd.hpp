@@ -24,6 +24,8 @@ See file README.md
 #include <boost/graph/undirected_dfs.hpp>
 #include <boost/graph/connected_components.hpp>
 
+#include <boost/dynamic_bitset.hpp>       // needed ! Allows bitwise operations on dynamic size boolean vectors
+
 //#define DEV_MODE
 
 /// All the provided code is in this namespace
@@ -98,6 +100,21 @@ explore(
 	}
 	return found;
 }
+//-------------------------------------------------------------------------------------------
+/// Print vector of bits
+template<typename T>
+void
+PrintBitVector( std::ostream& f, const T& vec )
+{
+	for( size_t i=0; i<vec.size(); i++ )
+	{
+		f << vec[i];
+		if( !((i+1)%4) )
+			f << '.';
+	}
+	f << "\n";
+}
+
 //-------------------------------------------------------------------------------------------
 template<typename T>
 void
@@ -371,8 +388,12 @@ RemoveRedundant( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 /// The index map \c idx_map is used to fetch the index from the vertices
 template<typename vertex_t>
 void
-BuildBinaryVector( const std::vector<vertex_t>& cycle, std::vector<bool>& binvect, const std::vector<size_t>& idx_map )
+BuildBinaryVector(
+	const std::vector<vertex_t>& cycle,
+	boost::dynamic_bitset<>&     binvect,
+	const std::vector<size_t>&   idx_map )
 {
+//	std::cout << "BuildBinaryVector(): binvect size=" << binvect.size() << '\n';
 	for( size_t i=0; i<cycle.size(); ++i )
 	{
 		VertexPair<vertex_t> vp( (i==0?cycle[cycle.size()-1]:cycle[i-1]), cycle[i] );
@@ -390,7 +411,7 @@ template<typename vertex_t>
 void
 BuildBinaryVectors(
 	const std::vector<std::vector<vertex_t>>& v_cycles,
-	std::vector<std::vector<bool>>&           v_binvect,
+	std::vector<boost::dynamic_bitset<>>&     v_binvect,
 	size_t                                    nbVertices )
 {
 	assert( v_cycles.size() == v_binvect.size() );
@@ -426,10 +447,14 @@ template<typename vertex_t, typename graph_t>
 std::vector<std::vector<vertex_t>>
 RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 {
+/// IMPORTANT: the code below assumes we have at least 3 cycles, so lets exit right away if not !
+	if( v_in.size() < 3 )
+		return v_in;
+
 	std::vector<std::vector<vertex_t>> v_out;
 	v_out.reserve( v_in.size() ); // to avoid unnecessary memory reallocations and copies
 
-/// preliminary sorting by length, so we keep the shortest paths
+/// preliminary sorting by length, so we keep the shortest paths first
 	std::sort(
 		std::begin(v_in),
 		std::end(v_in),
@@ -441,19 +466,48 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 
 /// build for each cycle its associated binary vector
 
-	size_t nbVertices = boost::num_vertices(g);
-	std::vector<std::vector<bool>> v_binvect( v_in.size() );  // one binary vector per cycle
-	BuildBinaryVectors( v_in, v_binvect, nbVertices );
+	std::vector<boost::dynamic_bitset<>> v_binvect( v_in.size() );  // one binary vector per cycle
+
+	BuildBinaryVectors( v_in, v_binvect, boost::num_vertices(g) );
 
 /// build the composed cycle by taking each pair of cycle
-/*    for( size_t i=0; i<v_in.size()-1; i++ )
-		for( size_t j=i+1; i<v_in.size(); j++ )
+/// and comparing to the others
+	boost::dynamic_bitset<> v_removals( v_in.size() );  // sets to 0, 1 means it will be removed
+	size_t nbRemovals(0);
+    for( size_t i=0; i<v_in.size()-2; i++ )
+		for( size_t j=i+1; j<v_in.size()-1; j++ )
 		{
-			std::cout << "i=" << i << " j=" << j << "\n";
-
+//			std::cout << "i=" << i << " j=" << j << "\n";
+			auto res = v_binvect[i] ^ v_binvect[j];
+//			std::cout << "res:\n"; PrintBitVector( std::cout, res );
+			for( size_t k=j+1; k<v_in.size(); k++ )
+			{
+//					std::cout << "compare to elem " << k << '\n';
+//					PrintBitVector( std::cout, v_binvect[k] );
+				if( v_removals[k] == 0 )        // if already to 1, no need to check
+				{
+					auto maxsize = std::max( v_in[i].size(), v_in[j].size() );
+					if( v_in[k].size() > maxsize )
+					{
+//							std::cout << " -size=" << v_in[k].size() << " higher than " << maxsize << '\n';
+						if( res == v_binvect[k] )
+						{
+							v_removals[k] = 1;// std::cout << " remove it!\n";
+							nbRemovals++;
+						}
+					}
+				}
+			}
 		}
-*/
 
+	std::cout << "Nbremovals=" << nbRemovals << '\n';
+//	std::cout << "copy elements:\n";
+    for( size_t i=0; i<v_in.size(); i++ )        // finally, copy all the correct
+		if( v_removals[i] == 0 )                 // cycles to output vector
+		{
+			v_out.push_back( v_in[i] );
+//			std::cout <<"  - copy elem " << i << '\n';
+		}
 	return v_out;
 
 }
