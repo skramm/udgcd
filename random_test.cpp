@@ -82,7 +82,7 @@ int main( int argc, const char** argv )
 	}
 
 	SaveGraph( g, std::to_string(t) );
-	RenderGraph( g, ("gen_" + std::to_string(t)).c_str() );
+	RenderGraph( g, "gen_" + std::to_string(t) );
 
 	return Process( g );
 }

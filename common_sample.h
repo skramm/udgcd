@@ -28,7 +28,7 @@ int g_idx = 0;
 //-------------------------------------------------------------------
 /// Prints some details on graph and returns nb of expected cycles
 /**
-(assumes that no two vertices have two edges join them...)
+(assumes that no two vertices have two edges that join them !)
 */
 template<typename graph_t>
 size_t
@@ -46,6 +46,7 @@ PrintGraphInfo( const graph_t& g )
 	return nb_cycles;
 }
 //-------------------------------------------------------------------
+#if 0
 void
 CallDot( std::string id_str )
 {
@@ -66,27 +67,29 @@ BuildDotFileName()
 {
 	return "out/plot_" + prog_id + "_" + std::to_string(g_idx);
 }
+#endif
 //-------------------------------------------------------------------
 /// Generates a dot file from graph \c g and calls the renderer (dot/Graphviz) to produce a svg image of the graph
 template<typename graph_t>
 void
-RenderGraph( const graph_t& g, const char* name=0 )
+RenderGraph( const graph_t& g, const std::string id_str )
 {
-	std::string id_str;
+/*	std::string id_str;
 	if( !name )
 		id_str = BuildDotFileName();
 	else
-		id_str=name;
+		id_str = *name;*/
 	std::cout << "id_str=" << id_str << '\n';
 	{
-		std::ofstream f ( "out/" + id_str + ".dot" );
+		std::ofstream f ( "out/" + id_str + "_" + std::to_string(g_idx) + ".dot" );
 		assert( f.is_open() );
 		boost::write_graphviz( f, g );
 	}
-	CallDot( id_str );
+//	CallDot( id_str );
 	g_idx++;
 }
 //-------------------------------------------------------------------
+#if 0
 /// Generates a dot file from graph \c g and calls the renderer (dot/Graphviz) to produce a svg image of the graph,
 /// with names of vertices in a provided external vector \c v_names ("external properties")
 template<typename graph_t>
@@ -112,7 +115,6 @@ template<typename graph_t, typename vertex_t>
 void
 RenderGraph3( graph_t& g )
 {
-
 	boost::dynamic_properties dp;
 	dp.property( "color",   boost::get( &vertex_t::color_str, g ) );
 
@@ -128,6 +130,7 @@ RenderGraph3( graph_t& g )
 	CallDot( id_str );
 	g_idx++;
 }
+#endif
 //-------------------------------------------------------------------
 /// General string tokenizer, taken from http://stackoverflow.com/a/236803/193789
 /**

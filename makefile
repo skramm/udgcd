@@ -43,6 +43,8 @@ GEN_SAMPLE_FILES = $(wildcard samples/graph_*.txt)
 GEN_SAMPLES_OUTPUT = $(patsubst samples/graph_%.txt,out/stdout_graph_%.txt,$(GEN_SAMPLE_FILES))
 #GEN_SAMPLES_PLOT = $(patsubst samples/%.txt,out/sample_%.svg,$(GEN_SAMPLE_FILES))
 
+DOT_FILES=$(wildcard out/*.dot)
+SVG_FILES=$(patsubst out/%.dot,out/%.svg,$(DOT_FILES))
 
 # default target
 all: $(EXEC_FILES)
@@ -57,11 +59,11 @@ run: all
 
 # runs on all generated samples
 rungen: $(GEN_GSAMPLES_OUTPUT) bin/read_graph
-	@echo "target $@" done
+	@echo "target $@ done"
 
 # runs on all samples
 runsam: $(GEN_SAMPLES_OUTPUT) bin/read_graph
-	@echo "target $@" done
+	@echo "target $@ done"
 
 out/stdout_gen_graph_%.txt: out/gen_graph_%.txt
 	time bin/read_graph $< > $@
@@ -69,9 +71,11 @@ out/stdout_gen_graph_%.txt: out/gen_graph_%.txt
 out/stdout_graph_%.txt: samples/graph_%.txt
 	time bin/read_graph $< > $@
 
-out/sample_%.svg: out/stdout_graph_%.txt out/sample.svg
-	mv $< $@
+#out/sample_%.svg: out/stdout_graph_%.txt out/sample.svg
+#	mv $< $@
 
+out/%.svg : out/%.dot
+	dot -Tsvg -Nfontsize=24 $< >$@
 
 test:
 	echo out/test_{00..99}.txt
@@ -86,6 +90,8 @@ show: $(SRC_FILES)
 	@echo GEN_SAMPLE_FILES=$(GEN_SAMPLE_FILES)
 	@echo GEN_SAMPLES_OUTPUT=$(GEN_SAMPLES_OUTPUT)
 	@echo GEN_SAMPLES_PLOT =$(GEN_SAMPLES_PLOT)
+	@echo DOT_FILES =$(DOT_FILES)
+	@echo SVG_FILES =$(SVG_FILES)
 
 doc:
 	doxygen doxyfile 1>$(OBJ_DIR)/doxygen_stdout.txt 2>$(OBJ_DIR)/doxygen_stderr.txt
@@ -104,6 +110,8 @@ cleandoc:
 	@-rm -r html/*
 	@-rmdir html
 
+svg: $(SVG_FILES)
+	@echo "target $@ done"
 
 diff:
 	git diff --color-words | aha > $(OBJ_DIR)/diff.html

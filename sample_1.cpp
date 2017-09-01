@@ -54,10 +54,6 @@ typedef boost::adjacency_list<
 	boost::undirectedS,            // type of graph
 	myVertex_t,                  // vertex properties
 	myEdge
-/*	boost::property<               // edge properties
-		boost::edge_color_t,             // ???
-		boost::default_color_type        // enum, holds 5 colors
-		>*/
 	> graph_t;
 
 	typedef boost::graph_traits<graph_t>::vertex_descriptor vertex_t;
@@ -117,7 +113,7 @@ int main()
 
 	AssignRandomColors( g );
 	AssignNodeNames( g, names );
-	RenderGraph( g );
+	RenderGraph( g, prog_id );
 
 	//std::vector<std::vector<vertex_t>> cycles = udgcd::FindCycles<graph_t,vertex_t>( g );      // no cycles at first
 	auto cycles = udgcd::FindCycles<graph_t,vertex_t>( g );      // no cycles at first
@@ -126,22 +122,23 @@ int main()
 	add_edge( 1, 6, g );                                 // cycle !
 	cycles = udgcd::FindCycles<graph_t,vertex_t>( g );
 
-	RenderGraph3<graph_t,myVertex_t>( g );
+//	RenderGraph3<graph_t,myVertex_t>( g );
+	RenderGraph( g, "s1" );
 
 	udgcd::PrintPaths( std::cout, cycles, "final-1" );
 
 	add_edge( 13, 14, g );                              // another cycle !
-	RenderGraph( g );
+	RenderGraph( g, prog_id );
 	cycles = udgcd::FindCycles<graph_t,vertex_t>( g );
 	udgcd::PrintPaths( std::cout, cycles, "final-2" );
 
 	add_edge( 15, 8, g );                               // another cycle !
-	RenderGraph( g );
+	RenderGraph( g, prog_id );
 	cycles = udgcd::FindCycles<graph_t,vertex_t>( g );
 	udgcd::PrintPaths( std::cout, cycles, "final-3" );
 
 	add_edge( 15, 8, g );                               // add a second arc between same vertices, does not add a path
-	RenderGraph( g );
+	RenderGraph( g, prog_id );
 	cycles = udgcd::FindCycles<graph_t,vertex_t>( g );
 	udgcd::PrintPaths( std::cout, cycles, "final-4" );
 

@@ -53,7 +53,7 @@ add_edge(7, 8, g);
 add_edge(8, 6, g);
 */
 
-//	RenderGraph( g );
+	RenderGraph( g, prog_id );
 
 	std::vector<std::vector<vertex_t>> cycles = udgcd::FindCycles<graph_t,vertex_t>( g );      // no cycles at first
 	udgcd::PrintPaths( std::cout, cycles, "final-0" );

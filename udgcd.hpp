@@ -499,8 +499,6 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 						}
 					}
 				}
-				}
-			}
 		}
 
 	std::cout << "Nbremovals=" << nbRemovals << '\n';
