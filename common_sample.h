@@ -52,7 +52,7 @@ CallDot( std::string id_str )
 	std::system(
 		std::string(
 //			"dot -Tsvg -Grankdir=LR -Nfontsize=24 "
-			"dot -Tsvg -Nfontsize=24 "
+			"dot -Tsvg -Nfontsize=24 out/"
 			+ id_str
 			+ ".dot > out/"
 			+ id_str

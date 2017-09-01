@@ -265,7 +265,7 @@ template<typename vertex_t, typename graph_t>
 bool
 IsChordless( const std::vector<vertex_t>& path, const graph_t& g )
 {
-	if( path.size() < 4 ) // else, no need to test
+	if( path.size() < 4 ) // no need to test if less than 4 vertices
 		return true;
 
 	for( size_t i=0; i<path.size()-3; ++i )
@@ -429,8 +429,7 @@ BuildBinaryVectors(
 //		std::cout << "i=" << i << " map=" << idx_map[i] << '\n';
 	}
 
-	std::cout << "idx_map:\n";
-	PrintVector( std::cout, idx_map );
+//	std::cout << "idx_map:\n"; PrintVector( std::cout, idx_map );
 
     for( auto& binvect: v_binvect )
 		binvect.resize( nbCombinations );
@@ -474,42 +473,42 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 /// and comparing to the others
 	boost::dynamic_bitset<> v_removals( v_in.size() );  // sets to 0, 1 means it will be removed
 	size_t nbRemovals(0);
-    for( size_t i=0; i<v_in.size()-2; i++ )
-		for( size_t j=i+1; j<v_in.size()-1; j++ )
+    for( size_t i=0; i<v_in.size()-1; i++ )
+		for( size_t j=i+1; j<v_in.size(); j++ )
 		{
-//			std::cout << "i=" << i << " j=" << j << "\n";
+			std::cout << "\n* i=" << i << " j=" << j << "\n";
+			PrintVector( std::cout, v_in[i] ); PrintBitVector( std::cout, v_binvect[i] );
+			PrintVector( std::cout, v_in[j] ); PrintBitVector( std::cout, v_binvect[j] );
 			auto res = v_binvect[i] ^ v_binvect[j];
-//			std::cout << "res:\n"; PrintBitVector( std::cout, res );
-			for( size_t k=j+1; k<v_in.size(); k++ )
-			{
-//					std::cout << "compare to elem " << k << '\n';
-//					PrintBitVector( std::cout, v_binvect[k] );
-				if( v_removals[k] == 0 )        // if already to 1, no need to check
+			std::cout << "exor:\n"; PrintBitVector( std::cout, res );
+			for( size_t k=0; k<v_in.size(); k++ )
+				if( k != i && k != j )
 				{
-					auto maxsize = std::max( v_in[i].size(), v_in[j].size() );
-					if( v_in[k].size() > maxsize )
+					std::cout << "compare to elem " << k << "\n"; PrintVector( std::cout, v_in[k] ); PrintBitVector( std::cout, v_binvect[k] );
+					if( v_removals[k] == 0 )        // if already to 1, no need to check
 					{
-//							std::cout << " -size=" << v_in[k].size() << " higher than " << maxsize << '\n';
-						if( res == v_binvect[k] )
+						auto maxsize = std::max( v_in[i].size(), v_in[j].size() );
+						if( v_in[k].size() >= maxsize )
 						{
-							v_removals[k] = 1;// std::cout << " remove it!\n";
-							nbRemovals++;
+//							std::cout << " -size=" << v_in[k].size() << " higher than " << maxsize << '\n';
+							if( res == v_binvect[k] )
+							{
+								v_removals[k] = 1; std::cout << " remove it!\n";
+								nbRemovals++;
+							}
 						}
 					}
+				}
 				}
 			}
 		}
 
 	std::cout << "Nbremovals=" << nbRemovals << '\n';
-//	std::cout << "copy elements:\n";
     for( size_t i=0; i<v_in.size(); i++ )        // finally, copy all the correct
 		if( v_removals[i] == 0 )                 // cycles to output vector
-		{
 			v_out.push_back( v_in[i] );
-//			std::cout <<"  - copy elem " << i << '\n';
-		}
-	return v_out;
 
+	return v_out;
 }
 //-------------------------------------------------------------------------------------------
 /// Cycle detector for an undirected graph
@@ -655,10 +654,18 @@ FindCycles( graph_t& g )
 #endif
 
 // post process 4:
+//	std::vector<std::vector<vertex_t>> v_cycles5 = RemoveRedundant2( v_cycles3, g );
 	std::vector<std::vector<vertex_t>> v_cycles5 = RemoveRedundant2( v_cycles4, g );
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles5, "After removal of composed cycles" );
 #endif
+
+// post process 3: remove non-chordless cycles
+//	std::vector<std::vector<vertex_t>> v_cycles6 = RemoveNonChordless( v_cycles5, g );
+#ifdef UDGCD_PRINT_STEPS
+//	PrintPaths( std::cout, v_cycles6, "After removal of non-chordless cycles" );
+#endif
+
 
 	return v_cycles5;
 }
