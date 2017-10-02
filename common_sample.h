@@ -228,7 +228,7 @@ Process( graph_t& g )
 	udgcd::PrintPaths( std::cout, cycles, "final" );
 	if( expected != cycles.size() )
 	{
-		std::cout << "ERROR: computed nb of cycles is not what expected...\n";
+		std::cout << "ERROR: computed nb of cycles is not what expected (expected=" << expected << ")\n";
 		return 1;
 	}
 	return 0;

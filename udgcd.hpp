@@ -26,7 +26,14 @@ See file README.md
 
 #include <boost/dynamic_bitset.hpp>       // needed ! Allows bitwise operations on dynamic size boolean vectors
 
-//#define DEV_MODE
+#define DEV_MODE
+
+#ifdef DEV_MODE
+	#include <iostream>
+	#define COUT std::cout
+	#define PRINT_FUNCTION std::cout << "*** start function " <<  __FUNCTION__ << "()\n"
+#endif
+
 
 /// All the provided code is in this namespace
 namespace udgcd {
@@ -57,18 +64,20 @@ explore(
 	size_t edge_idx = 0;
 
 	std::vector<Vertex> src_path = vv_paths[vv_paths.size()-1];
-//	COUTP << "src_path :"; for( const auto& vv:src_path )	cout << vv << "-"; cout << "\n";
 
+#ifdef DEV_MODE
+	COUT << "src_path :"; for( const auto& vv:src_path ) COUT << vv << "-"; COUT << "\n";
+	int iter=0;	size_t n = ei_end - ei;
+#endif
 	bool found = false;
-//	int iter=0;
-//	size_t n = ei_end -ei;
 	for( ; ei != ei_end; ++ei, ++edge_idx )
 	{
 		bool b = false;
 		Vertex v2a = source(*ei, g);
 		Vertex v2b = target(*ei, g);
-//		COUTP << ++iter << '/' <<  n << ": connected edges v2: v2a=" << v2a << " v2b=" << v2b << "\n";
-
+#ifdef DEV_MODE
+		COUT << ++iter << '/' <<  n << ": connected edges v2a=" << v2a << " v2b=" << v2b << "\n";
+#endif
 		if( v2b == v1 && v2a == src_path[0] ) // we just found the edge that we started on, so no need to finish the current iteration, just move on.
 			continue;
 
@@ -114,7 +123,20 @@ PrintBitVector( std::ostream& f, const T& vec )
 	}
 	f << "\n";
 }
-
+//-------------------------------------------------------------------------------------------
+/// Print vector of vectors of bits
+template<typename T>
+void
+PrintBitVectors( std::ostream& f, const T& vec )
+{
+	f << "Binary vectors for each paths:\n";
+	for( size_t i=0; i<vec.size(); i++ )
+	{
+		f << i << ": ";
+		PrintBitVector( f, vec[i] );
+	}
+//	f << "\n";
+}
 //-------------------------------------------------------------------------------------------
 template<typename T>
 void
@@ -151,13 +173,19 @@ template<typename T>
 std::vector<std::vector<T>>
 RemoveOppositePairs( const std::vector<std::vector<T>>& v_cycles )
 {
+	PRINT_FUNCTION;
 	assert( v_cycles.size() );
+
 	std::vector<std::vector<T>> out;      // output vector
 	std::vector<bool> flags( v_cycles.size(), true ); // some flags to keep track of which elements are reversed
 
 	for( size_t i=0; i<v_cycles.size()-1; ++i )
+	{
 		if( flags[i] )
 		{
+#ifdef DEV_MODE
+			COUT << "-Considering path " << i << ":  "; PrintVector( std::cout, v_cycles[i] );
+#endif
 			std::vector<T> rev = v_cycles[i];                       // step 1: build a reversed copy of the current vector
 			std::reverse( rev.begin(), rev.end() );
 			for( size_t j=i+1; j<v_cycles.size(); ++j )                  // step 2: parse the rest of the list, and check
@@ -165,11 +193,14 @@ RemoveOppositePairs( const std::vector<std::vector<T>>& v_cycles )
 				{
 					out.push_back( v_cycles[i] );                        //  1 - add current vector into output
 					flags[j] = false;                                 //  2 -  invalidate the reversed one
+#ifdef DEV_MODE
+					COUT << " -> discarding path " << j << ":  "; PrintVector( std::cout, v_cycles[j] );
+#endif
 				}
 		}
+	}
 	return out;
 }
-
 //-------------------------------------------------------------------------------------------
 template<typename T>
 void
@@ -215,6 +246,7 @@ template<typename T>
 std::vector<std::vector<T>>
 RemoveIdentical( const std::vector<std::vector<T>>& v_cycles )
 {
+	PRINT_FUNCTION;
 	assert( v_cycles.size() );
 
 	if( v_cycles.size() == 1 )                                   // if single path in input, then we justs add it, after trimming/sorting
@@ -283,6 +315,8 @@ template<typename vertex_t, typename graph_t>
 std::vector<std::vector<vertex_t>>
 RemoveNonChordless( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 {
+	PRINT_FUNCTION;
+
 	std::vector<std::vector<vertex_t>> v_out;
 	v_out.reserve( v_in.size() ); // to avoid unnecessary memory reallocations and copies
     for( const auto& cycle: v_in )
@@ -346,6 +380,8 @@ template<typename vertex_t, typename graph_t>
 std::vector<std::vector<vertex_t>>
 RemoveRedundant( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 {
+	PRINT_FUNCTION;
+
 	std::vector<std::vector<vertex_t>> v_out;
 	v_out.reserve( v_in.size() ); // to avoid unnecessary memory reallocations and copies
 
@@ -389,9 +425,9 @@ RemoveRedundant( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 template<typename vertex_t>
 void
 BuildBinaryVector(
-	const std::vector<vertex_t>& cycle,
-	boost::dynamic_bitset<>&     binvect,
-	const std::vector<size_t>&   idx_map )
+	const std::vector<vertex_t>& cycle,    ///< input cycle
+	boost::dynamic_bitset<>&     binvect,  ///< output binary vector
+	const std::vector<size_t>&   idx_map ) ///< reference index map, see how it is build in \ref BuildBinaryVectors()
 {
 //	std::cout << "BuildBinaryVector(): binvect size=" << binvect.size() << '\n';
 	for( size_t i=0; i<cycle.size(); ++i )
@@ -414,10 +450,11 @@ BuildBinaryVectors(
 	std::vector<boost::dynamic_bitset<>>&     v_binvect,
 	size_t                                    nbVertices )
 {
+	PRINT_FUNCTION;
 	assert( v_cycles.size() == v_binvect.size() );
 
 	size_t nbCombinations = nbVertices * (nbVertices-1) / 2;
-	std::cout << "nbCombinations=" << nbCombinations << '\n';
+//	std::cout << "nbCombinations=" << nbCombinations << '\n';
 
 
 /// build table of series $y_n = y_{n-1}+N-n-1$
@@ -446,6 +483,8 @@ template<typename vertex_t, typename graph_t>
 std::vector<std::vector<vertex_t>>
 RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 {
+	PRINT_FUNCTION;
+
 /// IMPORTANT: the code below assumes we have at least 3 cycles, so lets exit right away if not !
 	if( v_in.size() < 3 )
 		return v_in;
@@ -469,6 +508,10 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 
 	BuildBinaryVectors( v_in, v_binvect, boost::num_vertices(g) );
 
+#ifdef DEV_MODE
+	PrintBitVectors( std::cout, v_binvect );
+#endif
+
 /// build the composed cycle by taking each pair of cycle
 /// and comparing to the others
 	boost::dynamic_bitset<> v_removals( v_in.size() );  // sets to 0, 1 means it will be removed
@@ -476,15 +519,15 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
     for( size_t i=0; i<v_in.size()-1; i++ )
 		for( size_t j=i+1; j<v_in.size(); j++ )
 		{
-			std::cout << "\n* i=" << i << " j=" << j << "\n";
-			PrintVector( std::cout, v_in[i] ); PrintBitVector( std::cout, v_binvect[i] );
-			PrintVector( std::cout, v_in[j] ); PrintBitVector( std::cout, v_binvect[j] );
+//			std::cout << "\n* i=" << i << " j=" << j << "\n";
+//			PrintVector( std::cout, v_in[i] ); PrintBitVector( std::cout, v_binvect[i] );
+//			PrintVector( std::cout, v_in[j] ); PrintBitVector( std::cout, v_binvect[j] );
 			auto res = v_binvect[i] ^ v_binvect[j];
-			std::cout << "exor:\n"; PrintBitVector( std::cout, res );
+//			std::cout << "exor:\n"; PrintBitVector( std::cout, res );
 			for( size_t k=0; k<v_in.size(); k++ )
 				if( k != i && k != j )
 				{
-					std::cout << "compare to elem " << k << "\n"; PrintVector( std::cout, v_in[k] ); PrintBitVector( std::cout, v_binvect[k] );
+//					std::cout << "compare to elem " << k << "\n"; PrintVector( std::cout, v_in[k] ); PrintBitVector( std::cout, v_binvect[k] );
 					if( v_removals[k] == 0 )        // if already to 1, no need to check
 					{
 						auto maxsize = std::max( v_in[i].size(), v_in[j].size() );
@@ -493,7 +536,7 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 //							std::cout << " -size=" << v_in[k].size() << " higher than " << maxsize << '\n';
 							if( res == v_binvect[k] )
 							{
-								v_removals[k] = 1; std::cout << " remove it!\n";
+								v_removals[k] = 1; //std::cout << " remove it!\n";
 								nbRemovals++;
 							}
 						}
@@ -501,7 +544,7 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 				}
 		}
 
-	std::cout << "Nbremovals=" << nbRemovals << '\n';
+//	std::cout << "Nbremovals=" << nbRemovals << '\n';
     for( size_t i=0; i<v_in.size(); i++ )        // finally, copy all the correct
 		if( v_removals[i] == 0 )                 // cycles to output vector
 			v_out.push_back( v_in[i] );
@@ -573,6 +616,7 @@ FindCycles( graph_t& g )
 	std::map<typename graph_t::edge_descriptor, boost::default_color_type> edge_color;
 	auto ecmap = boost::make_assoc_property_map( edge_color );
 
+// step 1: do a DFS
 	boost::undirected_dfs( g, cycleDetector, vcmap, ecmap, 0 );
 
 	if( !cycleDetector.cycleDetected() )             // if no detection,
@@ -613,9 +657,10 @@ FindCycles( graph_t& g )
 		explore( vi, g, v_paths, v_cycles );    // call of recursive function
 	}
 
-#else      // old way: search from all
+#else      // old way: search paths from all vertices
 	for( const auto& vi: cycleDetector.v_source_vertex )
 	{
+		COUT << "\n * Start exploring from source vertex " << vi << "\n";
 		std::vector<std::vector<vertex_t>> v_paths;
 		std::vector<vertex_t> newv(1, vi ); // start by one of the filed source vertex
 		v_paths.push_back( newv );

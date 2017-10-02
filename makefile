@@ -68,7 +68,7 @@ runsam: $(GEN_SAMPLES_OUTPUT) bin/read_graph
 out/stdout_gen_graph_%.txt: out/gen_graph_%.txt
 	time bin/read_graph $< > $@
 
-out/stdout_graph_%.txt: samples/graph_%.txt
+out/stdout_graph_%.txt: samples/graph_%.txt $(EXEC_FILES)
 	time bin/read_graph $< > $@
 
 #out/sample_%.svg: out/stdout_graph_%.txt out/sample.svg
