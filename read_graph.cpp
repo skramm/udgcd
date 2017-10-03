@@ -37,7 +37,6 @@ int main( int argc, const char** argv )
 	}
 	graph_t g = LoadGraph<graph_t>( argv[1] );
 	auto vs1 = split_string( argv[1], '/' );      // splits by '/', and keep the last one (filename)
-	std::cout << "last=" << vs1.back() << '\n';
 	auto vs2 = split_string( vs1.back(), '.' );     // splits by the point (if any)
 
 	RenderGraph( g, vs2[0] );

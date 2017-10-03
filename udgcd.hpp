@@ -26,12 +26,14 @@ See file README.md
 
 #include <boost/dynamic_bitset.hpp>       // needed ! Allows bitwise operations on dynamic size boolean vectors
 
-#define DEV_MODE
+#define UDGCD_DEV_MODE
 
-#ifdef DEV_MODE
+#ifdef UDGCD_DEV_MODE
 	#include <iostream>
 	#define COUT std::cout
 	#define PRINT_FUNCTION std::cout << "*** start function " <<  __FUNCTION__ << "()\n"
+	#define PRINT_FUNCTION_2 std::cout << "*** start function " <<  __FUNCTION__ << "()"
+	#define UDGCD_PRINT_STEPS
 #endif
 
 
@@ -39,89 +41,21 @@ See file README.md
 namespace udgcd {
 
 //-------------------------------------------------------------------------------------------
-/// Private, don't use.
-/**
-Recursive function, explores edges connected to \c v1 until we find a cycle
-
-\warning Have to be sure there \b is a cycle, else infinite recursion !
-*/
-template <class Vertex, class Graph>
-bool
-explore(
-	const Vertex& v1,                            ///< the starting vertex we want to explore
-	const Graph&  g,
-	std::vector<std::vector<Vertex>>& vv_paths,
-	std::vector<std::vector<Vertex>>& v_cycles, ///< this is where we store the paths that have cycles
-	int depth = 0
-) {
-	++depth;
-	static int max_depth = std::max( depth, max_depth );
-	assert( vv_paths.size()>0 );
-
-	typename boost::graph_traits<Graph>::out_edge_iterator ei, ei_end;
-	boost::tie(ei, ei_end) = out_edges( v1, g );
-//	COUTP << "nb of edges = " << ei_end - ei << "\n";
-	size_t edge_idx = 0;
-
-	std::vector<Vertex> src_path = vv_paths[vv_paths.size()-1];
-
-#ifdef DEV_MODE
-	COUT << "src_path :"; for( const auto& vv:src_path ) COUT << vv << "-"; COUT << "\n";
-	int iter=0;	size_t n = ei_end - ei;
-#endif
-	bool found = false;
-	for( ; ei != ei_end; ++ei, ++edge_idx )
-	{
-		bool b = false;
-		Vertex v2a = source(*ei, g);
-		Vertex v2b = target(*ei, g);
-#ifdef DEV_MODE
-		COUT << ++iter << '/' <<  n << ": connected edges v2a=" << v2a << " v2b=" << v2b << "\n";
-#endif
-		if( v2b == v1 && v2a == src_path[0] ) // we just found the edge that we started on, so no need to finish the current iteration, just move on.
-			continue;
-
-		std::vector<Vertex> newv(src_path);
-		bool AddNode = true;
-		if( newv.size() > 1 )
-			if( newv[ newv.size()-2 ] == v2b )
-				AddNode = false;
-
-		if( AddNode )
-		{
-			if( std::find( newv.cbegin(), newv.cend(), v2b ) != newv.cend() )
-			{
-				newv.push_back( v2b );
-//				COUTP << "*** FOUND CYCLE!\n";
-				v_cycles.push_back( newv );
-				return true;
-			}
-			else
-			{
-				newv.push_back( v2b );         // else add'em and continue
-//				COUTP << "  -adding vector ";  for( const auto& vv:newv )	cout << vv << "-"; cout << "\n";
-				vv_paths.push_back( newv );
-				b = explore( v2b, g, vv_paths, v_cycles, depth );
-			}
-		}
-		if( b )
-			found = true;
-	}
-	return found;
-}
-//-------------------------------------------------------------------------------------------
 /// Print vector of bits
 template<typename T>
 void
 PrintBitVector( std::ostream& f, const T& vec )
 {
+	size_t nb_ones = 0;
 	for( size_t i=0; i<vec.size(); i++ )
 	{
 		f << vec[i];
+		if( vec[i] )
+			nb_ones++;
 		if( !((i+1)%4) )
 			f << '.';
 	}
-	f << "\n";
+	f << ": #=" << nb_ones << "\n";
 }
 //-------------------------------------------------------------------------------------------
 /// Print vector of vectors of bits
@@ -167,6 +101,81 @@ PrintPaths( std::ostream& f, const std::vector<std::vector<T>>& v_paths, const c
 //-------------------------------------------------------------------------------------------
 /// Private, don't use.
 /**
+Recursive function, explores edges connected to \c v1 until we find a cycle
+
+\warning Have to be sure there \b is a cycle, else infinite recursion !
+*/
+template <class Vertex, class Graph>
+bool
+explore(
+	const Vertex& v1,                            ///< the starting vertex we want to explore
+	const Graph&  g,
+	std::vector<std::vector<Vertex>>& vv_paths,
+	std::vector<std::vector<Vertex>>& v_cycles, ///< this is where we store the paths that have cycles
+	int depth = 0
+) {
+	PRINT_FUNCTION_2 << " depth=" << depth << "\n";
+
+	++depth;
+	static int max_depth = std::max( depth, max_depth );
+	assert( vv_paths.size()>0 );
+
+	typename boost::graph_traits<Graph>::out_edge_iterator ei, ei_end;
+	boost::tie(ei, ei_end) = out_edges( v1, g );
+//	COUTP << "nb of edges = " << ei_end - ei << "\n";
+//	size_t edge_idx = 0;
+
+//	std::vector<Vertex> src_path = vv_paths[vv_paths.size()-1];
+	std::vector<Vertex> src_path = vv_paths.back();
+
+#ifdef UDGCD_DEV_MODE
+	COUT << "src_path :"; PrintVector( std::cout, src );
+	int iter=0;	size_t n = ei_end - ei;
+#endif
+
+	bool found = false;
+	for( ; ei != ei_end; ++ei ) //, ++edge_idx )         // iterating on all the output edges
+	{
+		bool b = false;
+		Vertex v2a = source(*ei, g);
+		Vertex v2b = target(*ei, g);
+#ifdef UDGCD_DEV_MODE
+		COUT << ++iter << '/' <<  n << " - v1=" << v1 << ": connected edges v2a=" << v2a << " v2b=" << v2b << "\n";
+#endif
+		if( v2b == v1 && v2a == src_path[0] ) // we just found the edge that we started on, so no need to finish the current iteration, just move on.
+			continue;
+
+		std::vector<Vertex> newv(src_path);  // create new path from source
+		bool AddNode = true;
+		if( newv.size() > 1 )
+			if( newv[ newv.size()-2 ] == v2b )
+				AddNode = false;
+
+		if( AddNode )
+		{
+			if( std::find( newv.cbegin(), newv.cend(), v2b ) != newv.cend() )
+			{
+				newv.push_back( v2b );
+				COUT << "*** FOUND CYCLE: "; PrintVector( std::cout, newv );
+				v_cycles.push_back( newv );
+				return true;
+			}
+			else
+			{
+				newv.push_back( v2b );         // else add'em and continue
+				COUT << "  -adding vector ";  for( const auto& vv:newv )	COUT << vv << "-"; COUT << "\n";
+				vv_paths.push_back( newv );
+				b = explore( v2b, g, vv_paths, v_cycles, depth );
+			}
+		}
+		if( b )
+			found = true;
+	}
+	return found;
+}
+//-------------------------------------------------------------------------------------------
+/// Private, don't use.
+/**
  Remove twins : vector that are the same, but in reverse order
 */
 template<typename T>
@@ -183,7 +192,7 @@ RemoveOppositePairs( const std::vector<std::vector<T>>& v_cycles )
 	{
 		if( flags[i] )
 		{
-#ifdef DEV_MODE
+#ifdef UDGCD_DEV_MODE
 			COUT << "-Considering path " << i << ":  "; PrintVector( std::cout, v_cycles[i] );
 #endif
 			std::vector<T> rev = v_cycles[i];                       // step 1: build a reversed copy of the current vector
@@ -193,7 +202,7 @@ RemoveOppositePairs( const std::vector<std::vector<T>>& v_cycles )
 				{
 					out.push_back( v_cycles[i] );                        //  1 - add current vector into output
 					flags[j] = false;                                 //  2 -  invalidate the reversed one
-#ifdef DEV_MODE
+#ifdef UDGCD_DEV_MODE
 					COUT << " -> discarding path " << j << ":  "; PrintVector( std::cout, v_cycles[j] );
 #endif
 				}
@@ -290,8 +299,10 @@ See
 - https://en.wikipedia.org/wiki/Cycle_(graph_theory)#Chordless_cycles
 
 Quote:
+<BLOCKQUOTE>
 "A chordless cycle in a graph, also called a hole or an induced cycle, is a cycle such that
 no two vertices of the cycle are connected by an edge that does not itself belong to the cycle."
+</BLOCKQUOTE>
 */
 template<typename vertex_t, typename graph_t>
 bool
@@ -352,7 +363,7 @@ struct VertexPair
 		return false;
 	}
 
-#ifndef DEV_MODE
+#ifndef UDGCD_DEV_MODE
 	friend std::ostream& operator << ( std::ostream& s, const VertexPair& vp )
 	{
 		s << '(' << vp.v1 << '-' << vp.v2 << ')';
@@ -508,12 +519,13 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 
 	BuildBinaryVectors( v_in, v_binvect, boost::num_vertices(g) );
 
-#ifdef DEV_MODE
+#ifdef UDGCD_DEV_MODE
 	PrintBitVectors( std::cout, v_binvect );
+	COUT << "Comparing XORed paths 2 by 2\n";
 #endif
 
-/// build the composed cycle by taking each pair of cycle
-/// and comparing to the others
+/// build the composed cycles by taking each pair of cycle, XOR it,
+/// and compare to the others
 	boost::dynamic_bitset<> v_removals( v_in.size() );  // sets to 0, 1 means it will be removed
 	size_t nbRemovals(0);
     for( size_t i=0; i<v_in.size()-1; i++ )
@@ -523,7 +535,7 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 //			PrintVector( std::cout, v_in[i] ); PrintBitVector( std::cout, v_binvect[i] );
 //			PrintVector( std::cout, v_in[j] ); PrintBitVector( std::cout, v_binvect[j] );
 			auto res = v_binvect[i] ^ v_binvect[j];
-//			std::cout << "exor:\n"; PrintBitVector( std::cout, res );
+			std::cout << "p" << i << " EXOR p" << j << "="; PrintBitVector( std::cout, res );
 			for( size_t k=0; k<v_in.size(); k++ )
 				if( k != i && k != j )
 				{
@@ -657,7 +669,7 @@ FindCycles( graph_t& g )
 		explore( vi, g, v_paths, v_cycles );    // call of recursive function
 	}
 
-#else      // old way: search paths from all vertices
+#else      // old way: search paths from all vertices that were registered as source vertex
 	for( const auto& vi: cycleDetector.v_source_vertex )
 	{
 		COUT << "\n * Start exploring from source vertex " << vi << "\n";
