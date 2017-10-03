@@ -114,14 +114,15 @@ explore(
 	std::vector<std::vector<Vertex>>& v_cycles, ///< this is where we store the paths that have cycles
 	int depth = 0
 ) {
-	PRINT_FUNCTION_2 << " depth=" << depth << "\n";
+	PRINT_FUNCTION_2 << " depth=" << depth << " v1=" << v1 << "\n";
 
 	++depth;
 	static int max_depth = std::max( depth, max_depth );
 	assert( vv_paths.size()>0 );
 
-	typename boost::graph_traits<Graph>::out_edge_iterator ei, ei_end;
-	boost::tie(ei, ei_end) = out_edges( v1, g );
+//	typename boost::graph_traits<Graph>::out_edge_iterator ei, ei_end;
+//	boost::tie(ei, ei_end) = out_edges( v1, g );
+
 //	COUTP << "nb of edges = " << ei_end - ei << "\n";
 //	size_t edge_idx = 0;
 
@@ -129,18 +130,21 @@ explore(
 	std::vector<Vertex> src_path = vv_paths.back();
 
 #ifdef UDGCD_DEV_MODE
-	COUT << "src_path :"; PrintVector( std::cout, src );
-	int iter=0;	size_t n = ei_end - ei;
+	COUT << "src_path: "; PrintVector( std::cout, src_path );
+	int iter=0;
+	auto tmp = boost::out_edges( v1, g );
+	size_t nbedges = tmp.second - tmp.first;
 #endif
 
 	bool found = false;
-	for( ; ei != ei_end; ++ei ) //, ++edge_idx )         // iterating on all the output edges
+//	for( ; ei != ei_end; ++ei ) //, ++edge_idx )         // iterating on all the output edges
+	for( auto oei = boost::out_edges( v1, g ); oei.first != oei.second; ++oei.first ) //, ++edge_idx )         // iterating on all the output edges
 	{
 		bool b = false;
-		Vertex v2a = source(*ei, g);
-		Vertex v2b = target(*ei, g);
+		Vertex v2a = boost::source(*oei.first, g);
+		Vertex v2b = boost::target(*oei.first, g);
 #ifdef UDGCD_DEV_MODE
-		COUT << ++iter << '/' <<  n << " - v1=" << v1 << ": connected edges v2a=" << v2a << " v2b=" << v2b << "\n";
+		COUT << ++iter << '/' << nbedges << " - v1=" << v1 << ": connected edges v2a=" << v2a << " v2b=" << v2b << "\n";
 #endif
 		if( v2b == v1 && v2a == src_path[0] ) // we just found the edge that we started on, so no need to finish the current iteration, just move on.
 			continue;
@@ -192,6 +196,8 @@ RemoveOppositePairs( const std::vector<std::vector<T>>& v_cycles )
 	{
 		if( flags[i] )
 		{
+			out.push_back( v_cycles[i] );                        //  1 - add current vector into output
+
 #ifdef UDGCD_DEV_MODE
 			COUT << "-Considering path " << i << ":  "; PrintVector( std::cout, v_cycles[i] );
 #endif
@@ -200,7 +206,7 @@ RemoveOppositePairs( const std::vector<std::vector<T>>& v_cycles )
 			for( size_t j=i+1; j<v_cycles.size(); ++j )                  // step 2: parse the rest of the list, and check
 				if( flags[j] && rev == v_cycles[j] )                     // if similar, then
 				{
-					out.push_back( v_cycles[i] );                        //  1 - add current vector into output
+//					out.push_back( v_cycles[i] );                        //  1 - add current vector into output
 					flags[j] = false;                                 //  2 -  invalidate the reversed one
 #ifdef UDGCD_DEV_MODE
 					COUT << " -> discarding path " << j << ":  "; PrintVector( std::cout, v_cycles[j] );
@@ -229,11 +235,11 @@ template<typename T>
 std::vector<T>
 GetSortedTrimmed( const std::vector<T>& v_in )
 {
-	assert( v_in.front() == v_in.back() ); // check this is a cycle
-	assert( v_in.size() > 2 );            // a (complete) cycle needs to be at least 3 vertices long
+	assert( v_in.front() == v_in.back() ); // check that this is a cycle
+	assert( v_in.size() > 2 );             // a (complete) cycle needs to be at least 3 vertices long
 
 	std::vector<T> v_out( v_in.size() - 1 );                      // Trim: remove
-	std::copy( v_in.cbegin(), v_in.cend()-1, v_out.begin() );     // last element
+	std::copy( v_in.cbegin(), v_in.cend()-1, v_out.begin() );     //  last element
 
 	PutSmallestElemFirst( v_out );
 
@@ -244,7 +250,84 @@ GetSortedTrimmed( const std::vector<T>& v_in )
 	}
 	return v_out;
 }
+//-------------------------------------------------------------------------------------------
+/// Removes the parts that are not part of the cycle.
+/**
+Example:
+in: 1-2-3-4-5-3
+out: 3-4-5
+*/
+template<typename T>
+std::vector<T>
+FindTrueCycle( const std::vector<T>& cycle )
+{
+	PRINT_FUNCTION;
+	COUT << "in: "; PrintVector( std::cout, cycle );
+	assert( cycle.size() > 2 ); // 3 or more nodes
+	if( cycle.size() == 3 )     // if 3 nodes, just return the input path
+		return cycle;
 
+	std::vector<T> out;
+	out.reserve( cycle.size() );
+
+	bool done = false;
+	for( size_t i=0; i<cycle.size()-1 && !done; ++i )
+	{
+//		COUT << "-i=" << i << "\n";
+		const T& n1 = cycle[i];
+		for( size_t j=i+2; j<cycle.size() && !done; ++j )
+		{
+//			COUT << "  -j=" << j << "\n";
+			const T& n2 = cycle[j];
+			if( n1 == n2 )
+			{
+//				COUT << "Resize : " << j-i << "\n";
+				out.resize( j-i );
+				std::copy( std::begin(cycle) + i, std::begin(cycle) + j, std::begin(out) );
+				done = true;
+			}
+		}
+	}
+	PutSmallestElemFirst( out );
+	if( out.back() < out[1] )                     // if we have 1-4-3-2, then
+	{
+		std::reverse( out.begin(), out.end() );   // we transform it into 2-3-4-1
+		PutSmallestElemFirst( out );                // and put smallest first: 1-2-3-4
+	}
+
+	COUT << "out: "; PrintVector( std::cout, out );
+
+	return out;
+}
+//-------------------------------------------------------------------------------------------
+/// Private, don't use.
+/**
+Removes for each cycle the parts that are not part of the cycle.
+
+Example:
+in: 1-2-3-4-5-3
+out: 3-4-5
+*/
+template<typename T>
+std::vector<std::vector<T>>
+CleanCycles( const std::vector<std::vector<T>>& v_cycles )
+{
+	PRINT_FUNCTION;
+	assert( v_cycles.size() );
+
+
+	std::vector<std::vector<T>> out;
+	out.reserve( v_cycles.size() );
+
+	for( const auto& cycle: v_cycles )
+	{
+		auto newcy = FindTrueCycle( cycle );
+		if( std::find( std::begin(out), std::end(out), newcy ) == std::end(out) )
+			out.push_back( newcy );
+	}
+
+	return out;
+}
 //-------------------------------------------------------------------------------------------
 /// Private, don't use.
 /**
@@ -276,7 +359,6 @@ RemoveIdentical( const std::vector<std::vector<T>>& v_cycles )
 
 	return out;
 }
-
 //-------------------------------------------------------------------------------------------
 /// Returns true if vertices \c v1 and \c v2 are connected by an edge
 /**
@@ -690,20 +772,29 @@ FindCycles( graph_t& g )
 	PrintPaths( std::cout, v_cycles, "Raw cycles" );
 #endif
 
+// post process 0: cleanout the cycles by removing steps that are not part of the cycle
+	std::vector<std::vector<vertex_t>> v_cycles0 = CleanCycles( v_cycles );
+#ifdef UDGCD_PRINT_STEPS
+	PrintPaths( std::cout, v_cycles0, "After CleanCycles()" );
+#endif
+
+
 // post process 1: remove the paths that are identical but reversed
-	std::vector<std::vector<vertex_t>> v_cycles2 = RemoveOppositePairs( v_cycles );
+	std::vector<std::vector<vertex_t>> v_cycles2 = RemoveOppositePairs( v_cycles0 );
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles2, "After removal of symmetrical cycles" );
 #endif
 
 // post process 2: remove twin paths
+/*
 	std::vector<std::vector<vertex_t>> v_cycles3 = RemoveIdentical( v_cycles2 );
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles3, "After removal of identical cycles" );
 #endif
+*/
 
 // post process 3: remove non-chordless cycles
-	std::vector<std::vector<vertex_t>> v_cycles4 = RemoveNonChordless( v_cycles3, g );
+	std::vector<std::vector<vertex_t>> v_cycles4 = RemoveNonChordless( v_cycles2, g );
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles4, "After removal of non-chordless cycles" );
 #endif
