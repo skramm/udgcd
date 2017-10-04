@@ -178,6 +178,7 @@ explore(
 	return found;
 }
 //-------------------------------------------------------------------------------------------
+#if 0
 /// Private, don't use.
 /**
  Remove twins : vector that are the same, but in reverse order
@@ -190,6 +191,8 @@ RemoveOppositePairs( const std::vector<std::vector<T>>& v_cycles )
 	assert( v_cycles.size() );
 
 	std::vector<std::vector<T>> out;      // output vector
+	out.reserve( v_cycles.size() );       // preallocate memory
+
 	std::vector<bool> flags( v_cycles.size(), true ); // some flags to keep track of which elements are reversed
 
 	for( size_t i=0; i<v_cycles.size()-1; ++i )
@@ -214,8 +217,14 @@ RemoveOppositePairs( const std::vector<std::vector<T>>& v_cycles )
 				}
 		}
 	}
+// adding last one, if not discarded
+
+	if( flags.back() )
+		out.push_back( v_cycles.back() );
+
 	return out;
 }
+#endif
 //-------------------------------------------------------------------------------------------
 template<typename T>
 void
@@ -262,7 +271,7 @@ std::vector<T>
 FindTrueCycle( const std::vector<T>& cycle )
 {
 	PRINT_FUNCTION;
-	COUT << "in: "; PrintVector( std::cout, cycle );
+//	COUT << "in: "; PrintVector( std::cout, cycle );
 	assert( cycle.size() > 2 ); // 3 or more nodes
 	if( cycle.size() == 3 )     // if 3 nodes, just return the input path
 		return cycle;
@@ -295,8 +304,7 @@ FindTrueCycle( const std::vector<T>& cycle )
 		PutSmallestElemFirst( out );                // and put smallest first: 1-2-3-4
 	}
 
-	COUT << "out: "; PrintVector( std::cout, out );
-
+//	COUT << "out: "; PrintVector( std::cout, out );
 	return out;
 }
 //-------------------------------------------------------------------------------------------
@@ -315,17 +323,15 @@ CleanCycles( const std::vector<std::vector<T>>& v_cycles )
 	PRINT_FUNCTION;
 	assert( v_cycles.size() );
 
-
 	std::vector<std::vector<T>> out;
 	out.reserve( v_cycles.size() );
 
 	for( const auto& cycle: v_cycles )
 	{
 		auto newcy = FindTrueCycle( cycle );
-		if( std::find( std::begin(out), std::end(out), newcy ) == std::end(out) )
+		if( std::find( std::begin(out), std::end(out), newcy ) == std::end(out) )     // add to output vector only if not already present
 			out.push_back( newcy );
 	}
-
 	return out;
 }
 //-------------------------------------------------------------------------------------------
@@ -514,7 +520,7 @@ RemoveRedundant( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 }
 //-------------------------------------------------------------------------------------------
 /// Builds the binary vector \c binvect associated to the cycle \c cycle.
-/// The index map \c idx_map is used to fetch the index from the vertices
+/// The index map \c idx_map is used to fetch the index in binary vector from the two vertices indexes
 template<typename vertex_t>
 void
 BuildBinaryVector(
@@ -535,13 +541,40 @@ BuildBinaryVector(
 //	PrintVector( std::cout, binvect );
 }
 //-------------------------------------------------------------------------------------------
+/// build table of series $y_n = y_{n-1}+N-n-1$
+/**
+This is needed to build the binary vector associated with a path
+
+For example, if 4 vertices, then the possible edges are:
+\verbatim
+00
+01
+02
+03
+12
+13
+23
+\endverbatim
+
+*/
+std::vector<size_t>
+BuildBinaryIndexMap( size_t nbVertices )
+{
+	std::vector<size_t> idx_map( nbVertices-1 );
+	idx_map[0] = 0;
+	for( size_t i=1;i<nbVertices-1; i++ )
+		idx_map[i] = idx_map[i-1] + nbVertices - i - 1;
+
+	return idx_map;
+}
+//-------------------------------------------------------------------------------------------
 /// builds all the binary vectors for all the cycles
 template<typename vertex_t>
 void
 BuildBinaryVectors(
-	const std::vector<std::vector<vertex_t>>& v_cycles,
-	std::vector<boost::dynamic_bitset<>>&     v_binvect,
-	size_t                                    nbVertices )
+	const std::vector<std::vector<vertex_t>>& v_cycles,       ///< input cycles
+	std::vector<boost::dynamic_bitset<>>&     v_binvect,      ///< output vector of binary vectors
+	size_t                                    nbVertices )    ///< nb of vertices of the graph
 {
 	PRINT_FUNCTION;
 	assert( v_cycles.size() == v_binvect.size() );
@@ -549,17 +582,8 @@ BuildBinaryVectors(
 	size_t nbCombinations = nbVertices * (nbVertices-1) / 2;
 //	std::cout << "nbCombinations=" << nbCombinations << '\n';
 
-
-/// build table of series $y_n = y_{n-1}+N-n-1$
-	std::vector<size_t> idx_map( nbVertices-1 );
-	idx_map[0] = 0;
-	for( size_t i=1;i<nbVertices-1; i++ )
-	{
-		idx_map[i] = idx_map[i-1] + nbVertices - i - 1;
-//		std::cout << "i=" << i << " map=" << idx_map[i] << '\n';
-	}
-
-//	std::cout << "idx_map:\n"; PrintVector( std::cout, idx_map );
+	std::vector<size_t> idx_map = BuildBinaryIndexMap( nbVertices );
+	std::cout << "idx_map: "; PrintVector( std::cout, idx_map );
 
     for( auto& binvect: v_binvect )
 		binvect.resize( nbCombinations );
@@ -567,6 +591,24 @@ BuildBinaryVectors(
 	for( size_t i=0; i<v_cycles.size(); i++ )
 		BuildBinaryVector( v_cycles[i], v_binvect[i], idx_map );
 }
+//-------------------------------------------------------------------------------------------
+/// convert, for a given graph, a Binary Vector to a Path Vector (TODO)
+template<typename vertex_t>
+std::vector<vertex_t>
+ConvertBVtoPV( const boost::dynamic_bitset<>& v_in, size_t nbVertices )
+{
+	std::vector<vertex_t> v_out;
+	assert( v_in.size() == nbVertices * (nbVertices-1) / 2 );
+
+	for( size_t i=0; i<v_in.size(); ++i )
+	{
+//		vertex_t v1 =
+//		if( v_in[i] )
+
+	}
+	return v_out;
+}
+
 //-------------------------------------------------------------------------------------------
 /// Post-process step: removes paths (cycles) that are redundant (i.e. that can be deduced/build from the others)
 /**
@@ -598,7 +640,7 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 /// build for each cycle its associated binary vector
 
 	std::vector<boost::dynamic_bitset<>> v_binvect( v_in.size() );  // one binary vector per cycle
-
+	size_t nb_vertices = boost::num_vertices(g);
 	BuildBinaryVectors( v_in, v_binvect, boost::num_vertices(g) );
 
 #ifdef UDGCD_DEV_MODE
@@ -608,7 +650,7 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 
 /// build the composed cycles by taking each pair of cycle, XOR it,
 /// and compare to the others
-	boost::dynamic_bitset<> v_removals( v_in.size() );  // sets to 0, 1 means it will be removed
+	boost::dynamic_bitset<> v_removals( v_in.size() );  // sets all to 0, 1 means it will be removed
 	size_t nbRemovals(0);
     for( size_t i=0; i<v_in.size()-1; i++ )
 		for( size_t j=i+1; j<v_in.size(); j++ )
@@ -618,6 +660,8 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 //			PrintVector( std::cout, v_in[j] ); PrintBitVector( std::cout, v_binvect[j] );
 			auto res = v_binvect[i] ^ v_binvect[j];
 			std::cout << "p" << i << " EXOR p" << j << "="; PrintBitVector( std::cout, res );
+			auto xored_path = ConvertBVtoPV<vertex_t>( res, nb_vertices );
+			PrintVector( std::cout, xored_path );
 			for( size_t k=0; k<v_in.size(); k++ )
 				if( k != i && k != j )
 				{
@@ -780,10 +824,11 @@ FindCycles( graph_t& g )
 
 
 // post process 1: remove the paths that are identical but reversed
-	std::vector<std::vector<vertex_t>> v_cycles2 = RemoveOppositePairs( v_cycles0 );
+/*	std::vector<std::vector<vertex_t>> v_cycles2 = RemoveOppositePairs( v_cycles0 );
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles2, "After removal of symmetrical cycles" );
 #endif
+*/
 
 // post process 2: remove twin paths
 /*
@@ -794,13 +839,12 @@ FindCycles( graph_t& g )
 */
 
 // post process 3: remove non-chordless cycles
-	std::vector<std::vector<vertex_t>> v_cycles4 = RemoveNonChordless( v_cycles2, g );
+	std::vector<std::vector<vertex_t>> v_cycles4 = RemoveNonChordless( v_cycles0, g );
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles4, "After removal of non-chordless cycles" );
 #endif
 
 // post process 4:
-//	std::vector<std::vector<vertex_t>> v_cycles5 = RemoveRedundant2( v_cycles3, g );
 	std::vector<std::vector<vertex_t>> v_cycles5 = RemoveRedundant2( v_cycles4, g );
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles5, "After removal of composed cycles" );
