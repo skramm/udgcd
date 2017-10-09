@@ -40,6 +40,12 @@ See file README.md
 /// All the provided code is in this namespace
 namespace udgcd {
 
+/// holds a path as a binary vector.
+/**
+For a graph of \f$n\f$ vertices, its size needs to be \f$n.(n-1)/2\f$
+*/
+typedef boost::dynamic_bitset<> BinaryPath;
+
 //-------------------------------------------------------------------------------------------
 /// Print vector of bits
 template<typename T>
@@ -52,7 +58,7 @@ PrintBitVector( std::ostream& f, const T& vec )
 		f << vec[i];
 		if( vec[i] )
 			nb_ones++;
-		if( !((i+1)%4) )
+		if( !((i+1)%4) && i != vec.size()-1 )
 			f << '.';
 	}
 	f << ": #=" << nb_ones << "\n";
@@ -282,15 +288,12 @@ FindTrueCycle( const std::vector<T>& cycle )
 	bool done = false;
 	for( size_t i=0; i<cycle.size()-1 && !done; ++i )
 	{
-//		COUT << "-i=" << i << "\n";
 		const T& n1 = cycle[i];
 		for( size_t j=i+2; j<cycle.size() && !done; ++j )
 		{
-//			COUT << "  -j=" << j << "\n";
 			const T& n2 = cycle[j];
 			if( n1 == n2 )
 			{
-//				COUT << "Resize : " << j-i << "\n";
 				out.resize( j-i );
 				std::copy( std::begin(cycle) + i, std::begin(cycle) + j, std::begin(out) );
 				done = true;
@@ -525,10 +528,9 @@ template<typename vertex_t>
 void
 BuildBinaryVector(
 	const std::vector<vertex_t>& cycle,    ///< input cycle
-	boost::dynamic_bitset<>&     binvect,  ///< output binary vector
+	BinaryPath&                  binvect,  ///< output binary vector
 	const std::vector<size_t>&   idx_map ) ///< reference index map, see how it is build in \ref BuildBinaryVectors()
 {
-//	std::cout << "BuildBinaryVector(): binvect size=" << binvect.size() << '\n';
 	for( size_t i=0; i<cycle.size(); ++i )
 	{
 		VertexPair<vertex_t> vp( (i==0?cycle[cycle.size()-1]:cycle[i-1]), cycle[i] );
@@ -573,7 +575,7 @@ template<typename vertex_t>
 void
 BuildBinaryVectors(
 	const std::vector<std::vector<vertex_t>>& v_cycles,       ///< input cycles
-	std::vector<boost::dynamic_bitset<>>&     v_binvect,      ///< output vector of binary vectors
+	std::vector<BinaryPath>&                  v_binvect,      ///< output vector of binary vectors
 	size_t                                    nbVertices )    ///< nb of vertices of the graph
 {
 	PRINT_FUNCTION;
@@ -595,7 +597,7 @@ BuildBinaryVectors(
 /// convert, for a given graph, a Binary Vector to a Path Vector (TODO)
 template<typename vertex_t>
 std::vector<vertex_t>
-ConvertBVtoPV( const boost::dynamic_bitset<>& v_in, size_t nbVertices )
+ConvertBVtoPV( const BinaryPath& v_in, size_t nbVertices )
 {
 	std::vector<vertex_t> v_out;
 	assert( v_in.size() == nbVertices * (nbVertices-1) / 2 );
@@ -639,7 +641,7 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 
 /// build for each cycle its associated binary vector
 
-	std::vector<boost::dynamic_bitset<>> v_binvect( v_in.size() );  // one binary vector per cycle
+	std::vector<BinaryPath> v_binvect( v_in.size() );  // one binary vector per cycle
 	size_t nb_vertices = boost::num_vertices(g);
 	BuildBinaryVectors( v_in, v_binvect, boost::num_vertices(g) );
 
@@ -822,6 +824,12 @@ FindCycles( graph_t& g )
 	PrintPaths( std::cout, v_cycles0, "After CleanCycles()" );
 #endif
 
+size_t nbVertices = boost::num_vertices(g);
+//size_t nbCombinations = nbVertices * (nbVertices-1) / 2;
+
+std::vector<BinaryPath> v_binvect( v_cycles0.size() );
+BuildBinaryVectors( v_cycles0, v_binvect, nbVertices );
+PrintBitVectors( std::cout, v_binvect );
 
 // post process 1: remove the paths that are identical but reversed
 /*	std::vector<std::vector<vertex_t>> v_cycles2 = RemoveOppositePairs( v_cycles0 );
