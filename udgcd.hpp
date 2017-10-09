@@ -529,34 +529,35 @@ void
 BuildBinaryVector(
 	const std::vector<vertex_t>& cycle,    ///< input cycle
 	BinaryPath&                  binvect,  ///< output binary vector
-	const std::vector<size_t>&   idx_map ) ///< reference index map, see how it is build in \ref BuildBinaryVectors()
+	const std::vector<size_t>&   idx_map ) ///< reference index map, see how it is build in \ref BuildBinaryVectors() and \ref BuildBinaryIndexMap(()
 {
 	for( size_t i=0; i<cycle.size(); ++i )
 	{
 		VertexPair<vertex_t> vp( (i==0?cycle[cycle.size()-1]:cycle[i-1]), cycle[i] );
-		size_t idx1 = idx_map[vp.v1];
-		size_t idx2 = idx1 + vp.v2 - 1;
-//		std::cout << "vp: " << vp << " idx1=" << idx1 << " idx2=" << idx2 << std::endl;
-		assert( idx2 < binvect.size() );
-		binvect[idx2] = 1;
+		size_t idx = idx_map[vp.v1] + vp.v2 - 1;
+		assert( idx < binvect.size() );
+		binvect[idx] = 1;
 	}
 //	PrintVector( std::cout, binvect );
 }
 //-------------------------------------------------------------------------------------------
 /// build table of series $y_n = y_{n-1}+N-n-1$
 /**
-This is needed to build the binary vector associated with a path
+This is needed to build the binary vector associated with a path, see \ref BuildBinaryVector()
 
-For example, if 4 vertices, then the possible edges are:
+For example, if 6 vertices, then there are 6*(6-1)/2 = 15 possible edges:
 \verbatim
-00
-01
-02
-03
-12
-13
-23
+0  1  2  3  4  5  6  7  8  9  10 11 12 13 14
+01-02-03-04-05-12-13-14-15-23-24-25-34-35-45
 \endverbatim
+
+This function builds a vector of 6-1=5 elements:
+\verbatim
+0-4-7-9-10
+\endverbatim
+With those value, we get the index of a given edge in the binary vector with the formulae:
+\f$ idx = idx_map[v1] + v2 - 1 \f$
+with \f$v1\f$ being the smallest vertex and v2 the other one.
 
 */
 std::vector<size_t>
@@ -564,8 +565,10 @@ BuildBinaryIndexMap( size_t nbVertices )
 {
 	std::vector<size_t> idx_map( nbVertices-1 );
 	idx_map[0] = 0;
+	size_t n = nbVertices-1;
 	for( size_t i=1;i<nbVertices-1; i++ )
-		idx_map[i] = idx_map[i-1] + nbVertices - i - 1;
+//		idx_map[i] = idx_map[i-1] + nbVertices - i - 1;
+		idx_map[i] = idx_map[i-1] + n--;
 
 	return idx_map;
 }
@@ -594,14 +597,27 @@ BuildBinaryVectors(
 		BuildBinaryVector( v_cycles[i], v_binvect[i], idx_map );
 }
 //-------------------------------------------------------------------------------------------
+std::vector<std::pair<size_t,size_t>>
+BuildReverseBinaryMap( size_t nb_vertices )
+{
+	size_t nb_combinations = nb_vertices*(nb_vertices-1)/2;
+	std::vector<std::pair<size_t,size_t>> out( nb_combinations );
+	for( size_t i=0; i<nb_combinations; ++i )
+	{
+//		out[i].first =
+	}
+	return out;
+}
+//-------------------------------------------------------------------------------------------
 /// convert, for a given graph, a Binary Vector to a Path Vector (TODO)
 template<typename vertex_t>
 std::vector<vertex_t>
-ConvertBVtoPV( const BinaryPath& v_in, size_t nbVertices )
+ConvertBVtoPV( const BinaryPath& v_in, size_t nbVertices, const std::vector<std::pair<size_t,size_t>>& rev_map )
 {
 	std::vector<vertex_t> v_out;
 	assert( v_in.size() == nbVertices * (nbVertices-1) / 2 );
 
+	std::vector<int> counter( nbVertices, 0 );
 	for( size_t i=0; i<v_in.size(); ++i )
 	{
 //		vertex_t v1 =
@@ -645,6 +661,7 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 	size_t nb_vertices = boost::num_vertices(g);
 	BuildBinaryVectors( v_in, v_binvect, boost::num_vertices(g) );
 
+	auto rev_map = BuildReverseBinaryMap( nb_vertices );
 #ifdef UDGCD_DEV_MODE
 	PrintBitVectors( std::cout, v_binvect );
 	COUT << "Comparing XORed paths 2 by 2\n";
@@ -662,7 +679,7 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 //			PrintVector( std::cout, v_in[j] ); PrintBitVector( std::cout, v_binvect[j] );
 			auto res = v_binvect[i] ^ v_binvect[j];
 			std::cout << "p" << i << " EXOR p" << j << "="; PrintBitVector( std::cout, res );
-			auto xored_path = ConvertBVtoPV<vertex_t>( res, nb_vertices );
+			auto xored_path = ConvertBVtoPV<vertex_t>( res, nb_vertices, rev_map );
 			PrintVector( std::cout, xored_path );
 			for( size_t k=0; k<v_in.size(); k++ )
 				if( k != i && k != j )
