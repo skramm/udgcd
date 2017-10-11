@@ -454,7 +454,7 @@ struct VertexPair
 		return false;
 	}
 
-#ifndef UDGCD_DEV_MODE
+#ifdef UDGCD_DEV_MODE
 	friend std::ostream& operator << ( std::ostream& s, const VertexPair& vp )
 	{
 		s << '(' << vp.v1 << '-' << vp.v2 << ')';
@@ -565,11 +565,8 @@ BuildBinaryIndexMap( size_t nbVertices )
 {
 	std::vector<size_t> idx_map( nbVertices-1 );
 	idx_map[0] = 0;
-	size_t n = nbVertices-1;
 	for( size_t i=1;i<nbVertices-1; i++ )
-//		idx_map[i] = idx_map[i-1] + nbVertices - i - 1;
-		idx_map[i] = idx_map[i-1] + n--;
-
+		idx_map[i] = idx_map[i-1] + nbVertices - i - 1;
 	return idx_map;
 }
 //-------------------------------------------------------------------------------------------
@@ -597,32 +594,54 @@ BuildBinaryVectors(
 		BuildBinaryVector( v_cycles[i], v_binvect[i], idx_map );
 }
 //-------------------------------------------------------------------------------------------
+/// Builds an index map giving from an index in the binary vector the indexes of the two vertices
+/// that are connected
 std::vector<std::pair<size_t,size_t>>
 BuildReverseBinaryMap( size_t nb_vertices )
 {
+	PRINT_FUNCTION;
 	size_t nb_combinations = nb_vertices*(nb_vertices-1)/2;
 	std::vector<std::pair<size_t,size_t>> out( nb_combinations );
+	size_t v1 = 0;
+	size_t v2 = 1;
 	for( size_t i=0; i<nb_combinations; ++i )
 	{
-//		out[i].first =
+		if( v2 == nb_vertices )
+		{
+			v1++;
+			v2 = v1 + 1;
+		}
+		out[i].first  = v1;
+		out[i].second = v2++;
+		COUT << i << ": (" << out[i].first << " - " << out[i].second << ")\n";
 	}
 	return out;
 }
 //-------------------------------------------------------------------------------------------
-/// convert, for a given graph, a Binary Vector to a Path Vector (TODO)
+/// convert, for a given graph, a Binary Vector (BV) \c v_in to a Path Vector (PV) (TODO)
 template<typename vertex_t>
 std::vector<vertex_t>
 ConvertBVtoPV( const BinaryPath& v_in, size_t nbVertices, const std::vector<std::pair<size_t,size_t>>& rev_map )
 {
-	std::vector<vertex_t> v_out;
 	assert( v_in.size() == nbVertices * (nbVertices-1) / 2 );
+	assert( v_in.size() == rev_map.size() );
 
+	PRINT_FUNCTION;
+	PrintBitVector( std::cout, v_in );
+
+	std::vector<vertex_t> v_out;
 	std::vector<int> counter( nbVertices, 0 );
 	for( size_t i=0; i<v_in.size(); ++i )
 	{
-//		vertex_t v1 =
-//		if( v_in[i] )
-
+		vertex_t v1 = rev_map[i].first;
+		vertex_t v2 = rev_map[i].second;
+		assert( v1 < nbVertices );
+		assert( v2 < nbVertices );
+		COUT << "v1=" << v1 << " v2=" << v2 << "\n";
+		counter[v1]++;
+		counter[v2]++;
+		assert( counter[v1] < 3 );
+		assert( counter[v2] < 3 );
 	}
 	return v_out;
 }
@@ -662,6 +681,7 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 	BuildBinaryVectors( v_in, v_binvect, boost::num_vertices(g) );
 
 	auto rev_map = BuildReverseBinaryMap( nb_vertices );
+
 #ifdef UDGCD_DEV_MODE
 	PrintBitVectors( std::cout, v_binvect );
 	COUT << "Comparing XORed paths 2 by 2\n";
