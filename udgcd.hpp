@@ -47,21 +47,28 @@ For a graph of \f$n\f$ vertices, its size needs to be \f$n.(n-1)/2\f$
 typedef boost::dynamic_bitset<> BinaryPath;
 
 //-------------------------------------------------------------------------------------------
+/// Counts the number of bits to 1
+size_t
+CountOnes( const BinaryPath& vec )
+{
+	size_t nb_ones = 0;
+	for( size_t i=0; i<vec.size(); i++ )
+		if( vec[i] )
+	return nb_ones;
+}
+//-------------------------------------------------------------------------------------------
 /// Print vector of bits
 template<typename T>
 void
 PrintBitVector( std::ostream& f, const T& vec )
 {
-	size_t nb_ones = 0;
 	for( size_t i=0; i<vec.size(); i++ )
 	{
 		f << vec[i];
-		if( vec[i] )
-			nb_ones++;
 		if( !((i+1)%4) && i != vec.size()-1 )
 			f << '.';
 	}
-	f << ": #=" << nb_ones << "\n";
+	f << ": #=" << CountOnes( vec ) << "\n";
 }
 //-------------------------------------------------------------------------------------------
 /// Print vector of vectors of bits
@@ -433,6 +440,7 @@ template <typename vertex_t>
 struct VertexPair
 {
 	vertex_t v1,v2;
+	VertexPair() {}
 	VertexPair( vertex_t va, vertex_t vb ): v1(va), v2(vb)
 	{
 		if( v2<v1 )
@@ -441,16 +449,10 @@ struct VertexPair
 	// 2-3 is smaller than 2-4
 	friend bool operator < ( const VertexPair& vp_a, const VertexPair& vp_b )
 	{
-//		assert( vp_a.v1 < vp_a.v2 );
-		if( vp_a.v1 < vp_b.v1 ) //&& vp_a.v2 < vp_b.v2 )
-				return true;
-		else
-		{
-			if( vp_a.v1 == vp_b.v1 )
-				return ( vp_a.v2 < vp_b.v2 );
-		}
-//			if( vp_a.v2 < vp_b.v2 )
-//				return true;
+		if( vp_a.v1 < vp_b.v1 )
+			return true;
+		if( vp_a.v1 == vp_b.v1 )
+			return ( vp_a.v2 < vp_b.v2 );
 		return false;
 	}
 
@@ -630,18 +632,36 @@ ConvertBVtoPV( const BinaryPath& v_in, size_t nbVertices, const std::vector<std:
 	PrintBitVector( std::cout, v_in );
 
 	std::vector<vertex_t> v_out;
-	std::vector<int> counter( nbVertices, 0 );
+//	std::vector<int> counter( nbVertices, 0 );
+
+
+/// holds, for each vertex, the index on the two other vertices that are connected
+/**
+	example: 0:1-2 , 1:0-3, 2:0-3
+*/
+	std::vector<VertexPair<vertex_t>> vertex_table( CountOnes( v_in ) );
+
 	for( size_t i=0; i<v_in.size(); ++i )
 	{
-		vertex_t v1 = rev_map[i].first;
-		vertex_t v2 = rev_map[i].second;
-		assert( v1 < nbVertices );
-		assert( v2 < nbVertices );
-		COUT << "v1=" << v1 << " v2=" << v2 << "\n";
-		counter[v1]++;
-		counter[v2]++;
-		assert( counter[v1] < 3 );
-		assert( counter[v2] < 3 );
+		if( v_in[i] == 1 )
+		{
+			vertex_t v1 = rev_map[i].first;
+			vertex_t v2 = rev_map[i].second;
+			assert( v1 < nbVertices );
+			assert( v2 < nbVertices );
+			COUT << i << ": v1=" << v1 << " v2=" << v2 << "\n";
+//			counter[v1]++;
+//			counter[v2]++;
+//			assert( counter[v1] < 3 );
+//			assert( counter[v2] < 3 );
+
+//			vertex_table[v1].Assign( v2 );
+//			vertex_table[v2].Assign( v1 );
+		}
+	}
+	for( const auto& vp: vertex_table )
+	{
+
 	}
 	return v_out;
 }
