@@ -131,3 +131,11 @@ $(BIN_DIR)/%: $(OBJ_DIR)/%.o
 	@echo $(COLOR_1) " - Link demo $@." $(COLOR_OFF)
 	$(L)$(CXX) -o $@ -s $<  $(LDFLAGS)
 
+bin/test_catch: $(OBJ_FILES)
+	$(CXX) -o bin/test_catch obj/test_catch.o -s
+	@echo "done target $@"
+
+# TODO: what is this -s option ?
+test: bin/test_catch
+	bin/test_catch -s
+

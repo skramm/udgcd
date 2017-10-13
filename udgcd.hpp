@@ -54,6 +54,7 @@ CountOnes( const BinaryPath& vec )
 	size_t nb_ones = 0;
 	for( size_t i=0; i<vec.size(); i++ )
 		if( vec[i] )
+			nb_ones++;
 	return nb_ones;
 }
 //-------------------------------------------------------------------------------------------
@@ -597,7 +598,7 @@ BuildBinaryVectors(
 }
 //-------------------------------------------------------------------------------------------
 /// Builds an index map giving from an index in the binary vector the indexes of the two vertices
-/// that are connected
+/// that are connected. See \ref ConvertBVtoPV()
 std::vector<std::pair<size_t,size_t>>
 BuildReverseBinaryMap( size_t nb_vertices )
 {
@@ -621,6 +622,20 @@ BuildReverseBinaryMap( size_t nb_vertices )
 }
 //-------------------------------------------------------------------------------------------
 /// convert, for a given graph, a Binary Vector (BV) \c v_in to a Path Vector (PV) (TODO)
+/**
+Algorithm:
+-using rev_map, that gives for a given index in the binary vector the two corresponding vertices
+
+FOR each element in BV with value 1:
+ - fetch the two values v1 and v2 in rev_map
+ - if( flag[v1] is false, set flag[v1] to true
+   else vertex_map[v1] = v2
+
+ - if( flag[v2] is false, set flag[v2] to true
+   else vertex_map[v2] = v1
+
+
+*/
 template<typename vertex_t>
 std::vector<vertex_t>
 ConvertBVtoPV( const BinaryPath& v_in, size_t nbVertices, const std::vector<std::pair<size_t,size_t>>& rev_map )
@@ -633,13 +648,9 @@ ConvertBVtoPV( const BinaryPath& v_in, size_t nbVertices, const std::vector<std:
 
 	std::vector<vertex_t> v_out;
 //	std::vector<int> counter( nbVertices, 0 );
+	std::vector<vertex_t> flag( nbVertices, false );
 
-
-/// holds, for each vertex, the index on the two other vertices that are connected
-/**
-	example: 0:1-2 , 1:0-3, 2:0-3
-*/
-	std::vector<VertexPair<vertex_t>> vertex_table( CountOnes( v_in ) );
+	std::map<vertex_t,vertex_t> vertex_map;
 
 	for( size_t i=0; i<v_in.size(); ++i )
 	{
@@ -655,13 +666,21 @@ ConvertBVtoPV( const BinaryPath& v_in, size_t nbVertices, const std::vector<std:
 //			assert( counter[v1] < 3 );
 //			assert( counter[v2] < 3 );
 
-//			vertex_table[v1].Assign( v2 );
-//			vertex_table[v2].Assign( v1 );
+			if( !flag.at(v1) )
+				flag.at(v1) = true;
+			else
+				vertex_map[v1] = v2;
+
+			if( !flag.at(v2) )
+				flag.at(v2) = true;
+			else
+				vertex_map[v2] = v1;
 		}
 	}
-	for( const auto& vp: vertex_table )
+	COUT << "VERTEX MAP:\n";
+	for( const auto& vp: vertex_map )
 	{
-
+		COUT << vp.first << "-" << vp.second << "\n";
 	}
 	return v_out;
 }
