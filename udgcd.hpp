@@ -51,11 +51,12 @@ typedef boost::dynamic_bitset<> BinaryPath;
 size_t
 CountOnes( const BinaryPath& vec )
 {
-	size_t nb_ones = 0;
+/*	size_t nb_ones = 0;
 	for( size_t i=0; i<vec.size(); i++ )
 		if( vec[i] )
 			nb_ones++;
-	return nb_ones;
+	return nb_ones;*/
+	return vec.count(); // works with boost::dynamic_bitset
 }
 //-------------------------------------------------------------------------------------------
 /// Print vector of bits
@@ -598,7 +599,22 @@ BuildBinaryVectors(
 }
 //-------------------------------------------------------------------------------------------
 /// Builds an index map giving from an index in the binary vector the indexes of the two vertices
-/// that are connected. See \ref ConvertBVtoPV()
+/// that are connected. See \ref ConvertBC2VC()
+/**
+Example for n=5 (=> size=10)
+\verbatim
+0 | 0 1
+1 | 0 2
+2 | 0 3
+3 | 0 4
+4 | 1 2
+5 | 1 3
+6 | 1 4
+7 | 2 3
+8 | 2 4
+9 | 2 5
+\endverbatim
+*/
 std::vector<std::pair<size_t,size_t>>
 BuildReverseBinaryMap( size_t nb_vertices )
 {
@@ -616,15 +632,17 @@ BuildReverseBinaryMap( size_t nb_vertices )
 		}
 		out[i].first  = v1;
 		out[i].second = v2++;
-		COUT << i << ": (" << out[i].first << " - " << out[i].second << ")\n";
+//		COUT << i << ": (" << out[i].first << " - " << out[i].second << ")\n";
 	}
 	return out;
 }
 //-------------------------------------------------------------------------------------------
-/// convert, for a given graph, a Binary Vector (BV) \c v_in to a Path Vector (PV) (TODO)
+/// convert, for a given graph, a Binary Cycle (BC) \c v_in to a Vertex Cycle (VC) (TODO)
 /**
 Algorithm:
 -using rev_map, that gives for a given index in the binary vector the two corresponding vertices
+
+* step 1: build a map, giving for each vertex, the next one
 
 FOR each element in BV with value 1:
  - fetch the two values v1 and v2 in rev_map
@@ -634,57 +652,78 @@ FOR each element in BV with value 1:
  - if( flag[v2] is false, set flag[v2] to true
    else vertex_map[v2] = v1
 
+* step 2: parse the map, and add the vertices to the output vector
 
+\todo: the downside of this approach is that we need to build before the \c rev_map, that is pretty big...
+Maybe we can find a better way ?
 */
 template<typename vertex_t>
 std::vector<vertex_t>
-ConvertBVtoPV( const BinaryPath& v_in, size_t nbVertices, const std::vector<std::pair<size_t,size_t>>& rev_map )
+ConvertBC2VC( const BinaryPath& v_in, size_t nbVertices, const std::vector<std::pair<size_t,size_t>>& rev_map )
 {
 	assert( v_in.size() == nbVertices * (nbVertices-1) / 2 );
 	assert( v_in.size() == rev_map.size() );
 
 	PRINT_FUNCTION;
-	PrintBitVector( std::cout, v_in );
+//	PrintBitVector( std::cout, v_in );
 
 	std::vector<vertex_t> v_out;
-//	std::vector<int> counter( nbVertices, 0 );
 	std::vector<vertex_t> flag( nbVertices, false );
-
 	std::map<vertex_t,vertex_t> vertex_map;
 
-	for( size_t i=0; i<v_in.size(); ++i )
+// step 1: build map from binary vector
 	{
-		if( v_in[i] == 1 )
+		bool firstone(true);
+		for( size_t i=0; i<v_in.size(); ++i )
 		{
-			vertex_t v1 = rev_map[i].first;
-			vertex_t v2 = rev_map[i].second;
-			assert( v1 < nbVertices );
-			assert( v2 < nbVertices );
-			COUT << i << ": v1=" << v1 << " v2=" << v2 << "\n";
-//			counter[v1]++;
-//			counter[v2]++;
-//			assert( counter[v1] < 3 );
-//			assert( counter[v2] < 3 );
+			if( v_in[i] == 1 )
+			{
 
-			if( !flag.at(v1) )
-				flag.at(v1) = true;
-			else
-				vertex_map[v1] = v2;
+				vertex_t v1 = rev_map[i].first;
+				vertex_t v2 = rev_map[i].second;
+				if( firstone )
+				{
+					firstone = false;
+					v_out.push_back( v1 );
+					v_out.push_back( v2 );
+				}
+				assert( v1 < nbVertices );
+				assert( v2 < nbVertices );
+//				COUT << i << ": v1=" << v1 << " v2=" << v2 << " flag[v1]=" << flag.at(v1) << " flag[v2]=" << flag.at(v2) << "\n";
 
-			if( !flag.at(v2) )
-				flag.at(v2) = true;
-			else
-				vertex_map[v2] = v1;
+				if( !flag.at(v1) )
+					flag.at(v1) = true;
+				else
+					vertex_map[v1] = v2;
+
+				if( !flag.at(v2) )
+					flag.at(v2) = true;
+				else
+					vertex_map[v2] = v1;
+			}
 		}
 	}
+#if 0
+	COUT << "v_out: " << v_out[0] << "-" << v_out[1] << "\n";
 	COUT << "VERTEX MAP:\n";
 	for( const auto& vp: vertex_map )
-	{
 		COUT << vp.first << "-" << vp.second << "\n";
+#endif
+
+// step 2: extract vertices from map
+//	COUT << "step2:\n";
+	vertex_t current = v_out[1];
+	auto nbOnes = v_in.count()-2;
+	do
+	{
+		v_out.push_back( vertex_map[current] );
+//		COUT << "ADDING " << vertex_map[current] << "\n";
+		current = vertex_map[current];
 	}
+	while( --nbOnes );
+
 	return v_out;
 }
-
 //-------------------------------------------------------------------------------------------
 /// Post-process step: removes paths (cycles) that are redundant (i.e. that can be deduced/build from the others)
 /**
@@ -738,7 +777,7 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 //			PrintVector( std::cout, v_in[j] ); PrintBitVector( std::cout, v_binvect[j] );
 			auto res = v_binvect[i] ^ v_binvect[j];
 			std::cout << "p" << i << " EXOR p" << j << "="; PrintBitVector( std::cout, res );
-			auto xored_path = ConvertBVtoPV<vertex_t>( res, nb_vertices, rev_map );
+			auto xored_path = ConvertBC2VC<vertex_t>( res, nb_vertices, rev_map );
 			PrintVector( std::cout, xored_path );
 			for( size_t k=0; k<v_in.size(); k++ )
 				if( k != i && k != j )
