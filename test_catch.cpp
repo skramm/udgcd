@@ -1,7 +1,9 @@
 
 /**
 \file test_catch.cpp
-\brief test file
+\brief test file, needs the Catch framework
+
+https://github.com/philsquared/Catch/
 */
 
 
