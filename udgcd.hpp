@@ -26,14 +26,16 @@ See file README.md
 
 #include <boost/dynamic_bitset.hpp>       // needed ! Allows bitwise operations on dynamic size boolean vectors
 
-#define UDGCD_DEV_MODE
-
 #ifdef UDGCD_DEV_MODE
 	#include <iostream>
-	#define COUT std::cout
+	#define COUT if(1) std::cout
 	#define PRINT_FUNCTION std::cout << "*** start function " <<  __FUNCTION__ << "()\n"
-	#define PRINT_FUNCTION_2 std::cout << "*** start function " <<  __FUNCTION__ << "()"
+	#define PRINT_FUNCTION_2 if(1) std::cout << "*** start function " <<  __FUNCTION__ << "()"
 	#define UDGCD_PRINT_STEPS
+#else
+	#define PRINT_FUNCTION
+	#define PRINT_FUNCTION_2 if(0) std::cout
+	#define COUT if(0) std::cout
 #endif
 
 

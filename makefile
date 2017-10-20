@@ -17,9 +17,14 @@ COLOR_OFF="\e[0m"
 # general compiler flags
 # -Wno-unused-result is to avoid the warning on call to std::system() when calling dot (see void CallDot() )
 CFLAGS = -std=c++0x -Wall -O2 -Iinclude -Wno-unused-result
+CFLAGS = -std=c++11 -Wall -O2 -Iinclude -Wno-unused-result
 
 ifeq "$(PRINT_STEPS)" "Y"
 	CFLAGS += -DUDGCD_PRINT_STEPS
+endif
+
+ifeq "$(DEVMODE)" "Y"
+	CFLAGS += -DUDGCD_DEV_MODE
 endif
 
 SHELL=/bin/bash
@@ -77,8 +82,8 @@ out/stdout_graph_%.txt: samples/graph_%.txt $(EXEC_FILES)
 out/%.svg : out/%.dot
 	dot -Tsvg -Nfontsize=24 $< >$@
 
-test:
-	echo out/test_{00..99}.txt
+#test:
+#	echo out/test_{00..99}.txt
 
 show: $(SRC_FILES)
 	@echo SRC_FILES=$(SRC_FILES)
