@@ -32,10 +32,12 @@ See file README.md
 	#define PRINT_FUNCTION std::cout << "*** start function " <<  __FUNCTION__ << "()\n"
 	#define PRINT_FUNCTION_2 if(1) std::cout << "*** start function " <<  __FUNCTION__ << "()"
 	#define UDGCD_PRINT_STEPS
+	#define PRINT_DIFF( step, v_after, v_before ) std::cout << step << ": REMOVAL OF " << v_before.size() - v_after.size() << "\n"
 #else
 	#define PRINT_FUNCTION
 	#define PRINT_FUNCTION_2 if(0) std::cout
 	#define COUT if(0) std::cout
+	#define PRINT_DIFF ;
 #endif
 
 
@@ -148,9 +150,9 @@ explore(
 
 #ifdef UDGCD_DEV_MODE
 	COUT << "src_path: "; PrintVector( std::cout, src_path );
-	int iter=0;
-	auto tmp = boost::out_edges( v1, g );
-	size_t nbedges = tmp.second - tmp.first;
+//	int iter=0;
+//	auto tmp = boost::out_edges( v1, g );
+//	size_t nbedges = tmp.second - tmp.first;
 #endif
 
 	bool found = false;
@@ -161,7 +163,7 @@ explore(
 		Vertex v2a = boost::source(*oei.first, g);
 		Vertex v2b = boost::target(*oei.first, g);
 #ifdef UDGCD_DEV_MODE
-		COUT << ++iter << '/' << nbedges << " - v1=" << v1 << ": connected edges v2a=" << v2a << " v2b=" << v2b << "\n";
+//		COUT << ++iter << '/' << nbedges << " - v1=" << v1 << ": connected edges v2a=" << v2a << " v2b=" << v2b << "\n";
 #endif
 		if( v2b == v1 && v2a == src_path[0] ) // we just found the edge that we started on, so no need to finish the current iteration, just move on.
 			continue;
@@ -666,7 +668,7 @@ ConvertBC2VC( const BinaryPath& v_in, size_t nbVertices, const std::vector<std::
 	assert( v_in.size() == nbVertices * (nbVertices-1) / 2 );
 	assert( v_in.size() == rev_map.size() );
 
-	PRINT_FUNCTION;
+//	PRINT_FUNCTION;
 //	PrintBitVector( std::cout, v_in );
 
 	std::vector<vertex_t> v_out;
@@ -778,9 +780,9 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 //			PrintVector( std::cout, v_in[i] ); PrintBitVector( std::cout, v_binvect[i] );
 //			PrintVector( std::cout, v_in[j] ); PrintBitVector( std::cout, v_binvect[j] );
 			auto res = v_binvect[i] ^ v_binvect[j];
-			std::cout << "p" << i << " EXOR p" << j << "="; PrintBitVector( std::cout, res );
-			auto xored_path = ConvertBC2VC<vertex_t>( res, nb_vertices, rev_map );
-			PrintVector( std::cout, xored_path );
+//			std::cout << "p" << i << " EXOR p" << j << "="; PrintBitVector( std::cout, res );
+//			auto xored_path = ConvertBC2VC<vertex_t>( res, nb_vertices, rev_map );
+//			PrintVector( std::cout, xored_path );
 			for( size_t k=0; k<v_in.size(); k++ )
 				if( k != i && k != j )
 				{
@@ -965,12 +967,14 @@ PrintBitVectors( std::cout, v_binvect );
 
 // post process 3: remove non-chordless cycles
 	std::vector<std::vector<vertex_t>> v_cycles4 = RemoveNonChordless( v_cycles0, g );
+	PRINT_DIFF( "STEP 3", v_cycles4, v_cycles0 );
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles4, "After removal of non-chordless cycles" );
 #endif
 
 // post process 4:
 	std::vector<std::vector<vertex_t>> v_cycles5 = RemoveRedundant2( v_cycles4, g );
+	PRINT_DIFF( "STEP 4", v_cycles5, v_cycles4 );
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles5, "After removal of composed cycles" );
 #endif

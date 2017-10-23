@@ -70,20 +70,12 @@ rungen: $(GEN_GSAMPLES_OUTPUT) bin/read_graph
 runsam: $(GEN_SAMPLES_OUTPUT) bin/read_graph
 	@echo "target $@ done"
 
-out/stdout_gen_graph_%.txt: out/gen_graph_%.txt
-	time bin/read_graph $< > $@
-
 out/stdout_graph_%.txt: samples/graph_%.txt $(EXEC_FILES)
-	time bin/read_graph $< > $@
-
-#out/sample_%.svg: out/stdout_graph_%.txt out/sample.svg
-#	mv $< $@
+	-bin/read_graph $< > $@;\
+	STATUS=$$?; echo "file $<: exit with $$STATUS" >> runsam.log
 
 out/%.svg : out/%.dot
 	dot -Tsvg -Nfontsize=24 $< >$@
-
-#test:
-#	echo out/test_{00..99}.txt
 
 show: $(SRC_FILES)
 	@echo SRC_FILES=$(SRC_FILES)
