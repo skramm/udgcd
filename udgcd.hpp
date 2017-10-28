@@ -40,7 +40,6 @@ See file README.md
 	#define PRINT_DIFF ;
 #endif
 
-
 /// All the provided code is in this namespace
 namespace udgcd {
 
@@ -853,6 +852,16 @@ template<class T>
 std::vector<T> CycleDetector<T>::v_source_vertex;
 
 //-------------------------------------------------------------------------------------------
+/// Returns nb of cycles of the graph
+template<typename graph_t>
+size_t
+NbCycles( const graph_t& g )
+{
+	std::vector<size_t> component( boost::num_vertices( g ) );
+	auto nb_cc = boost::connected_components( g, &component[0] );
+	return boost::num_edges(g) -  boost::num_vertices(g) + nb_cc;
+}
+//-------------------------------------------------------------------------------------------
 /// Main user interface: just call this function to get the cycles inside your graph
 /**
 Returns a vector of cycles that have been found in the graph
@@ -985,6 +994,9 @@ PrintBitVectors( std::cout, v_binvect );
 //	PrintPaths( std::cout, v_cycles6, "After removal of non-chordless cycles" );
 #endif
 
+// if one more, then remove it
+	if( v_cycles5.size() == NbCycles(g)+1 )
+		v_cycles5.pop_back();
 
 	return v_cycles5;
 }
