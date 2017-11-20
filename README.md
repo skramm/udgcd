@@ -79,10 +79,11 @@ Some additional apps are included, that are build by the makefile:
  - `sample_?.cpp`: c++ apps that build a graph and computes its cycles.
 
 ##### Build options:
- - The provided makefile is not requested to use the library, as it is "header-only", but might help. It has the following targets:
+ - The provided makefile is not requested to use the library, as it is "header-only".
+ It can be uses to show the demos. It has the following targets (for a full list, please enter `make help`):
   - `make` (no targets) : builds the included demos apps
   - `make run` : builds and runs all the included demos
-  - `make dox` : builds the doxygen reference file (needs doxygen installed...)
+  - `make doc` : builds the doxygen reference file (needs doxygen installed...)
 
 To run a single demo, run `bin/sample_X`.
 
@@ -173,8 +174,8 @@ struct my_Vertex
 };
 struct my_Edge
 {
-		int         e1;
-		std::string e2;
+	int         e1;
+	std::string e2;
 };
 ```
 Then your graph type definition will become:

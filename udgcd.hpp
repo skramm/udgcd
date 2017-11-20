@@ -37,7 +37,7 @@ See file README.md
 	#define PRINT_FUNCTION
 	#define PRINT_FUNCTION_2 if(0) std::cout
 	#define COUT if(0) std::cout
-	#define PRINT_DIFF ;
+	#define PRINT_DIFF(a,b,c) ;
 #endif
 
 /// All the provided code is in this namespace
@@ -756,7 +756,6 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 	PrintPaths( std::cout, v_in, "After sorting" );
 
 /// build for each cycle its associated binary vector
-
 	std::vector<BinaryPath> v_binvect( v_in.size() );  // one binary vector per cycle
 	size_t nb_vertices = boost::num_vertices(g);
 	BuildBinaryVectors( v_in, v_binvect, boost::num_vertices(g) );
@@ -775,26 +774,28 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
     for( size_t i=0; i<v_in.size()-1; i++ )
 		for( size_t j=i+1; j<v_in.size(); j++ )
 		{
-//			std::cout << "\n* i=" << i << " j=" << j << "\n";
-//			PrintVector( std::cout, v_in[i] ); PrintBitVector( std::cout, v_binvect[i] );
-//			PrintVector( std::cout, v_in[j] ); PrintBitVector( std::cout, v_binvect[j] );
+			std::cout << "\n* i=" << i << " j=" << j << "\n";
+			PrintVector( std::cout, v_in[i] ); PrintBitVector( std::cout, v_binvect[i] );
+			PrintVector( std::cout, v_in[j] ); PrintBitVector( std::cout, v_binvect[j] );
 			auto res = v_binvect[i] ^ v_binvect[j];
-//			std::cout << "p" << i << " EXOR p" << j << "="; PrintBitVector( std::cout, res );
-//			auto xored_path = ConvertBC2VC<vertex_t>( res, nb_vertices, rev_map );
-//			PrintVector( std::cout, xored_path );
+			std::cout << "p" << i << " EXOR p" << j << "="; PrintBitVector( std::cout, res );
+			auto xored_path = ConvertBC2VC<vertex_t>( res, nb_vertices, rev_map );
+			PrintVector( std::cout, xored_path );
 			for( size_t k=0; k<v_in.size(); k++ )
 				if( k != i && k != j )
 				{
-//					std::cout << "compare to elem " << k << "\n"; PrintVector( std::cout, v_in[k] ); PrintBitVector( std::cout, v_binvect[k] );
+//					std::cout << "compare to elem " << k << ": "; PrintVector( std::cout, v_in[k] ); PrintBitVector( std::cout, v_binvect[k] );
 					if( v_removals[k] == 0 )        // if already to 1, no need to check
+//						if( v_removals[i] == 0 ) //&& v_removals[k] == 0 )
 					{
 						auto maxsize = std::max( v_in[i].size(), v_in[j].size() );
 						if( v_in[k].size() >= maxsize )
 						{
-//							std::cout << " -size=" << v_in[k].size() << " higher than " << maxsize << '\n';
+//							std::cout << " -size=" << v_in[k].size() << " >= " << maxsize << '\n';
 							if( res == v_binvect[k] )
 							{
-								v_removals[k] = 1; //std::cout << " remove it!\n";
+								std::cout << "compare to elem " << k << ": "; PrintVector( std::cout, v_in[k] ); PrintBitVector( std::cout, v_binvect[k] );
+								v_removals[k] = 1; std::cout << " remove it!\n";
 								nbRemovals++;
 							}
 						}
@@ -802,11 +803,18 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 				}
 		}
 
-//	std::cout << "Nbremovals=" << nbRemovals << '\n';
+	std::cout << "Nbremovals=" << nbRemovals << '\n';
     for( size_t i=0; i<v_in.size(); i++ )        // finally, copy all the correct
+    {
+		COUT << "Elem " << i;
 		if( v_removals[i] == 0 )                 // cycles to output vector
+		{
 			v_out.push_back( v_in[i] );
-
+			COUT << ": keep\n";
+		}
+		else
+			COUT << "=" << v_removals[i] << " : remove\n";
+	}
 	return v_out;
 }
 //-------------------------------------------------------------------------------------------
@@ -981,12 +989,20 @@ PrintBitVectors( std::cout, v_binvect );
 	PrintPaths( std::cout, v_cycles4, "After removal of non-chordless cycles" );
 #endif
 
+//std::vector<std::vector<vertex_t>> v_cycles5;
+//size_t diff = 0;
+//do {
 // post process 4:
 	std::vector<std::vector<vertex_t>> v_cycles5 = RemoveRedundant2( v_cycles4, g );
+//	v_cycles5 = RemoveRedundant2( v_cycles4, g );
 	PRINT_DIFF( "STEP 4", v_cycles5, v_cycles4 );
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles5, "After removal of composed cycles" );
 #endif
+//	diff = v_cycles4.size() - v_cycles5.size();
+//	v_cycles4 = v_cycles5;
+//}
+//while( diff != 0 );
 
 // post process 3: remove non-chordless cycles
 //	std::vector<std::vector<vertex_t>> v_cycles6 = RemoveNonChordless( v_cycles5, g );
@@ -994,9 +1010,11 @@ PrintBitVectors( std::cout, v_binvect );
 //	PrintPaths( std::cout, v_cycles6, "After removal of non-chordless cycles" );
 #endif
 
+#if 0
 // if one more, then remove it
 	if( v_cycles5.size() == NbCycles(g)+1 )
 		v_cycles5.pop_back();
+#endif
 
 	return v_cycles5;
 }

@@ -33,14 +33,25 @@ typedef boost::graph_traits<graph_t>::vertex_descriptor vertex_t;
 typedef boost::graph_traits<graph_t>::edge_descriptor   edge_t;
 
 //-------------------------------------------------------------------
-/// saves graph \c g in a text file, in folder \c out
+/// Saves graph \c g in a text file, in folder \c out
+/**
+- fails is folder does not exist
+- data is saved as ASCII, with the following format
+ - first line: number of vertices
+ - one line per edge
+*/
 void
 SaveGraph( graph_t g, std::string id )
 {
 	std::string fname = "out/gen_graph_" + id + ".txt";
-	std::cout << "Graph is saved in file " << fname << '\n';
+	std::cout << "udgcd: graph is saved in file " << fname << '\n';
 	std::ofstream f( fname );
-	assert( f.is_open() );
+	if( !f.is_open() )
+	THROW_ERROR( "unable to open file " + fname  );
+/*	{
+		std::cerr << "udgcd: " << __FILE << '-' << __FUNCTION__ << ": unable to open file " << fname << std::endl;
+		throw;
+	}*/
 	f << "v:" << boost::num_vertices( g ) << "\n\n";
 
 	for(                                 // enumerate all the edges
@@ -57,8 +68,8 @@ int main( int argc, const char** argv )
 	SHOW_INFO;
 
 	graph_t g;
-	auto t = time(0);
-	std::srand( t );
+	auto current_time = time(0);
+	std::srand( current_time );
 	size_t nb_egdes = 15;
 	size_t nb_vertices = 8;
 	if( argc > 1 )
@@ -81,8 +92,8 @@ int main( int argc, const char** argv )
 		}
 	}
 
-	SaveGraph( g, std::to_string(t) );
-	RenderGraph( g, "gen_" + std::to_string(t) );
+	SaveGraph( g, std::to_string(current_time) );
+	RenderGraph( g, "gen_" + std::to_string(current_time) );
 
 	return Process( g );
 }

@@ -68,6 +68,13 @@ BuildDotFileName()
 	return "out/plot_" + prog_id + "_" + std::to_string(g_idx);
 }
 #endif
+
+#define THROW_ERROR( msg ) \
+	{ \
+		std::cerr << "udgcd: " << __FILE__ << '-' << __FUNCTION__ << ": " << msg << std::endl; \
+		throw; \
+	}
+
 //-------------------------------------------------------------------
 /// Generates a dot file from graph \c g and calls the renderer (dot/Graphviz) to produce a svg image of the graph
 template<typename graph_t>
@@ -81,8 +88,10 @@ RenderGraph( const graph_t& g, const std::string id_str )
 		id_str = *name;*/
 	std::cout << "id_str=" << id_str << '\n';
 	{
-		std::ofstream f ( "out/" + id_str + "_" + std::to_string(g_idx) + ".dot" );
-		assert( f.is_open() );
+		std::string fname( "out/" + id_str + "_" + std::to_string(g_idx) + ".dot" );
+		std::ofstream f ( fname );
+		if( !f.is_open() )
+			THROW_ERROR( "unable to open file" + fname );
 		boost::write_graphviz( f, g );
 	}
 //	CallDot( id_str );
