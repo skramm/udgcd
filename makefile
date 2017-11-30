@@ -13,7 +13,7 @@ COLOR_OFF="\e[0m"
 # disable implicit rules
 .SUFFIXES:
 
-.PHONY: clearlogfile
+.PHONY: clearlogfile svg all help runsam doc clean cleanout diff
 
 #--------------------------------
 # general compiler flags

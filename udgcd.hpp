@@ -657,7 +657,7 @@ FOR each element in BV with value 1:
 
 * step 2: parse the map, and add the vertices to the output vector
 
-\todo: the downside of this approach is that we need to build before the \c rev_map, that is pretty big...
+\todo: the downside of this approach is that we need to build before the \c rev_map, that can be pretty big...
 Maybe we can find a better way ?
 */
 template<typename vertex_t>
@@ -786,7 +786,7 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 				{
 //					std::cout << "compare to elem " << k << ": "; PrintVector( std::cout, v_in[k] ); PrintBitVector( std::cout, v_binvect[k] );
 					if( v_removals[k] == 0 )        // if already to 1, no need to check
-//						if( v_removals[i] == 0 ) //&& v_removals[k] == 0 )
+						if( v_removals[j] == 0 )
 					{
 						auto maxsize = std::max( v_in[i].size(), v_in[j].size() );
 						if( v_in[k].size() >= maxsize )

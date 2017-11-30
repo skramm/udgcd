@@ -224,22 +224,25 @@ LoadGraph( const char* fname )
 }
 //-------------------------------------------------------------------
 /// Process the graph to find cycles
-/// This function is called by the two apps.
+/// This function is called by the two apps
+/**
+Returns the number of differences
+*/
 template<typename graph_t>
 int
 Process( graph_t& g )
 {
 	typedef typename boost::graph_traits<graph_t>::vertex_descriptor vertex_t;
 
-	auto expected = PrintGraphInfo( g );
+	int expected = PrintGraphInfo( g );
 
 	std::vector<std::vector<vertex_t>> cycles = udgcd::FindCycles<graph_t,vertex_t>( g );
 	udgcd::PrintPaths( std::cout, cycles, "final" );
-	if( expected != cycles.size() )
-	{
+	if( expected != (int)cycles.size() )
 		std::cout << "ERROR: computed nb of cycles is not what expected (expected=" << expected << ")\n";
-		return 1;
-	}
-	return 0;
+
+	std::cout << "diff=" << expected - (int)cycles.size() << "\n";
+
+	return (int)cycles.size() - expected;
 }
 //-------------------------------------------------------------------
