@@ -62,20 +62,10 @@ SaveGraph( graph_t g, std::string id )
 		f << boost::source( *pei.first, g ) << "-" << boost::target( *pei.first, g ) << '\n';
 }
 //-------------------------------------------------------------------
-/// see random_test.cpp
-int main( int argc, const char** argv )
+graph_t
+GenerateRandomGraph( size_t nb_vertices, size_t nb_egdes )
 {
-	SHOW_INFO;
-
 	graph_t g;
-	auto current_time = time(0);
-	std::srand( current_time );
-	size_t nb_egdes = 15;
-	size_t nb_vertices = 8;
-	if( argc > 1 )
-		nb_vertices = std::atoi( argv[1] );
-	if( argc > 2 )
-		nb_egdes = std::atoi( argv[2] );
 
 	for( size_t i=0;i<nb_vertices; i++ )
 		add_vertex(g);
@@ -91,6 +81,25 @@ int main( int argc, const char** argv )
 				boost::add_edge( v1, v2, g );
 		}
 	}
+	return g;
+}
+//-------------------------------------------------------------------
+/// see random_test.cpp
+int main( int argc, const char** argv )
+{
+	SHOW_INFO;
+
+	size_t nb_egdes = 15;
+	size_t nb_vertices = 8;
+	if( argc > 1 )
+		nb_vertices = std::atoi( argv[1] );
+	if( argc > 2 )
+		nb_egdes = std::atoi( argv[2] );
+
+	auto current_time = time(0);
+	std::srand( current_time );
+
+	graph_t g = GenerateRandomGraph( nb_vertices, nb_egdes );
 
 	SaveGraph( g, std::to_string(current_time) );
 	RenderGraph( g, "gen_" + std::to_string(current_time) );

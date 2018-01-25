@@ -770,10 +770,14 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 /// build the composed cycles by taking each pair of cycle, XOR it,
 /// and compare to the others
 	boost::dynamic_bitset<> v_removals( v_in.size() );  // sets all to 0, 1 means it will be removed
+	size_t counter1(0);
 	size_t nbRemovals(0);
+	size_t nbNonChordless(0);
+
     for( size_t i=0; i<v_in.size()-1; i++ )
 		for( size_t j=i+1; j<v_in.size(); j++ )
 		{
+			counter1++;
 			std::cout << "\n* i=" << i << " j=" << j << "\n";
 			PrintVector( std::cout, v_in[i] ); PrintBitVector( std::cout, v_binvect[i] );
 			PrintVector( std::cout, v_in[j] ); PrintBitVector( std::cout, v_binvect[j] );
@@ -781,6 +785,14 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 			std::cout << "p" << i << " EXOR p" << j << "="; PrintBitVector( std::cout, res );
 			auto xored_path = ConvertBC2VC<vertex_t>( res, nb_vertices, rev_map );
 			PrintVector( std::cout, xored_path );
+
+			if( xored_path.size() > 3 )
+				if( !IsChordless( xored_path, g ) )
+				{
+					nbNonChordless++;
+					std::cout << " => is NOT chordless!\n";
+				}
+
 			for( size_t k=0; k<v_in.size(); k++ )
 				if( k != i && k != j )
 				{
@@ -802,6 +814,9 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 					}
 				}
 		}
+
+	std::cout << "* counter1=" << counter1 << "\n";
+	std::cout << "* Nb NonChordless=" << nbNonChordless << "\n";
 
 	std::cout << "Nbremovals=" << nbRemovals << '\n';
     for( size_t i=0; i<v_in.size(); i++ )        // finally, copy all the correct
