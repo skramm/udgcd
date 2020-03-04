@@ -109,6 +109,7 @@ show: $(SRC_FILES)
 
 doc:
 	doxygen doxyfile 1>$(OBJ_DIR)/doxygen_stdout.txt 2>$(OBJ_DIR)/doxygen_stderr.txt
+	xdg-open html/index.html
 
 clean:
 	@-rm $(OBJ_DIR)/*

@@ -11,6 +11,7 @@
 #include <iostream>
 
 #define UDGCD_DEV_MODE
+#define UDGCD_PRINT_STEPS
 #include "udgcd.hpp"
 
 std::string prog_id = "read_graph";

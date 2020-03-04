@@ -43,6 +43,37 @@ See file README.md
 /// All the provided code is in this namespace
 namespace udgcd {
 
+//-------------------------------------------------------------------------------------------
+template<typename T>
+void
+PrintVector( std::ostream& f, const std::vector<T>& vec )
+{
+	for( const auto& elem : vec )
+		f << elem << "-";
+	f << "\n";
+}
+
+/// Additional helper function, can be used to print the cycles found
+template<typename T>
+void
+PrintPaths( std::ostream& f, const std::vector<std::vector<T>>& v_paths, const char* msg=0 )
+{
+	static int iter=0;
+	f << "Paths (" << iter++ << "): nb=" << v_paths.size();
+	if( msg )
+		f << ": " << msg;
+	f << "\n";
+
+	for( size_t i=0; i<v_paths.size(); i++ )
+	{
+		f << " - " << i << ": ";
+		PrintVector( f, v_paths[i] );
+	}
+}
+//-------------------------------------------------------------------------------------------
+/// holds private types and functions, unneeded to use this library
+namespace priv {
+
 /// holds a path as a binary vector.
 /**
 For a graph of \f$n\f$ vertices, its size needs to be \f$n.(n-1)/2\f$
@@ -88,33 +119,6 @@ PrintBitVectors( std::ostream& f, const T& vec )
 		PrintBitVector( f, vec[i] );
 	}
 //	f << "\n";
-}
-//-------------------------------------------------------------------------------------------
-template<typename T>
-void
-PrintVector( std::ostream& f, const std::vector<T>& vec )
-{
-	for( const auto& elem : vec )
-		f << elem << "-";
-	f << "\n";
-}
-
-/// Additional helper function, can be used to print the cycles found
-template<typename T>
-void
-PrintPaths( std::ostream& f, const std::vector<std::vector<T>>& v_paths, const char* msg=0 )
-{
-	static int iter=0;
-	f << "Paths (" << iter++ << "): nb=" << v_paths.size();
-	if( msg )
-		f << ": " << msg;
-	f << "\n";
-
-	for( size_t i=0; i<v_paths.size(); i++ )
-	{
-		f << " - " << i << ": ";
-		PrintVector( f, v_paths[i] );
-	}
 }
 //-------------------------------------------------------------------------------------------
 /// Private, don't use.
@@ -333,7 +337,7 @@ out: 3-4-5
 */
 template<typename T>
 std::vector<std::vector<T>>
-CleanCycles( const std::vector<std::vector<T>>& v_cycles )
+cleanCycles( const std::vector<std::vector<T>>& v_cycles )
 {
 	PRINT_FUNCTION;
 	assert( v_cycles.size() );
@@ -832,6 +836,9 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 	}
 	return v_out;
 }
+
+} // namespace priv
+
 //-------------------------------------------------------------------------------------------
 /// Cycle detector for an undirected graph
 /**
@@ -870,11 +877,14 @@ struct CycleDetector : public boost::dfs_visitor<>
 		static std::vector<vertex_t> v_source_vertex;
 };
 
+
 /// static var instanciation
 template<class T>
 std::vector<T> CycleDetector<T>::v_source_vertex;
 
 //-------------------------------------------------------------------------------------------
+// USELESS ?
+#if 0
 /// Returns nb of cycles of the graph
 template<typename graph_t>
 size_t
@@ -884,6 +894,11 @@ NbCycles( const graph_t& g )
 	auto nb_cc = boost::connected_components( g, &component[0] );
 	return boost::num_edges(g) -  boost::num_vertices(g) + nb_cc;
 }
+
+
+} // namespace priv
+#endif
+
 //-------------------------------------------------------------------------------------------
 /// Main user interface: just call this function to get the cycles inside your graph
 /**
@@ -955,7 +970,7 @@ FindCycles( graph_t& g )
 		std::vector<std::vector<vertex_t>> v_paths;
 		std::vector<vertex_t> newv(1, vi ); // start by one of the filed source vertex
 		v_paths.push_back( newv );
-		explore( vi, g, v_paths, v_cycles );    // call of recursive function
+		priv::explore( vi, g, v_paths, v_cycles );    // call of recursive function
 
 #ifdef UDGCD_PRINT_STEPS
 //	std::cout << "considering vertex " << vi << ": v_cycle size=" << v_cycles.size() << '\n';
@@ -970,17 +985,17 @@ FindCycles( graph_t& g )
 #endif
 
 // post process 0: cleanout the cycles by removing steps that are not part of the cycle
-	std::vector<std::vector<vertex_t>> v_cycles0 = CleanCycles( v_cycles );
+	std::vector<std::vector<vertex_t>> v_cycles0 = priv::cleanCycles( v_cycles );
 #ifdef UDGCD_PRINT_STEPS
-	PrintPaths( std::cout, v_cycles0, "After CleanCycles()" );
+	PrintPaths( std::cout, v_cycles0, "After cleanCycles()" );
 #endif
 
 size_t nbVertices = boost::num_vertices(g);
 //size_t nbCombinations = nbVertices * (nbVertices-1) / 2;
 
-std::vector<BinaryPath> v_binvect( v_cycles0.size() );
-BuildBinaryVectors( v_cycles0, v_binvect, nbVertices );
-PrintBitVectors( std::cout, v_binvect );
+std::vector<priv::BinaryPath> v_binvect( v_cycles0.size() );
+priv::BuildBinaryVectors( v_cycles0, v_binvect, nbVertices );
+priv::PrintBitVectors( std::cout, v_binvect );
 
 // post process 1: remove the paths that are identical but reversed
 /*	std::vector<std::vector<vertex_t>> v_cycles2 = RemoveOppositePairs( v_cycles0 );
@@ -998,7 +1013,7 @@ PrintBitVectors( std::cout, v_binvect );
 */
 
 // post process 3: remove non-chordless cycles
-	std::vector<std::vector<vertex_t>> v_cycles4 = RemoveNonChordless( v_cycles0, g );
+	std::vector<std::vector<vertex_t>> v_cycles4 = priv::RemoveNonChordless( v_cycles0, g );
 	PRINT_DIFF( "STEP 3", v_cycles4, v_cycles0 );
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles4, "After removal of non-chordless cycles" );
@@ -1008,7 +1023,7 @@ PrintBitVectors( std::cout, v_binvect );
 //size_t diff = 0;
 //do {
 // post process 4:
-	std::vector<std::vector<vertex_t>> v_cycles5 = RemoveRedundant2( v_cycles4, g );
+	std::vector<std::vector<vertex_t>> v_cycles5 = priv::RemoveRedundant2( v_cycles4, g );
 //	v_cycles5 = RemoveRedundant2( v_cycles4, g );
 	PRINT_DIFF( "STEP 4", v_cycles5, v_cycles4 );
 #ifdef UDGCD_PRINT_STEPS
@@ -1025,11 +1040,7 @@ PrintBitVectors( std::cout, v_binvect );
 //	PrintPaths( std::cout, v_cycles6, "After removal of non-chordless cycles" );
 #endif
 
-#if 0
-// if one more, then remove it
-	if( v_cycles5.size() == NbCycles(g)+1 )
-		v_cycles5.pop_back();
-#endif
+
 
 	return v_cycles5;
 }
