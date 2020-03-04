@@ -68,7 +68,7 @@ GenerateRandomGraph( size_t nb_vertices, size_t nb_egdes )
 	graph_t g;
 
 	for( size_t i=0;i<nb_vertices; i++ )
-		add_vertex(g);
+		boost::add_vertex(g);
 
 	for( size_t i=0;i<nb_egdes; i++ )
 	{

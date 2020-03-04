@@ -150,6 +150,8 @@ bin/test_catch: obj/test_catch.o
 	@echo "done target $@"
 
 # TODO: what is this -s option ?
+# answer 2018-08-31: https://github.com/catchorg/Catch2/blob/master/docs/command-line.md#showing-results-for-successful-tests
+# (also shows successful test results)
 test: bin/test_catch
 	bin/test_catch -s
 
