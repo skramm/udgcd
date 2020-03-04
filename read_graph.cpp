@@ -9,6 +9,8 @@
 */
 
 #include <iostream>
+
+#define UDGCD_DEV_MODE
 #include "udgcd.hpp"
 
 std::string prog_id = "read_graph";

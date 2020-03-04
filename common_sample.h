@@ -226,7 +226,11 @@ LoadGraph( const char* fname )
 /// Process the graph to find cycles
 /// This function is called by the two apps
 /**
-Returns the number of differences
+Returns the number of differences between
+- the \b computed number of cycles
+- and the \b expected number of cycles
+
+So should be 0 if code is okay...
 */
 template<typename graph_t>
 int

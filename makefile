@@ -33,10 +33,10 @@ endif
 SHELL=/bin/bash
 
 # files and folders
+SRC_DIR=.
 APP=udgcd.hpp
 HEADERS=$(wildcard $(SRC_DIR)/*.h*)
 BIN_DIR=bin
-SRC_DIR=.
 OBJ_DIR=obj
 
 SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)

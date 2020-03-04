@@ -32,7 +32,7 @@ See file README.md
 	#define PRINT_FUNCTION std::cout << "*** start function " <<  __FUNCTION__ << "()\n"
 	#define PRINT_FUNCTION_2 if(1) std::cout << "*** start function " <<  __FUNCTION__ << "()"
 	#define UDGCD_PRINT_STEPS
-	#define PRINT_DIFF( step, v_after, v_before ) std::cout << step << ": REMOVAL OF " << v_before.size() - v_after.size() << "\n"
+	#define PRINT_DIFF( step, v_after, v_before ) std::cout << step << ": REMOVAL OF " << v_before.size() - v_after.size() << " cycles\n"
 #else
 	#define PRINT_FUNCTION
 	#define PRINT_FUNCTION_2 if(0) std::cout
@@ -782,7 +782,7 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 			PrintVector( std::cout, v_in[i] ); PrintBitVector( std::cout, v_binvect[i] );
 			PrintVector( std::cout, v_in[j] ); PrintBitVector( std::cout, v_binvect[j] );
 			auto res = v_binvect[i] ^ v_binvect[j];
-			std::cout << "p" << i << " EXOR p" << j << "="; PrintBitVector( std::cout, res );
+			COUT << "p" << i << " EXOR p" << j << "="; PrintBitVector( std::cout, res );
 			auto xored_path = ConvertBC2VC<vertex_t>( res, nb_vertices, rev_map );
 			PrintVector( std::cout, xored_path );
 
@@ -790,7 +790,7 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 				if( !IsChordless( xored_path, g ) )
 				{
 					nbNonChordless++;
-					std::cout << " => is NOT chordless!\n";
+					COUT << " => is NOT chordless!\n";
 				}
 
 			for( size_t k=0; k<v_in.size(); k++ )

@@ -12,7 +12,7 @@ https://github.com/philsquared/Catch/
 
 #include "udgcd.hpp"
 
-using namespace udgcd;
+//using namespace udgcd;
 
 //-------------------------------------------------------------------------------------------
 /// Process test: converts input cycle (expressed as a vector of vertices) into
@@ -20,17 +20,17 @@ using namespace udgcd;
 void
 ProcessTest( std::vector<size_t>& cycle , size_t nbVertices )
 {
-	auto bim = BuildBinaryIndexMap( nbVertices );
+	auto bim = udgcd::BuildBinaryIndexMap( nbVertices );
 	REQUIRE( bim.size() == nbVertices-1 );
 
 	size_t nbCombinations = nbVertices * (nbVertices-1) / 2;
-	BinaryPath bc( nbCombinations );
-	BuildBinaryVector( cycle, bc, bim );
+	udgcd::BinaryPath bc( nbCombinations );
+	udgcd::BuildBinaryVector( cycle, bc, bim );
 
-	auto rev_map = BuildReverseBinaryMap( nbVertices );
+	auto rev_map = udgcd::BuildReverseBinaryMap( nbVertices );
 	REQUIRE( rev_map.size() == nbCombinations );
 
-	auto cycle2 = ConvertBC2VC<size_t>( bc, nbVertices, rev_map );
+	auto cycle2 = udgcd::ConvertBC2VC<size_t>( bc, nbVertices, rev_map );
 	REQUIRE( cycle == cycle2 );
 
 }
