@@ -76,7 +76,16 @@ namespace priv {
 
 /// holds a path as a binary vector.
 /**
-For a graph of \f$n\f$ vertices, its size needs to be \f$n.(n-1)/2\f$
+For a graph of \f$n\f$ vertices, its size needs to be \f$ n.(n-1)/2 \f$
+
+Example: for the path 1-3-4 on a graph of 5 vertices (0 - 4), the vector will have a size of 10 elements:
+
+\verbatim
+edge:    0  0  0  0  1  1  1  2  2  3
+         1  2  3  4  2  3  4  3  4  4
+--------------------------------------
+vector:  0  0  0  0  0  1  1  0  0  1
+\endverbatim
 */
 typedef boost::dynamic_bitset<> BinaryPath;
 
@@ -106,6 +115,25 @@ PrintBitVector( std::ostream& f, const T& vec )
 	}
 	f << ": #=" << CountOnes( vec ) << "\n";
 }
+
+template<typename T>
+void
+printBitMatrix( std::ostream& f, const T& mat, std::string msg )
+{
+	f << "Matrix " << msg << "\n";
+    for( auto line: mat )
+    {
+		f << " | ";
+		for( size_t i=0; i<line.size(); i++ )
+		{
+			f << line[i];
+			if( !((i+1)%4) && i != line.size()-1 )
+				f << '.';
+		}
+		f << " |\n";
+	}
+}
+
 //-------------------------------------------------------------------------------------------
 /// Print vector of vectors of bits
 template<typename T>
@@ -535,11 +563,15 @@ RemoveRedundant( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 //-------------------------------------------------------------------------------------------
 /// Builds the binary vector \c binvect associated to the cycle \c cycle.
 /// The index map \c idx_map is used to fetch the index in binary vector from the two vertices indexes
+/**
+- sample input: 1-3-5
+
+*/
 template<typename vertex_t>
 void
 BuildBinaryVector(
 	const std::vector<vertex_t>& cycle,    ///< input cycle
-	BinaryPath&                  binvect,  ///< output binary vector
+	BinaryPath&                  binvect,  ///< output binary vector (must be allocated)
 	const std::vector<size_t>&   idx_map ) ///< reference index map, see how it is build in \ref BuildBinaryVectors() and \ref BuildBinaryIndexMap(()
 {
 	for( size_t i=0; i<cycle.size(); ++i )
@@ -556,19 +588,19 @@ BuildBinaryVector(
 /**
 This is needed to build the binary vector associated with a path, see \ref BuildBinaryVector()
 
-For example, if 6 vertices, then there are 6*(6-1)/2 = 15 possible edges:
+For example, if 6 vertices (indexes 0 to 5), then there are 6*(6-1)/2 = 15 possible edges:
 \verbatim
-0  1  2  3  4  5  6  7  8  9  10 11 12 13 14
-01-02-03-04-05-12-13-14-15-23-24-25-34-35-45
+        0  1  2  3  4  5  6  7  8  9  10 11 12 13 14
+edges:  01-02-03-04-05-12-13-14-15-23-24-25-34-35-45
 \endverbatim
 
 This function builds a vector of 6-1=5 elements:
 \verbatim
 0-4-7-9-10
 \endverbatim
-With those value, we get the index of a given edge in the binary vector with the formulae:
+With those values, we get the index of a given edge in the binary vector with the formulae:
 \f$ idx = idx_map[v1] + v2 - 1 \f$
-with \f$v1\f$ being the smallest vertex and v2 the other one.
+with \f$ v1 \f$ being the smallest vertex and \f$ v2 \f$ the other one.
 
 */
 std::vector<size_t>
@@ -604,6 +636,9 @@ BuildBinaryVectors(
 	for( size_t i=0; i<v_cycles.size(); i++ )
 		BuildBinaryVector( v_cycles[i], v_binvect[i], idx_map );
 }
+
+using RevBinMap = std::vector<std::pair<size_t,size_t>>;
+
 //-------------------------------------------------------------------------------------------
 /// Builds an index map giving from an index in the binary vector the indexes of the two vertices
 /// that are connected. See \ref ConvertBC2VC()
@@ -622,12 +657,12 @@ Example for n=5 (=> size=10)
 9 | 2 5
 \endverbatim
 */
-std::vector<std::pair<size_t,size_t>>
+RevBinMap
 BuildReverseBinaryMap( size_t nb_vertices )
 {
 	PRINT_FUNCTION;
 	size_t nb_combinations = nb_vertices*(nb_vertices-1)/2;
-	std::vector<std::pair<size_t,size_t>> out( nb_combinations );
+	RevBinMap out( nb_combinations );
 	size_t v1 = 0;
 	size_t v2 = 1;
 	for( size_t i=0; i<nb_combinations; ++i )
@@ -666,7 +701,11 @@ Maybe we can find a better way ?
 */
 template<typename vertex_t>
 std::vector<vertex_t>
-ConvertBC2VC( const BinaryPath& v_in, size_t nbVertices, const std::vector<std::pair<size_t,size_t>>& rev_map )
+ConvertBC2VC(
+	const BinaryPath& v_in,         ///< input binary path
+	size_t            nbVertices,   ///< nb of vertices of the graph
+	const RevBinMap&  rev_map       ///< required map, has to be build before, see BuildReverseBinaryMap()
+)
 {
 	assert( v_in.size() == nbVertices * (nbVertices-1) / 2 );
 	assert( v_in.size() == rev_map.size() );
@@ -732,6 +771,76 @@ ConvertBC2VC( const BinaryPath& v_in, size_t nbVertices, const std::vector<std::
 	return v_out;
 }
 //-------------------------------------------------------------------------------------------
+/// TEMP: WIP Gaussian binary elimination
+/**
+Input: a binary matrix
+- assumes no identical rows
+*/
+std::vector<BinaryPath>
+gaussianElim( const std::vector<BinaryPath>& mat )
+{
+	assert( mat.size() > 1 );
+	auto m_in = mat; // copy so we can edit it (arg is const)
+
+	std::vector<BinaryPath> m_out;
+	size_t col = 0;
+	size_t nb_rows = mat.size();
+	size_t nb_cols = mat[0].size();
+	size_t c=0;
+	bool done = false;
+
+	printBitMatrix( std::cout, m_in, "m_in INITIAL" );
+
+	do
+	{
+		std::cout << "\n* start iter " << ++c << ", current col=" << col << "\n";
+
+		bool found = false;                      // search for first row with a 1 in current column
+		for( size_t row=0; m_in.size(); row++ )
+		{
+			std::cout << "considering line " << row << "\n";
+			if( m_in[row][col] == 1 )
+			{
+				found = true;
+				std::cout << "row: " << row << ": found 1 in col " << col << "\n";
+				m_out.push_back( m_in.at(row) );
+
+
+				if( row < nb_rows-1 )                        // search for all following rows that have a 1 in that column
+				{
+					for( size_t i=row+1; i<nb_rows; i++ )
+					{
+						if( m_in[i][col] == 1 )             // it there is, we XOR them with initial line
+						{
+							auto res = m_in[i] ^ m_in[row];
+							m_in[i] = res;
+						}
+					}
+				}
+				break;
+			}
+		}
+		if( !found )
+		{
+			std::cout << "no col with 1, done!\n";
+			done = true;
+		}
+		else
+		{
+			std::cout << "switch to next col\n";
+			col++;
+		}
+		if( col == nb_cols )
+			done = true;
+
+		printBitMatrix( std::cout, m_in, "m_in" );
+		printBitMatrix( std::cout, m_out, "m_out" );
+	}
+	while( !done );
+	std::cout << "Done!\n\n";
+	return m_out;
+}
+//-------------------------------------------------------------------------------------------
 /// Post-process step: removes paths (cycles) that are redundant (i.e. that can be deduced/build from the others)
 /**
 arg is not const, because it gets sorted here.
@@ -764,6 +873,9 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 	size_t nb_vertices = boost::num_vertices(g);
 	BuildBinaryVectors( v_in, v_binvect, boost::num_vertices(g) );
 
+#if 0
+	std::vector<BinaryPath> gaussianElim( v_binvect );
+#else
 	auto rev_map = BuildReverseBinaryMap( nb_vertices );
 
 #ifdef UDGCD_DEV_MODE
@@ -790,12 +902,14 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 			auto xored_path = ConvertBC2VC<vertex_t>( res, nb_vertices, rev_map );
 			PrintVector( std::cout, xored_path );
 
+#if 0
 			if( xored_path.size() > 3 )
 				if( !IsChordless( xored_path, g ) )
 				{
 					nbNonChordless++;
 					COUT << " => is NOT chordless!\n";
 				}
+#endif
 
 			for( size_t k=0; k<v_in.size(); k++ )
 				if( k != i && k != j )
@@ -834,6 +948,8 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 		else
 			COUT << "=" << v_removals[i] << " : remove\n";
 	}
+#endif
+
 	return v_out;
 }
 
