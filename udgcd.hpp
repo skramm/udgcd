@@ -1211,7 +1211,45 @@ priv::PrintBitVectors( std::cout, v_binvect );
 }
 //-------------------------------------------------------------------------------------------
 namespace priv {
-/// Returns true if \c cycle is truely a cycle in graph \c g
+
+/// WIP!!!!!!!!! UNTESTED !
+/// Recursive function, will iterate in graph and return true
+/**
+*/
+template<typename vertex_t, typename graph_t>
+bool
+checkNextNode(
+	const std::vector<vertex_t>& cycle,  ///< the cycle we are exploring
+	size_t idx_curr,                   ///< current vertex
+	const graph_t& g
+)
+{
+	assert( cycle.size() > 2 );
+	vertex_t start = g[0];
+	vertex_t curr  = g[idx_curr];
+	vertex_t next  = g[idx_curr==cycle.size()-1 ? 0 : idx_curr+1];
+
+	for(                                             // iterate over edges
+		auto it_pair = boost::out_edges( curr, g );  // of current vertex
+		it_pair.first != it_pair.second;
+		++it_pair.first
+	)
+	{
+		if( idx_curr > 1 )
+			if( *it_pair.first == start )   // if we meet the initial vertex
+				return true;                // then, it is indeed a cycle!
+
+		if( *it_pair.first == next )        // if we meet the next node, then
+		{                                   // we continue to iterate
+			bool b = checkNextNode( cycle, ++idx_curr, g );
+			if( !b )                        // stop condition
+				return false;
+		}
+	}
+	return false;
+}
+
+/// WIP Returns true if \c cycle is truely a cycle in graph \c g
 /**
 This function is only there for checking purposes
 */
@@ -1220,14 +1258,38 @@ bool
 isACycle( const std::vector<vertex_t>& cycle, const graph_t& g )
 {
 	PRINT_FUNCTION;
+
 	bool res = true;
 
-// TODO
-	for( auto v: cycle )
+	return checkNextNode( cycle, 0, g );
+
+/*	auto nb = cycle.size();
+	for( auto i=0; i<nb; i++ )
 	{
+		if( boost::num_edges(v) < 2 )      // if vertex has less than
+			return false;                  // 2 edges, then it cannot be part of a cycle
+
+		auto idx_curr = cycle[i];
+		auto idx_next = cycle[i==nb-1 ? 0    : i+1];
+		auto idx_prev = cycle[i==0    ? nb-1 : i-1];
+
+		vertex_t v_curr = g[idx_curr];
+		vertex_t v_next = g[idx_next];
+		vertex_t v_prev = g[idx_prev];
+
+		auto it_pair = boost::out_edges( v, g );
+
+		for( ; it_pair.first != it_pair.second; ++it_pair.first )  // iterate over edges
+		{
+
+		}
+
+
+
 //boost::source( edge, g ) << "-" << boost::target( edge, g );
 	}
 	return res;
+*/
 }
 
 /// Returns true if all cycles in \c v_in are truely cycles in graph \c g
