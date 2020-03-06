@@ -1,11 +1,13 @@
-// Copyright Sebastien Kramm 2016-2017
+// Copyright Sebastien Kramm 2016-2020
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
 /**
 \file read_graph.cpp
-\brief read a graph in simple text format and searches for cycles
+\brief read a graph in simple text format, searches for cycles, and make sure these are correct
+
+Also generates a .dot file that can be graphically rendered with Graphviz
 */
 
 #include <iostream>
@@ -39,9 +41,9 @@ int main( int argc, const char** argv )
 		return 1;
 	}
 	graph_t g = LoadGraph<graph_t>( argv[1] );
+
 	auto vs1 = split_string( argv[1], '/' );      // splits by '/', and keep the last one (filename)
 	auto vs2 = split_string( vs1.back(), '.' );     // splits by the point (if any)
-
 	RenderGraph( g, vs2[0] );
 
 	bool noProcess(false);

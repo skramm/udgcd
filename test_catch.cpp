@@ -37,10 +37,40 @@ ProcessTest( std::vector<size_t>& cycle, size_t nbVertices )
 }
 
 //-------------------------------------------------------------------------------------------
+TEST_CASE( "test clean cycle", "[test3]" )
+{
+	{
+		std::vector<size_t> in{1,2,3,1};
+		std::vector<size_t> out{1,2,3};
+		auto newcy = udgcd::priv::findTrueCycle( in );
+		REQUIRE( newcy == out );
+	}
+	{
+		std::vector<size_t> in{1,2,3,1,2,3};
+		std::vector<size_t> out{1,2,3};
+		auto newcy = udgcd::priv::findTrueCycle( in );
+		REQUIRE( newcy == out );
+	}
+	{
+		std::vector<size_t> in{1,2,3,1,5,6,7};
+		std::vector<size_t> out{1,2,3};
+		auto newcy = udgcd::priv::findTrueCycle( in );
+		REQUIRE( newcy == out );
+	}
+	{
+		std::vector<size_t> in{6,7,8,9,1,6,0,2};
+		std::vector<size_t> out{1,6,7,8,9};
+		auto newcy = udgcd::priv::findTrueCycle( in );
+		REQUIRE( newcy == out );
+	}
+}
+
+//-------------------------------------------------------------------------------------------
 TEST_CASE( "test 1", "[test1]" )
 {
 	{
 		std::vector<size_t> cycle{1,2,3,4};
+
 		udgcd::PrintVector( std::cout, cycle ); //, "1: cycle" );
 
 		ProcessTest( cycle, 5 );
@@ -60,7 +90,6 @@ TEST_CASE( "test 1", "[test1]" )
 		ProcessTest( cycle, 20 );
 	}
 }
-
 //-------------------------------------------------------------------------------------------
 std::vector<udgcd::priv::BinaryPath>
 buildBinMat( const std::vector<std::string>& m )

@@ -1,4 +1,4 @@
-// Copyright Sebastien Kramm, 2016-2017
+// Copyright Sebastien Kramm 2016-2020
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -120,7 +120,7 @@ template<typename T>
 void
 printBitMatrix( std::ostream& f, const T& mat, std::string msg )
 {
-	f << "Matrix " << msg << "\n";
+	f << "Matrix " << msg << ", nbLines=" << mat.size() << "\n";
     for( auto line: mat )
     {
 		f << " | ";
@@ -313,12 +313,12 @@ GetSortedTrimmed( const std::vector<T>& v_in )
 /// Removes the parts that are not part of the cycle.
 /**
 Example:
-in: 1-2-3-4-5-3
-out: 3-4-5
+- in: 1-2-3-4-5-3
+- out: 3-4-5
 */
 template<typename T>
 std::vector<T>
-FindTrueCycle( const std::vector<T>& cycle )
+findTrueCycle( const std::vector<T>& cycle )
 {
 	PRINT_FUNCTION;
 //	COUT << "in: "; PrintVector( std::cout, cycle );
@@ -356,13 +356,11 @@ FindTrueCycle( const std::vector<T>& cycle )
 	return out;
 }
 //-------------------------------------------------------------------------------------------
-/// Private, don't use.
+/// Removes for each cycle the parts that are not part of the cycle.
 /**
-Removes for each cycle the parts that are not part of the cycle.
-
 Example:
-in: 1-2-3-4-5-3
-out: 3-4-5
+- in: 1-2-3-4-5-3
+- out: 3-4-5
 */
 template<typename T>
 std::vector<std::vector<T>>
@@ -376,7 +374,7 @@ cleanCycles( const std::vector<std::vector<T>>& v_cycles )
 
 	for( const auto& cycle: v_cycles )
 	{
-		auto newcy = FindTrueCycle( cycle );
+		auto newcy = findTrueCycle( cycle );
 		if( std::find( std::begin(out), std::end(out), newcy ) == std::end(out) )     // add to output vector only if not already present
 			out.push_back( newcy );
 	}
@@ -797,18 +795,17 @@ gaussianElim( const std::vector<BinaryPath>& mat )
 	std::vector<bool> tag(nb_rows,false);
 	do
 	{
-//		std::cout << "\n* start iter " << ++c << ", current col=" << col
-//			<< " #tagged lines = " << std::count( tag.begin(),tag.end(), true )
-//			<< "\n";
+		std::cout << "\n* start iter " << ++c << ", current col=" << col
+			<< " #tagged lines = " << std::count( tag.begin(),tag.end(), true ) << "\n";
 
 		bool found = false;
 		for( size_t row=0; row<nb_rows; row++ )                // search for first row with a 1 in current column
 		{
-//			std::cout << "considering line " << row << "\n";
+			std::cout << "considering line " << row << "\n";
 			if( tag[row] == false && m_in[row][col] == 1 )    // AND not tagged
 			{
 				found = true;
-//				std::cout << "row: " << row << ": found 1 in col " << col << "\n";
+				std::cout << "row: " << row << ": found 1 in col " << col << "\n";
 				m_out.push_back( m_in.at(row) );
 				tag[row] = true;
 				if( row < nb_rows-1 )
@@ -823,33 +820,30 @@ gaussianElim( const std::vector<BinaryPath>& mat )
 							}
 					}
 				}
-//				std::cout << "BREAK loop\n";
+				std::cout << "BREAK loop\n";
 				break;
 			}
 		}
 		if( !found )
 		{
-//			std::cout << "no row with 1 in col " << col << ", done!\n";
-			done = true;
+			std::cout << "no row with 1 in col " << col << ", done!\n";
+//			done = true;
 		}
-		else
+		std::cout << "switch to next col\n";
+		col++;
+		if( col == nb_cols )
 		{
-//			std::cout << "switch to next col\n";
-			col++;
-			if( col == nb_cols )
-			{
-//				std::cout << "All columns done, end\n";
-				done = true;
-			}
+			std::cout << "All columns done, end\n";
+			done = true;
 		}
 		if( std::find(tag.begin(),tag.end(), false ) == tag.end() )
 		{
-//			std::cout << "All lines tagged, end\n";
+			std::cout << "All lines tagged, end\n";
 			done = true;
 		}
 
-//		printBitMatrix( std::cout, m_in, "m_in" );
-//		printBitMatrix( std::cout, m_out, "m_out" );
+		printBitMatrix( std::cout, m_in, "m_in" );
+		printBitMatrix( std::cout, m_out, "m_out" );
 	}
 	while( !done );
 	return m_out;
@@ -964,26 +958,41 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 }
 
 //-------------------------------------------------------------------------------------------
-/// Post-process step: removes paths (cycles) based on Gaussian Elimination
+/// Post-process step: removes cycles based on Gaussian Elimination
 /**
 arg is not const, because it gets sorted here.
 */
 template<typename vertex_t, typename graph_t>
 std::vector<std::vector<vertex_t>>
-RemoveRedundant3( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
+removeRedundant3( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 {
 	PRINT_FUNCTION;
 
-/// IMPORTANT: the code below assumes we have at least 3 cycles, so lets exit right away if not !
+// IMPORTANT: the code below assumes we have at least 3 cycles, so lets exit right away if not !
 	if( v_in.size() < 3 )
 		return v_in;
 
 	std::vector<std::vector<vertex_t>> v_out;
 	v_out.reserve( v_in.size() ); // to avoid unnecessary memory reallocations and copies
 
-	std::vector<BinaryPath> gaussianElim( v_binvect );
+// build for each cycle its associated binary vector
+	std::vector<BinaryPath> v_binvect( v_in.size() );  // one binary vector per cycle
+	BuildBinaryVectors( v_in, v_binvect, boost::num_vertices(g) );
+	printBitMatrix( std::cout, v_binvect, "removeRedundant3(): input binary matrix" );
 
+	std::vector<BinaryPath> v_bpaths = gaussianElim( v_binvect );
 
+	printBitMatrix( std::cout, v_bpaths, "removeRedundant3(): output binary matrix" );
+
+// convert back binary cycles to vertex-based cycles, using a reverse map
+	size_t nb_vertices = boost::num_vertices(g);
+
+	auto rev_map = BuildReverseBinaryMap( nb_vertices );
+	for( auto bcycle: v_bpaths )
+	{
+		auto cycle = ConvertBC2VC<vertex_t>( bcycle, nb_vertices, rev_map );
+		v_out.push_back( cycle );
+	}
 	return v_out;
 }
 //-------------------------------------------------------------------------------------------
@@ -1140,12 +1149,14 @@ FindCycles( graph_t& g )
 	PrintPaths( std::cout, v_cycles0, "After cleanCycles()" );
 #endif
 
-size_t nbVertices = boost::num_vertices(g);
+//size_t nbVertices = boost::num_vertices(g);
 //size_t nbCombinations = nbVertices * (nbVertices-1) / 2;
 
+/*
 std::vector<priv::BinaryPath> v_binvect( v_cycles0.size() );
 priv::BuildBinaryVectors( v_cycles0, v_binvect, nbVertices );
 priv::PrintBitVectors( std::cout, v_binvect );
+*/
 
 // post process 1: remove the paths that are identical but reversed
 /*	std::vector<std::vector<vertex_t>> v_cycles2 = RemoveOppositePairs( v_cycles0 );
@@ -1163,21 +1174,21 @@ priv::PrintBitVectors( std::cout, v_binvect );
 */
 
 // post process 3: remove non-chordless cycles
-	std::vector<std::vector<vertex_t>> v_cycles4 = priv::RemoveNonChordless( v_cycles0, g );
-	PRINT_DIFF( "STEP 3", v_cycles4, v_cycles0 );
+//	std::vector<std::vector<vertex_t>> v_cycles4 = priv::RemoveNonChordless( v_cycles0, g );
+//	PRINT_DIFF( "STEP 3", v_cycles4, v_cycles0 );
 #ifdef UDGCD_PRINT_STEPS
-	PrintPaths( std::cout, v_cycles4, "After removal of non-chordless cycles" );
+//	PrintPaths( std::cout, v_cycles4, "After removal of non-chordless cycles" );
 #endif
 
 //std::vector<std::vector<vertex_t>> v_cycles5;
 //size_t diff = 0;
 //do {
 // post process 4:
-	std::vector<std::vector<vertex_t>> v_cycles5 = priv::RemoveRedundant2( v_cycles4, g );
+//	std::vector<std::vector<vertex_t>> v_cycles5 = priv::RemoveRedundant2( v_cycles4, g );
 //	v_cycles5 = RemoveRedundant2( v_cycles4, g );
-	PRINT_DIFF( "STEP 4", v_cycles5, v_cycles4 );
+//	PRINT_DIFF( "STEP 4", v_cycles5, v_cycles4 );
 #ifdef UDGCD_PRINT_STEPS
-	PrintPaths( std::cout, v_cycles5, "After removal of composed cycles" );
+//	PrintPaths( std::cout, v_cycles5, "After removal of composed cycles" );
 #endif
 //	diff = v_cycles4.size() - v_cycles5.size();
 //	v_cycles4 = v_cycles5;
@@ -1191,11 +1202,63 @@ priv::PrintBitVectors( std::cout, v_binvect );
 #endif
 
 
+	auto v_cycles5 = priv::removeRedundant3( v_cycles0, g );
+#ifdef UDGCD_PRINT_STEPS
+	PrintPaths( std::cout, v_cycles5, "After removeRedundant3()" );
+#endif
 
 	return v_cycles5;
 }
 //-------------------------------------------------------------------------------------------
+namespace priv {
+/// Returns true if \c cycle is truely a cycle in graph \c g
+/**
+This function is only there for checking purposes
+*/
+template<typename vertex_t, typename graph_t>
+bool
+isACycle( const std::vector<vertex_t>& cycle, const graph_t& g )
+{
+	PRINT_FUNCTION;
+	bool res = true;
 
-} // namespace end
+// TODO
+	for( auto v: cycle )
+	{
+//boost::source( edge, g ) << "-" << boost::target( edge, g );
+	}
+	return res;
+}
+
+/// Returns true if all cycles in \c v_in are truely cycles in graph \c g
+/**
+This function is only there for checking purposes
+*/
+template<typename vertex_t, typename graph_t>
+bool
+checkCycles( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
+{
+	PRINT_FUNCTION;
+	bool res = true;
+	for( auto cycle: v_in )
+	{
+#if 0
+		res = res & isACycle( cycle, g );
+#else
+		bool b = isACycle( cycle, g );
+		if( !b )
+		{
+			std::cout << "Error, computed cycle not a cycle:\n";
+			PrintVector( std::cout, cycle );
+		}
+		res = res & b;
+#endif
+	}
+	return res;
+}
+} // namespace priv end
+//-------------------------------------------------------------------------------------------
+
+} // udgcd namespace end
 
 #endif // HG_UDGCD_HPP
