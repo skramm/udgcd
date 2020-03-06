@@ -344,7 +344,8 @@ FindTrueCycle( const std::vector<T>& cycle )
 			}
 		}
 	}
-	PutSmallestElemFirst( out );
+	PutSmallestElemFirst( out );   // if we have 4-3-2-1, then transform into 1-4-3-2
+
 	if( out.back() < out[1] )                     // if we have 1-4-3-2, then
 	{
 		std::reverse( out.begin(), out.end() );   // we transform it into 2-3-4-1
@@ -613,7 +614,7 @@ BuildBinaryIndexMap( size_t nbVertices )
 	return idx_map;
 }
 //-------------------------------------------------------------------------------------------
-/// builds all the binary vectors for all the cycles
+/// Builds all the binary vectors for all the cycles
 template<typename vertex_t>
 void
 BuildBinaryVectors(
@@ -679,7 +680,7 @@ BuildReverseBinaryMap( size_t nb_vertices )
 	return out;
 }
 //-------------------------------------------------------------------------------------------
-/// convert, for a given graph, a Binary Cycle (BC) \c v_in to a Vertex Cycle (VC) (TODO)
+/// Convert, for a given graph, a Binary Cycle (BC) \c v_in to a Vertex Cycle (VC)
 /**
 Algorithm:
 -using rev_map, that gives for a given index in the binary vector the two corresponding vertices
@@ -696,7 +697,7 @@ FOR each element in BV with value 1:
 
 * step 2: parse the map, and add the vertices to the output vector
 
-\todo: the downside of this approach is that we need to build before the \c rev_map, that can be pretty big...
+\todo The downside of this approach is that we need to build before the \c rev_map, that can be pretty big...
 Maybe we can find a better way ?
 */
 template<typename vertex_t>
@@ -774,6 +775,8 @@ ConvertBC2VC(
 /// TEMP: WIP Gaussian binary elimination
 /**
 Input: a binary matrix
+output: a reduced matrix
+
 - assumes no identical rows
 */
 std::vector<BinaryPath>
@@ -789,55 +792,66 @@ gaussianElim( const std::vector<BinaryPath>& mat )
 	size_t c=0;
 	bool done = false;
 
-	printBitMatrix( std::cout, m_in, "m_in INITIAL" );
+//	printBitMatrix( std::cout, m_in, "m_in INITIAL" );
 
+	std::vector<bool> tag(nb_rows,false);
 	do
 	{
-		std::cout << "\n* start iter " << ++c << ", current col=" << col << "\n";
+//		std::cout << "\n* start iter " << ++c << ", current col=" << col
+//			<< " #tagged lines = " << std::count( tag.begin(),tag.end(), true )
+//			<< "\n";
 
-		bool found = false;                      // search for first row with a 1 in current column
-		for( size_t row=0; m_in.size(); row++ )
+		bool found = false;
+		for( size_t row=0; row<nb_rows; row++ )                // search for first row with a 1 in current column
 		{
-			std::cout << "considering line " << row << "\n";
-			if( m_in[row][col] == 1 )
+//			std::cout << "considering line " << row << "\n";
+			if( tag[row] == false && m_in[row][col] == 1 )    // AND not tagged
 			{
 				found = true;
-				std::cout << "row: " << row << ": found 1 in col " << col << "\n";
+//				std::cout << "row: " << row << ": found 1 in col " << col << "\n";
 				m_out.push_back( m_in.at(row) );
-
-
-				if( row < nb_rows-1 )                        // search for all following rows that have a 1 in that column
+				tag[row] = true;
+				if( row < nb_rows-1 )
 				{
-					for( size_t i=row+1; i<nb_rows; i++ )
+					for( size_t i=row+1; i<nb_rows; i++ )      // search for all following rows that have a 1 in that column
 					{
-						if( m_in[i][col] == 1 )             // it there is, we XOR them with initial line
-						{
-							auto res = m_in[i] ^ m_in[row];
-							m_in[i] = res;
-						}
+						if( tag[i] == false )                  // AND that are not tagged.
+							if( m_in[i][col] == 1 )            // it there is, we XOR them with initial line
+							{
+								auto res = m_in[i] ^ m_in[row];
+								m_in[i] = res;
+							}
 					}
 				}
+//				std::cout << "BREAK loop\n";
 				break;
 			}
 		}
 		if( !found )
 		{
-			std::cout << "no col with 1, done!\n";
+//			std::cout << "no row with 1 in col " << col << ", done!\n";
 			done = true;
 		}
 		else
 		{
-			std::cout << "switch to next col\n";
+//			std::cout << "switch to next col\n";
 			col++;
+			if( col == nb_cols )
+			{
+//				std::cout << "All columns done, end\n";
+				done = true;
+			}
 		}
-		if( col == nb_cols )
+		if( std::find(tag.begin(),tag.end(), false ) == tag.end() )
+		{
+//			std::cout << "All lines tagged, end\n";
 			done = true;
+		}
 
-		printBitMatrix( std::cout, m_in, "m_in" );
-		printBitMatrix( std::cout, m_out, "m_out" );
+//		printBitMatrix( std::cout, m_in, "m_in" );
+//		printBitMatrix( std::cout, m_out, "m_out" );
 	}
 	while( !done );
-	std::cout << "Done!\n\n";
 	return m_out;
 }
 //-------------------------------------------------------------------------------------------
@@ -873,9 +887,6 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 	size_t nb_vertices = boost::num_vertices(g);
 	BuildBinaryVectors( v_in, v_binvect, boost::num_vertices(g) );
 
-#if 0
-	std::vector<BinaryPath> gaussianElim( v_binvect );
-#else
 	auto rev_map = BuildReverseBinaryMap( nb_vertices );
 
 #ifdef UDGCD_DEV_MODE
@@ -948,11 +959,34 @@ RemoveRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 		else
 			COUT << "=" << v_removals[i] << " : remove\n";
 	}
-#endif
 
 	return v_out;
 }
 
+//-------------------------------------------------------------------------------------------
+/// Post-process step: removes paths (cycles) based on Gaussian Elimination
+/**
+arg is not const, because it gets sorted here.
+*/
+template<typename vertex_t, typename graph_t>
+std::vector<std::vector<vertex_t>>
+RemoveRedundant3( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
+{
+	PRINT_FUNCTION;
+
+/// IMPORTANT: the code below assumes we have at least 3 cycles, so lets exit right away if not !
+	if( v_in.size() < 3 )
+		return v_in;
+
+	std::vector<std::vector<vertex_t>> v_out;
+	v_out.reserve( v_in.size() ); // to avoid unnecessary memory reallocations and copies
+
+	std::vector<BinaryPath> gaussianElim( v_binvect );
+
+
+	return v_out;
+}
+//-------------------------------------------------------------------------------------------
 } // namespace priv
 
 //-------------------------------------------------------------------------------------------

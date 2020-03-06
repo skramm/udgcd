@@ -1,4 +1,3 @@
-
 /**
 \file test_catch.cpp
 \brief test file, needs the Catch framework
@@ -63,35 +62,50 @@ TEST_CASE( "test 1", "[test1]" )
 }
 
 //-------------------------------------------------------------------------------------------
-TEST_CASE( "test 2", "[test2]" )
+std::vector<udgcd::priv::BinaryPath>
+buildBinMat( const std::vector<std::string>& m )
 {
-//	int nbVertices = 4;
-//	auto nbCombinations = nbVertices * (nbVertices-1) / 2;
-
-    std::vector<udgcd::priv::BinaryPath> m_in;
+	std::vector<udgcd::priv::BinaryPath> out;
+	for( auto s: m )
 	{
-		udgcd::priv::BinaryPath bp(std::string("1100"));
-		m_in.push_back(bp);
+		udgcd::priv::BinaryPath bp(s);
+		out.push_back(bp);
+	}
+	return out;
+}
+//-------------------------------------------------------------------------------------------
+TEST_CASE( "test GaussianElimination", "[test2]" )
+{
+	{
+		std::vector<std::string> m1{
+			"1100",
+			"1101",
+			"1001",
+			"1111"
+		};
+		std::vector<udgcd::priv::BinaryPath> m_in= buildBinMat( m1 );
+
+		udgcd::priv::printBitMatrix( std::cout, m_in, "m_in" );
+		auto out = udgcd::priv::gaussianElim( m_in );
+		udgcd::priv::printBitMatrix( std::cout, out, "out" );
+
 	}
 	{
-		udgcd::priv::BinaryPath bp(std::string("1101"));
-		m_in.push_back(bp);
+		std::vector<std::string> m1{
+			"1100",
+			"0110",
+			"1010",
+			"0101",
+			"0011",
+			"1001"
+		};
+		std::vector<udgcd::priv::BinaryPath> m_in= buildBinMat( m1 );
+
+		udgcd::priv::printBitMatrix( std::cout, m_in, "m_in" );
+		auto out = udgcd::priv::gaussianElim( m_in );
+		udgcd::priv::printBitMatrix( std::cout, out, "out" );
+
 	}
-	{
-		udgcd::priv::BinaryPath bp(std::string("1001"));
-		m_in.push_back(bp);
-	}
-	{
-		udgcd::priv::BinaryPath bp(std::string("1111"));
-		m_in.push_back(bp);
-	}
-
-	udgcd::priv::printBitMatrix( std::cout, m_in, "m_in" );
-
-
-	auto out = udgcd::priv::gaussianElim( m_in );
-	udgcd::priv::printBitMatrix( std::cout, out, "out" );
-
 }
 
 //-------------------------------------------------------------------------------------------
