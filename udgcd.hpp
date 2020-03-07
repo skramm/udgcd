@@ -690,6 +690,54 @@ buildReverseBinaryMap( size_t nb_vertices )
 	return out;
 }
 //-------------------------------------------------------------------------------------------
+#if 0
+template<typename vertex_t>
+std::pair< std::vector<vertex_t>, std::map<vertex_t,vertex_t> >
+buildMapFromBinaryVector(
+	const BinaryPath& v_in,
+	size_t            nbVertices,
+	const RevBinMap&  rev_map
+)
+{
+	assert( nbVertices>2 );
+
+	std::vector<vertex_t>       v_out;
+	std::map<vertex_t,vertex_t> vertex_map;
+
+	std::vector<vertex_t> flag( nbVertices, false );
+	bool firstone(true);
+	for( size_t i=0; i<v_in.size(); ++i )
+	{
+		if( v_in[i] == 1 )
+		{
+
+			vertex_t v1 = rev_map[i].first;
+			vertex_t v2 = rev_map[i].second;
+			if( firstone )
+			{
+				firstone = false;
+				v_out.push_back( v1 );
+				v_out.push_back( v2 );
+			}
+			assert( v1 < nbVertices );
+			assert( v2 < nbVertices );
+//				COUT << i << ": v1=" << v1 << " v2=" << v2 << " flag[v1]=" << flag.at(v1) << " flag[v2]=" << flag.at(v2) << "\n";
+
+			if( !flag.at(v1) )
+				flag.at(v1) = true;
+			else
+				vertex_map[v1] = v2;
+
+			if( !flag.at(v2) )
+				flag.at(v2) = true;
+			else
+				vertex_map[v2] = v1;
+		}
+	}
+	return std::make_pair<v_out,vertex_map>;
+}
+#endif
+//-------------------------------------------------------------------------------------------
 /// Convert, for a given graph, a Binary Cycle (BC) \c v_in to a Vertex Cycle (VC)
 /**
 Algorithm:
@@ -710,7 +758,7 @@ FOR each element in BV with value 1:
 \todo The downside of this approach is that we need to build before the \c rev_map, that can be pretty big...
 Maybe we can find a better way ?
 
-\bug 2020-03-07: Seems to be a bug here. See sample 61: incorrect conversion of 5th output vector:
+\bug 2020-03-07: Seems to be a bug here. See sample 61: incorrect conversion of 4th output vector:
 has a 1 in 5 positions
 \verbatim
 15: 2-5
@@ -730,24 +778,26 @@ convertBC2VC(
 	const RevBinMap&  rev_map       ///< required map, has to be build before, see buildReverseBinaryMap()
 )
 {
+	assert( nbVertices>2 );
 	assert( v_in.size() == nbVertices * (nbVertices-1) / 2 );
 	assert( v_in.size() == rev_map.size() );
 
-//	PRINT_FUNCTION;
-//	PrintBitVector( std::cout, v_in );
+	PRINT_FUNCTION;
+	printBitVector( std::cout, v_in );
 
-	std::vector<vertex_t> v_out;
-	std::vector<vertex_t> flag( nbVertices, false );
-	std::map<vertex_t,vertex_t> vertex_map;
 
 // step 1: build map from binary vector
+
+	std::vector<vertex_t>       v_out;
+	std::map<vertex_t,vertex_t> vertex_map;
 	{
+		std::vector<vertex_t> flag( nbVertices, false );
 		bool firstone(true);
 		for( size_t i=0; i<v_in.size(); ++i )
 		{
+			COUT << "* i=" << i << '\n';
 			if( v_in[i] == 1 )
 			{
-
 				vertex_t v1 = rev_map[i].first;
 				vertex_t v2 = rev_map[i].second;
 				if( firstone )
@@ -755,10 +805,11 @@ convertBC2VC(
 					firstone = false;
 					v_out.push_back( v1 );
 					v_out.push_back( v2 );
+					COUT << "ADDING " << v1 << " and " << v2 << "\n";
 				}
 				assert( v1 < nbVertices );
 				assert( v2 < nbVertices );
-//				COUT << i << ": v1=" << v1 << " v2=" << v2 << " flag[v1]=" << flag.at(v1) << " flag[v2]=" << flag.at(v2) << "\n";
+					COUT << i << ": v1=" << v1 << " v2=" << v2 << " flag[v1]=" << flag.at(v1) << " flag[v2]=" << flag.at(v2) << "\n";
 
 				if( !flag.at(v1) )
 					flag.at(v1) = true;
@@ -769,11 +820,17 @@ convertBC2VC(
 					flag.at(v2) = true;
 				else
 					vertex_map[v2] = v1;
+				COUT << i << ": v1=" << v1 << " v2=" << v2 << " flag[v1]=" << flag.at(v1) << " flag[v2]=" << flag.at(v2)
+				<< " vertex_map[v1]=" << vertex_map[v1] << " vertex_map[v2]=" << vertex_map[v2]
+				<< "\n";
+
 			}
 		}
 	}
-#if 0
-	COUT << "v_out: " << v_out[0] << "-" << v_out[1] << "\n";
+
+
+#if 1
+	COUT << "AFTER STEP 1\nv_out: size=" << v_out.size() << " 0:" << v_out[0] << " 1:" << v_out[1] << "\n";
 	COUT << "VERTEX MAP:\n";
 	for( const auto& vp: vertex_map )
 		COUT << vp.first << "-" << vp.second << "\n";
@@ -783,14 +840,16 @@ convertBC2VC(
 //	COUT << "step2:\n";
 	vertex_t current = v_out[1];
 	auto nbOnes = v_in.count()-2;
+	COUT << "nbOnes=" << nbOnes << '\n';
 	do
 	{
 		v_out.push_back( vertex_map[current] );
-//		COUT << "ADDING " << vertex_map[current] << "\n";
+		COUT << "ADDING " << vertex_map[current] << "\n";
 		current = vertex_map[current];
 	}
 	while( --nbOnes );
 
+	PrintVector( std::cout, v_out );
 	return v_out;
 }
 //-------------------------------------------------------------------------------------------
