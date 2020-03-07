@@ -37,6 +37,85 @@ ProcessTest( std::vector<size_t>& cycle, size_t nbVertices )
 }
 
 //-------------------------------------------------------------------------------------------
+TEST_CASE( "test isACycle", "[test4]" )
+{
+	typedef boost::adjacency_list<
+		boost::vecS,
+		boost::vecS,
+		boost::undirectedS
+	> graph_t;
+
+	{
+		graph_t g( 5 );
+
+		add_edge(0, 1, g);   //   0--1---2
+		add_edge(1, 2, g);   //       \  |
+		add_edge(2, 3, g);   //        \ |
+		add_edge(3, 4, g);   //          3--4
+		add_edge(3, 1, g);   //
+
+		{
+			std::vector<size_t> in1{1,2,3};
+			REQUIRE( udgcd::priv::isACycle( in1, g ) );
+			std::vector<size_t> in2{2,3,1};
+			REQUIRE( udgcd::priv::isACycle( in2, g ) );
+			std::vector<size_t> in3{3,1,2};
+			REQUIRE( udgcd::priv::isACycle( in3, g ) );
+		}
+		{
+			std::vector<size_t> in{2,3,4};
+			REQUIRE( !udgcd::priv::isACycle( in, g ) );
+		}
+		{
+			std::vector<size_t> in{2,4,0};
+			REQUIRE( !udgcd::priv::isACycle( in, g ) );
+		}
+		{
+			std::vector<size_t> in{1,2,3,4};
+			REQUIRE( !udgcd::priv::isACycle( in, g ) );
+		}
+		{
+			std::vector<size_t> in{0,1,2,3,4};
+			REQUIRE( !udgcd::priv::isACycle( in, g ) );
+		}
+	}
+	{
+		graph_t g( 5 );
+
+		add_edge(0, 1, g);   //   0--1---2
+		add_edge(1, 2, g);   //      |   |
+		add_edge(2, 3, g);   //      |   |
+		add_edge(3, 4, g);   //      4---3
+		add_edge(4, 1, g);   //
+
+		{
+			std::vector<size_t> in1{1,2,3};
+			REQUIRE( !udgcd::priv::isACycle( in1, g ) );
+			std::vector<size_t> in2{2,3,1};
+			REQUIRE( !udgcd::priv::isACycle( in2, g ) );
+			std::vector<size_t> in3{3,1,2};
+			REQUIRE( !udgcd::priv::isACycle( in3, g ) );
+		}
+		{
+			std::vector<size_t> in{2,3,4};
+			REQUIRE( !udgcd::priv::isACycle( in, g ) );
+		}
+		{
+			std::vector<size_t> in{2,4,0};
+			REQUIRE( !udgcd::priv::isACycle( in, g ) );
+		}
+		{
+			std::vector<size_t> in{1,2,3,4};
+			REQUIRE( udgcd::priv::isACycle( in, g ) );
+		}
+		{
+			std::vector<size_t> in{0,1,2,3,4};
+			REQUIRE( !udgcd::priv::isACycle( in, g ) );
+		}
+	}
+
+}
+//-------------------------------------------------------------------------------------------
 TEST_CASE( "test clean cycle", "[test3]" )
 {
 	{

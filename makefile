@@ -156,3 +156,6 @@ bin/test_catch: obj/test_catch.o
 test: bin/test_catch
 	bin/test_catch -s
 
+test4: bin/test_catch
+	bin/test_catch [test4] -s
+
