@@ -23,15 +23,15 @@ ProcessTest( std::vector<size_t>& cycle, size_t nbVertices )
 
 	auto nbCombinations = nbVertices * (nbVertices-1) / 2;
 	udgcd::priv::BinaryPath bpa( nbCombinations );
-	udgcd::priv::BuildBinaryVector( cycle, bpa, bim );
+	udgcd::priv::buildBinaryVector( cycle, bpa, bim );
 
 //	std::cout << "binary vector:"
 //	udgcd::priv::PrintBitVector( std::cout, bpa );
 
-	auto rev_map = udgcd::priv::BuildReverseBinaryMap( nbVertices );
+	auto rev_map = udgcd::priv::buildReverseBinaryMap( nbVertices );
 	REQUIRE( rev_map.size() == nbCombinations );
 
-	auto cycle2 = udgcd::priv::ConvertBC2VC<size_t>( bpa, nbVertices, rev_map );
+	auto cycle2 = udgcd::priv::convertBC2VC<size_t>( bpa, nbVertices, rev_map );
 	REQUIRE( cycle == cycle2 );
 
 }

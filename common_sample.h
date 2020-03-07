@@ -223,14 +223,18 @@ LoadGraph( const char* fname )
 	return g;
 }
 //-------------------------------------------------------------------
-/// Process the graph to find cycles
-/// This function is called by the two apps
+/// Process the graph \c g to find cycles
+/// This function is called by the two apps: random_test.cpp and read_graph.cpp
 /**
-Returns the number of differences between
+This function makes sure :
+- that the correct number of cycles are found
+- that the computed cycles are correct.
+
+It will return 0 in case of success, -1 if incorrect cycles were found,
+and if none, the number of differences between:
 - the \b computed number of cycles
 - and the \b expected number of cycles
 
-So should be 0 if code is okay...
 */
 template<typename graph_t>
 int
@@ -246,6 +250,12 @@ Process( graph_t& g )
 		std::cout << "ERROR: computed nb of cycles is not what expected (expected=" << expected << ")\n";
 
 	std::cout << "diff=" << expected - (int)cycles.size() << "\n";
+
+	if( !udgcd::priv::checkCycles( cycles, g ) )
+	{
+		std::cout << "ERROR: incorrect cycle found\n";
+		return -1;
+	}
 
 	return (int)cycles.size() - expected;
 }
