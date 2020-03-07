@@ -18,7 +18,7 @@ https://github.com/philsquared/Catch/
 void
 ProcessTest( std::vector<size_t>& cycle, size_t nbVertices )
 {
-	auto bim = udgcd::priv::BuildBinaryIndexMap( nbVertices );
+	auto bim = udgcd::priv::buildBinaryIndexMap( nbVertices );
 	REQUIRE( bim.size() == nbVertices-1 );
 
 	auto nbCombinations = nbVertices * (nbVertices-1) / 2;
