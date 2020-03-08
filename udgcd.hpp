@@ -210,14 +210,14 @@ explore(
 			if( std::find( newv.cbegin(), newv.cend(), v2b ) != newv.cend() )
 			{
 				newv.push_back( v2b );
-				COUT << "*** FOUND CYCLE: "; PrintVector( std::cout, newv );
+//				COUT << "*** FOUND CYCLE: "; PrintVector( std::cout, newv );
 				v_cycles.push_back( newv );
 				return true;
 			}
 			else
 			{
 				newv.push_back( v2b );         // else add'em and continue
-				COUT << "  -adding vector ";  for( const auto& vv:newv )	COUT << vv << "-"; COUT << "\n";
+//				COUT << "  -adding vector ";  for( const auto& vv:newv )	COUT << vv << "-"; COUT << "\n";
 				vv_paths.push_back( newv );
 				b = explore( v2b, g, vv_paths, v_cycles, depth );
 			}
@@ -478,6 +478,7 @@ RemoveNonChordless( const std::vector<std::vector<vertex_t>>& v_in, const graph_
 #endif
 //-------------------------------------------------------------------------------------------
 /// holds two vertices, used in RemoveRedundant()
+/// \deprecated ???
 template <typename vertex_t>
 struct VertexPair
 {
@@ -507,6 +508,7 @@ struct VertexPair
 #endif
 };
 //-------------------------------------------------------------------------------------------
+#if 0
 template<typename vertex_t>
 void
 PrintSet( const std::set<VertexPair<vertex_t>>& set_edges, std::string msg )
@@ -515,56 +517,6 @@ PrintSet( const std::set<VertexPair<vertex_t>>& set_edges, std::string msg )
 	for( const auto& e: set_edges )
 		std::cout << e << '-';
 	std::cout << '\n';
-}
-//-------------------------------------------------------------------------------------------
-#if 0
-/// Post-process step: removes paths (cycles) that are redundant (i.e. that can be deduced/build from the others)
-/**
-arg is not const, because it gets sorted here.
-\bug bug here, see RemoveRedundant2
-*/
-template<typename vertex_t, typename graph_t>
-std::vector<std::vector<vertex_t>>
-RemoveRedundant( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
-{
-	PRINT_FUNCTION;
-
-	std::vector<std::vector<vertex_t>> v_out;
-	v_out.reserve( v_in.size() ); // to avoid unnecessary memory reallocations and copies
-
-	std::set<VertexPair<vertex_t>> set_edges;
-
-/// preliminary sorting by length, so we keep the shortest paths
-	std::sort(
-		std::begin(v_in),
-		std::end(v_in),
-		[]                                                                       // lambda
-		( const std::vector<vertex_t>& vv1, const std::vector<vertex_t>& vv2 )
-		{ return vv1.size() < vv2.size(); }
-	);
-	PrintPaths( std::cout, v_in, "After sorting" );
-
-/// enumerate the cycles and store each edge in set. Add cycle to output only if new edge detected
-    for( const auto& cycle: v_in )
-    {
-//		PrintPath( std::cout, cycle );
-//		PrintSet( set_edges, "start" );
-		bool newEdgeFound(false);
-		for( size_t i=0; i<cycle.size(); ++i )
-		{
-			VertexPair<vertex_t> vp( (i==0?cycle[cycle.size()-1]:cycle[i-1]), cycle[i] );
-			auto rv = set_edges.insert( vp );
-			if( rv.second == true )  // if insertion took place, it means the edge wasn't already there
-				newEdgeFound = true;
-//			std::cout << "i=" << i << " vp=" << vp << " found=" << newEdgeFound << '\n';
-		}
-		if( newEdgeFound )
-		{
-//			std::cout << " => Adding current cycle to output vector\n";
-			v_out.push_back( cycle );
-		}
-	}
-	return v_out;
 }
 #endif
 //-------------------------------------------------------------------------------------------
@@ -627,9 +579,10 @@ buildBinaryIndexMap( size_t nbVertices )
 template<typename vertex_t>
 void
 buildBinaryVectors(
-	const std::vector<std::vector<vertex_t>>& v_cycles,       ///< input cycles
-	std::vector<BinaryPath>&                  v_binvect,      ///< output vector of binary vectors
-	size_t                                    nbVertices )    ///< nb of vertices of the graph
+	const std::vector<std::vector<vertex_t>>& v_cycles,     ///< input cycles
+	std::vector<BinaryPath>&                  v_binvect,    ///< output vector of binary vectors
+	size_t                                    nbVertices    ///< nb of vertices of the graph
+)
 {
 	PRINT_FUNCTION;
 	assert( v_cycles.size() == v_binvect.size() );
@@ -638,7 +591,7 @@ buildBinaryVectors(
 //	std::cout << "nbCombinations=" << nbCombinations << '\n';
 
 	std::vector<size_t> idx_map = buildBinaryIndexMap( nbVertices );
-	std::cout << "idx_map: "; PrintVector( std::cout, idx_map );
+//	COUT << "idx_map: "; PrintVector( std::cout, idx_map );
 
     for( auto& binvect: v_binvect )
 		binvect.resize( nbCombinations );
@@ -698,8 +651,6 @@ buildReverseBinaryMap( size_t nb_vertices )
 /**
 The idea here is to avoid doing an extensive search each time to see if node is already present, witch
 can be costly for large cycles
-
-\bug bug here, see caller
 */
 template<typename vertex_t>
 std::vector<std::pair<vertex_t,vertex_t>>
@@ -732,18 +683,6 @@ Algorithm:
 
 \todo The downside of this approach is that we need to build before the \c rev_map, that can be pretty big...
 Maybe we can find a better way ?
-
-\bug 2020-03-07: Seems to be a bug here. See sample 61: incorrect conversion of 4th output vector:
-has a 1 in 5 positions
-\verbatim
-15: 2-5
-16: 2-6
-18: 3-4
-20: 3-6
-22: 4-5
-\endverbatim
-Thus should produce cycle: 2-5-4-3-6
-instead, produces: 2-5-4-5-4
 */
 template<typename vertex_t>
 std::vector<vertex_t>
@@ -755,17 +694,16 @@ convertBC2VC(
 	assert( v_in.size() == rev_map.size() );
 
 	PRINT_FUNCTION;
-	printBitVector( std::cout, v_in );
+//	printBitVector( std::cout, v_in );
 
 // step 1: build map from binary vector
 	auto v_pvertex = buildMapFromBinaryVector<vertex_t>( v_in, rev_map );
 
-#if 1
-//	COUT << "AFTER STEP 1\nv_out: size=" << v_out.size() << " 0:" << v_out[0] << " 1:" << v_out[1] << "\n";
+#if 0
 	COUT << "VERTEX MAP:\n";
-	size_t iter = 0;
+	size_t i = 0;
 	for( const auto& vp: v_pvertex )
-		COUT << iter++ << ":" << vp.first << "-" << vp.second << "\n";
+		COUT << i++ << ":" << vp.first << "-" << vp.second << "\n";
 #endif
 
 // step 2: extract vertices from map
@@ -784,14 +722,14 @@ convertBC2VC(
 		{
 			if( i != curr_idx )
 			{
-				COUT << " start "<< i << '\n';
+				COUT << " start "<< i << "/" << v_pvertex.size()-1 << '\n';
 				auto p = v_pvertex[i];
 				if( curr_v == p.first )
 				{
 					v_out.push_back( p.second );
-					curr_v = p.second;
+					curr_v   = p.second;
 					curr_idx = i;
-					stop = true;
+					stop     = true;
 					COUT << i << ": found first, v_out(size)=" << v_out.size() << " curr_idx=" << curr_idx << " curr_v=" << curr_v << '\n';
 				}
 				else
@@ -799,9 +737,9 @@ convertBC2VC(
 					if( curr_v == p.second )
 					{
 						v_out.push_back( p.first );
-						curr_v = p.first;
+						curr_v   = p.first;
 						curr_idx = i;
-						stop = true;
+						stop     = true;
 						COUT << i << ": found second, v_out(size)=" << v_out.size() << " curr_idx=" << curr_idx << " curr_v=" << curr_v << '\n';
 					}
 				}
@@ -812,7 +750,9 @@ convertBC2VC(
 	}
 	while( curr_v != v_out[0] );      // while we don't cycle
 
-	PrintVector( std::cout, v_out );
+//	PrintVector( std::cout, v_out );
+	v_out.pop_back();
+//	PrintVector( std::cout, v_out );
 
 	return v_out;
 }
@@ -842,17 +782,17 @@ gaussianElim( const std::vector<BinaryPath>& mat )
 	std::vector<bool> tag(nb_rows,false);
 	do
 	{
-		std::cout << "\n* start iter " << ++c << ", current col=" << col
+		COUT << "\n* start iter " << ++c << ", current col=" << col
 			<< " #tagged lines = " << std::count( tag.begin(),tag.end(), true ) << "\n";
 
 		bool found = false;
 		for( size_t row=0; row<nb_rows; row++ )                // search for first row with a 1 in current column
 		{
-			std::cout << "considering line " << row << "\n";
+			COUT << "considering line " << row << "\n";
 			if( tag[row] == false && m_in[row][col] == 1 )    // AND not tagged
 			{
 				found = true;
-				std::cout << "row: " << row << ": found 1 in col " << col << "\n";
+				COUT << "row: " << row << ": found 1 in col " << col << "\n";
 				m_out.push_back( m_in.at(row) );
 				tag[row] = true;
 				if( row < nb_rows-1 )
@@ -867,30 +807,31 @@ gaussianElim( const std::vector<BinaryPath>& mat )
 							}
 					}
 				}
-				std::cout << "BREAK loop\n";
+				COUT << "BREAK loop\n";
 				break;
 			}
 		}
 		if( !found )
 		{
-			std::cout << "no row with 1 in col " << col << ", done!\n";
+			COUT << "no row with 1 in col " << col << ", done!\n";
 //			done = true;
 		}
-		std::cout << "switch to next col\n";
+		COUT << "switch to next col\n";
 		col++;
 		if( col == nb_cols )
 		{
-			std::cout << "All columns done, end\n";
+			COUT << "All columns done, end\n";
 			done = true;
 		}
 		if( std::find(tag.begin(),tag.end(), false ) == tag.end() )
 		{
-			std::cout << "All lines tagged, end\n";
+			COUT << "All lines tagged, end\n";
 			done = true;
 		}
-
+#ifdef UDGCD_DEV_MODE
 		printBitMatrix( std::cout, m_in, "m_in" );
 		printBitMatrix( std::cout, m_out, "m_out" );
+#endif
 	}
 	while( !done );
 	return m_out;
@@ -902,7 +843,7 @@ arg is not const, because it gets sorted here.
 */
 template<typename vertex_t, typename graph_t>
 std::vector<std::vector<vertex_t>>
-removeRedundant3( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
+removeRedundant( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 {
 	PRINT_FUNCTION;
 
@@ -916,12 +857,12 @@ removeRedundant3( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 // build for each cycle its associated binary vector
 	std::vector<BinaryPath> v_binvect( v_in.size() );  // one binary vector per cycle
 	buildBinaryVectors( v_in, v_binvect, boost::num_vertices(g) );
-	printBitMatrix( std::cout, v_binvect, "removeRedundant3(): input binary matrix" );
+//	printBitMatrix( std::cout, v_binvect, "removeRedundant(): input binary matrix" );
 
 	std::vector<BinaryPath> v_bpaths = gaussianElim( v_binvect );
 
-	printBitMatrix( std::cout, v_bpaths, "removeRedundant3(): output binary matrix" );
-	printBitVectors( std::cout, v_bpaths );
+//	printBitMatrix( std::cout, v_bpaths, "removeRedundant(): output binary matrix" );
+//	printBitVectors( std::cout, v_bpaths );
 
 // convert back binary cycles to vertex-based cycles, using a reverse map
 	size_t nb_vertices = boost::num_vertices(g);
@@ -978,6 +919,7 @@ checkNextNode(
 	return false;
 }
 
+//-------------------------------------------------------------------------------------------
 /// Returns true if \c cycle is correct
 /**
 This function is only there for checking purposes
@@ -994,31 +936,31 @@ isACycle( const std::vector<vertex_t>& cycle, const graph_t& g )
 }
 
 //-------------------------------------------------------------------------------------------
-/// Returns true if all cycles in \c v_in are makes sure
+/// Returns the number of cycles that are incorrect
 /**
 This function is only there for checking purposes
 */
 template<typename vertex_t, typename graph_t>
-bool
+size_t
 checkCycles( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 {
 	PRINT_FUNCTION;
-	bool res = true;
+	size_t c = 0;
 	for( auto cycle: v_in )
 	{
 #if 0
-		res = res & isACycle( cycle, g );
+		c += (size_t)isACycle( cycle, g );
 #else
 		bool b = isACycle( cycle, g );
 		if( !b )
 		{
 			std::cout << "Error, computed cycle not a cycle:\n";
 			PrintVector( std::cout, cycle );
+			c++;
 		}
-		res = res & b;
 #endif
 	}
-	return res;
+	return c;
 }
 //-------------------------------------------------------------------------------------------
 
@@ -1113,10 +1055,7 @@ FindCycles( graph_t& g )
 	if( !cycleDetector.cycleDetected() )             // if no detection,
 		return std::vector<std::vector<vertex_t>>(); //  return empty vector, no cycles found
 
-
 	std::vector<std::vector<vertex_t>> v_cycles;     // else, get the cycles.
-
-
 
 // search paths only starting from vertices that were registered as source vertex
 	for( const auto& vi: cycleDetector.v_source_vertex )
@@ -1144,11 +1083,11 @@ FindCycles( graph_t& g )
 	PrintPaths( std::cout, v_cycles0, "After cleanCycles()" );
 #endif
 
-if( !priv::checkCycles( v_cycles0, g ) )
-{
-	std::cout << "ERROR: INVALID CYCLE DETECTED!!!\n";
-	exit(1);
-}
+	if( 0 != priv::checkCycles( v_cycles0, g ) )
+	{
+		std::cout << "ERROR: INVALID CYCLE DETECTED!!!\n";
+		exit(1);
+	}
 
 #if 0
 // post process 1: remove the paths that are identical but reversed
@@ -1158,49 +1097,26 @@ if( !priv::checkCycles( v_cycles0, g ) )
 #endif
 #endif
 
-// post process 2: remove twin paths
-/*
-	std::vector<std::vector<vertex_t>> v_cycles3 = RemoveIdentical( v_cycles2 );
-#ifdef UDGCD_PRINT_STEPS
-	PrintPaths( std::cout, v_cycles3, "After removal of identical cycles" );
-#endif
-*/
 
+#ifdef UDGCD_REMOVE_NONCHORDLESS
 // post process 3: remove non-chordless cycles
-//	std::vector<std::vector<vertex_t>> v_cycles4 = priv::RemoveNonChordless( v_cycles0, g );
-//	PRINT_DIFF( "STEP 3", v_cycles4, v_cycles0 );
+	std::vector<std::vector<vertex_t>> v_cycles1 = RemoveNonChordless( v_cycles0, g );
+
 #ifdef UDGCD_PRINT_STEPS
-//	PrintPaths( std::cout, v_cycles4, "After removal of non-chordless cycles" );
+	PrintPaths( std::cout, v_cycles6, "After removal of non-chordless cycles" );
+#endif
+	auto v_cycles2 = priv::removeRedundant( v_cycles1, g );
+
+#else
+
+	auto v_cycles2 = priv::removeRedundant( v_cycles0, g );
+#ifdef UDGCD_PRINT_STEPS
+	PrintPaths( std::cout, v_cycles2, "After removeRedundant()" );
 #endif
 
-//std::vector<std::vector<vertex_t>> v_cycles5;
-//size_t diff = 0;
-//do {
-// post process 4:
-//	std::vector<std::vector<vertex_t>> v_cycles5 = priv::RemoveRedundant2( v_cycles4, g );
-//	v_cycles5 = RemoveRedundant2( v_cycles4, g );
-//	PRINT_DIFF( "STEP 4", v_cycles5, v_cycles4 );
-#ifdef UDGCD_PRINT_STEPS
-//	PrintPaths( std::cout, v_cycles5, "After removal of composed cycles" );
-#endif
-//	diff = v_cycles4.size() - v_cycles5.size();
-//	v_cycles4 = v_cycles5;
-//}
-//while( diff != 0 );
-
-// post process 3: remove non-chordless cycles
-//	std::vector<std::vector<vertex_t>> v_cycles6 = RemoveNonChordless( v_cycles5, g );
-#ifdef UDGCD_PRINT_STEPS
-//	PrintPaths( std::cout, v_cycles6, "After removal of non-chordless cycles" );
 #endif
 
-
-	auto v_cycles5 = priv::removeRedundant3( v_cycles0, g );
-#ifdef UDGCD_PRINT_STEPS
-	PrintPaths( std::cout, v_cycles5, "After removeRedundant3()" );
-#endif
-
-	return v_cycles5;
+	return v_cycles2;
 }
 //-------------------------------------------------------------------------------------------
 

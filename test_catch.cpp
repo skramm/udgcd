@@ -31,7 +31,7 @@ ProcessTest( std::vector<size_t>& cycle, size_t nbVertices )
 	auto rev_map = udgcd::priv::buildReverseBinaryMap( nbVertices );
 	REQUIRE( rev_map.size() == nbCombinations );
 
-	auto cycle2 = udgcd::priv::convertBC2VC<size_t>( bpa, nbVertices, rev_map );
+	auto cycle2 = udgcd::priv::convertBC2VC<size_t>( bpa, rev_map );
 	REQUIRE( cycle == cycle2 );
 
 }
@@ -212,7 +212,6 @@ TEST_CASE( "test GaussianElimination", "[test2]" )
 		udgcd::priv::printBitMatrix( std::cout, m_in, "m_in" );
 		auto out = udgcd::priv::gaussianElim( m_in );
 		udgcd::priv::printBitMatrix( std::cout, out, "out" );
-
 	}
 }
 
@@ -243,7 +242,7 @@ vector: 1  0  1  0  0  0  1  0  0  1
 	udgcd::priv::BinaryPath v_in{ buildBinVect("1010001001") };
 	udgcd::priv::RevBinMap  rev_map = udgcd::priv::buildReverseBinaryMap( nb_vertices );
 
-	auto m = udgcd::priv::buildMapFromBinaryVector<size_t>( v_in, nb_vertices, rev_map );
+	auto m = udgcd::priv::buildMapFromBinaryVector<size_t>( v_in, rev_map );
 	std::map<size_t,size_t> res={
 		{0,1},{3,0},{1,4},{4,3}
 	};

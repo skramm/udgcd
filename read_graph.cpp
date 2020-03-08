@@ -12,12 +12,13 @@ Also generates a .dot file that can be graphically rendered with Graphviz
 
 #include <iostream>
 
-#define UDGCD_DEV_MODE
-#define UDGCD_PRINT_STEPS
-#include "udgcd.hpp"
+//#define UDGCD_DEV_MODE
+//#define UDGCD_PRINT_STEPS
 
 std::string prog_id = "read_graph";
 #include "common_sample.h"
+
+
 
 //-------------------------------------------------------------------------------------------
 /// Some typedefs for readability

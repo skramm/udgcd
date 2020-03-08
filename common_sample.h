@@ -15,6 +15,7 @@ Home page: https://github.com/skramm/udgcd
 #include <boost/version.hpp>
 #include "boost/graph/graphviz.hpp"
 //#include <boost/graph/connected_components.hpp>
+#include "udgcd.hpp"
 
 #include <string>
 
@@ -251,9 +252,10 @@ Process( graph_t& g )
 
 	std::cout << "diff=" << expected - (int)cycles.size() << "\n";
 
-	if( !udgcd::priv::checkCycles( cycles, g ) )
+	auto nbi = udgcd::priv::checkCycles( cycles, g );
+	if( nbi != 0 )
 	{
-		std::cout << "ERROR: incorrect cycle found\n";
+		std::cout << "ERROR: " << nbi << " incorrect cycles found\n";
 		return -1;
 	}
 
