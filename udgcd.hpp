@@ -646,13 +646,17 @@ buildBinaryVectors(
 	for( size_t i=0; i<v_cycles.size(); i++ )
 		buildBinaryVector( v_cycles[i], v_binvect[i], idx_map );
 }
+//-------------------------------------------------------------------------------------------
 
+//-------------------------------------------------------------------------------------------
 using RevBinMap = std::vector<std::pair<size_t,size_t>>;
 
 //-------------------------------------------------------------------------------------------
 /// Builds an index map giving from an index in the binary vector the indexes of the two vertices
 /// that are connected. See \ref convertBC2VC()
 /**
+Size: n*(n-1)/2
+
 Example for n=5 (=> size=10)
 \verbatim
 0 | 0 1
@@ -690,53 +694,32 @@ buildReverseBinaryMap( size_t nb_vertices )
 	return out;
 }
 //-------------------------------------------------------------------------------------------
-#if 0
+/// Fill map with adjacent nodes
+/**
+The idea here is to avoid doing an extensive search each time to see if node is already present, witch
+can be costly for large cycles
+
+\bug bug here, see caller
+*/
 template<typename vertex_t>
-std::pair< std::vector<vertex_t>, std::map<vertex_t,vertex_t> >
+std::vector<std::pair<vertex_t,vertex_t>>
 buildMapFromBinaryVector(
-	const BinaryPath& v_in,
-	size_t            nbVertices,
-	const RevBinMap&  rev_map
+	const BinaryPath& v_in,          ///< A binary vector holding 1 at each position where there is an edge
+	const RevBinMap&  rev_map        ///< Reverse map, see buildReverseBinaryMap()
 )
 {
-	assert( nbVertices>2 );
-
-	std::vector<vertex_t>       v_out;
-	std::map<vertex_t,vertex_t> vertex_map;
-
-	std::vector<vertex_t> flag( nbVertices, false );
-	bool firstone(true);
+	std::vector<std::pair<vertex_t,vertex_t>> v_out;
 	for( size_t i=0; i<v_in.size(); ++i )
 	{
-		if( v_in[i] == 1 )
+		if( v_in[i] == 1 ) // if we find a '1', then we have found a connection
 		{
-
-			vertex_t v1 = rev_map[i].first;
-			vertex_t v2 = rev_map[i].second;
-			if( firstone )
-			{
-				firstone = false;
-				v_out.push_back( v1 );
-				v_out.push_back( v2 );
-			}
-			assert( v1 < nbVertices );
-			assert( v2 < nbVertices );
-//				COUT << i << ": v1=" << v1 << " v2=" << v2 << " flag[v1]=" << flag.at(v1) << " flag[v2]=" << flag.at(v2) << "\n";
-
-			if( !flag.at(v1) )
-				flag.at(v1) = true;
-			else
-				vertex_map[v1] = v2;
-
-			if( !flag.at(v2) )
-				flag.at(v2) = true;
-			else
-				vertex_map[v2] = v1;
+			vertex_t v1 = rev_map[i].first;   // the two nodes
+			vertex_t v2 = rev_map[i].second;  // that are connected
+			v_out.push_back( std::make_pair(v1,v2) );
 		}
 	}
-	return std::make_pair<v_out,vertex_map>;
+	return v_out;
 }
-#endif
 //-------------------------------------------------------------------------------------------
 /// Convert, for a given graph, a Binary Cycle (BC) \c v_in to a Vertex Cycle (VC)
 /**
@@ -744,14 +727,6 @@ Algorithm:
 -using rev_map, that gives for a given index in the binary vector the two corresponding vertices
 
 * step 1: build a map, giving for each vertex, the next one
-
-FOR each element in BV with value 1:
- - fetch the two values v1 and v2 in rev_map
- - if( flag[v1] is false, set flag[v1] to true
-   else vertex_map[v1] = v2
-
- - if( flag[v2] is false, set flag[v2] to true
-   else vertex_map[v2] = v1
 
 * step 2: parse the map, and add the vertices to the output vector
 
@@ -774,82 +749,71 @@ template<typename vertex_t>
 std::vector<vertex_t>
 convertBC2VC(
 	const BinaryPath& v_in,         ///< input binary path
-	size_t            nbVertices,   ///< nb of vertices of the graph
 	const RevBinMap&  rev_map       ///< required map, has to be build before, see buildReverseBinaryMap()
 )
 {
-	assert( nbVertices>2 );
-	assert( v_in.size() == nbVertices * (nbVertices-1) / 2 );
 	assert( v_in.size() == rev_map.size() );
 
 	PRINT_FUNCTION;
 	printBitVector( std::cout, v_in );
 
-
 // step 1: build map from binary vector
-
-	std::vector<vertex_t>       v_out;
-	std::map<vertex_t,vertex_t> vertex_map;
-	{
-		std::vector<vertex_t> flag( nbVertices, false );
-		bool firstone(true);
-		for( size_t i=0; i<v_in.size(); ++i )
-		{
-			COUT << "* i=" << i << '\n';
-			if( v_in[i] == 1 )
-			{
-				vertex_t v1 = rev_map[i].first;
-				vertex_t v2 = rev_map[i].second;
-				if( firstone )
-				{
-					firstone = false;
-					v_out.push_back( v1 );
-					v_out.push_back( v2 );
-					COUT << "ADDING " << v1 << " and " << v2 << "\n";
-				}
-				assert( v1 < nbVertices );
-				assert( v2 < nbVertices );
-					COUT << i << ": v1=" << v1 << " v2=" << v2 << " flag[v1]=" << flag.at(v1) << " flag[v2]=" << flag.at(v2) << "\n";
-
-				if( !flag.at(v1) )
-					flag.at(v1) = true;
-				else
-					vertex_map[v1] = v2;
-
-				if( !flag.at(v2) )
-					flag.at(v2) = true;
-				else
-					vertex_map[v2] = v1;
-				COUT << i << ": v1=" << v1 << " v2=" << v2 << " flag[v1]=" << flag.at(v1) << " flag[v2]=" << flag.at(v2)
-				<< " vertex_map[v1]=" << vertex_map[v1] << " vertex_map[v2]=" << vertex_map[v2]
-				<< "\n";
-
-			}
-		}
-	}
-
+	auto v_pvertex = buildMapFromBinaryVector<vertex_t>( v_in, rev_map );
 
 #if 1
-	COUT << "AFTER STEP 1\nv_out: size=" << v_out.size() << " 0:" << v_out[0] << " 1:" << v_out[1] << "\n";
+//	COUT << "AFTER STEP 1\nv_out: size=" << v_out.size() << " 0:" << v_out[0] << " 1:" << v_out[1] << "\n";
 	COUT << "VERTEX MAP:\n";
-	for( const auto& vp: vertex_map )
-		COUT << vp.first << "-" << vp.second << "\n";
+	size_t iter = 0;
+	for( const auto& vp: v_pvertex )
+		COUT << iter++ << ":" << vp.first << "-" << vp.second << "\n";
 #endif
 
 // step 2: extract vertices from map
-//	COUT << "step2:\n";
-	vertex_t current = v_out[1];
-	auto nbOnes = v_in.count()-2;
-	COUT << "nbOnes=" << nbOnes << '\n';
+	COUT << "step2:\n";
+	std::vector<vertex_t> v_out(2);
+	v_out[0] = v_pvertex[0].first;
+	v_out[1] = v_pvertex[0].second;
+	size_t curr_idx = 0;
+	size_t curr_v   = v_out[1];
+	size_t iter =0;
 	do
 	{
-		v_out.push_back( vertex_map[current] );
-		COUT << "ADDING " << vertex_map[current] << "\n";
-		current = vertex_map[current];
+		COUT << "\n* iter " << ++iter << " curr_idx=" << curr_idx << " curr_v=" << curr_v << '\n';
+		bool stop = false;
+		for( size_t i=1; i<v_pvertex.size(); i++ )       // search for next one
+		{
+			if( i != curr_idx )
+			{
+				COUT << " start "<< i << '\n';
+				auto p = v_pvertex[i];
+				if( curr_v == p.first )
+				{
+					v_out.push_back( p.second );
+					curr_v = p.second;
+					curr_idx = i;
+					stop = true;
+					COUT << i << ": found first, v_out(size)=" << v_out.size() << " curr_idx=" << curr_idx << " curr_v=" << curr_v << '\n';
+				}
+				else
+				{
+					if( curr_v == p.second )
+					{
+						v_out.push_back( p.first );
+						curr_v = p.first;
+						curr_idx = i;
+						stop = true;
+						COUT << i << ": found second, v_out(size)=" << v_out.size() << " curr_idx=" << curr_idx << " curr_v=" << curr_v << '\n';
+					}
+				}
+			}
+			if( stop )
+				break;
+		}
 	}
-	while( --nbOnes );
+	while( curr_v != v_out[0] );      // while we don't cycle
 
 	PrintVector( std::cout, v_out );
+
 	return v_out;
 }
 //-------------------------------------------------------------------------------------------
@@ -965,7 +929,7 @@ removeRedundant3( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 	auto rev_map = buildReverseBinaryMap( nb_vertices );
 	for( auto bcycle: v_bpaths )
 	{
-		auto cycle = convertBC2VC<vertex_t>( bcycle, nb_vertices, rev_map );
+		auto cycle = convertBC2VC<vertex_t>( bcycle, rev_map );
 		v_out.push_back( cycle );
 	}
 	return v_out;

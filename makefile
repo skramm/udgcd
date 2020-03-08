@@ -159,3 +159,5 @@ test: bin/test_catch
 test4: bin/test_catch
 	bin/test_catch [test4] -s
 
+test5: bin/test_catch
+	bin/test_catch [test5] -s

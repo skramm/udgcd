@@ -217,3 +217,45 @@ TEST_CASE( "test GaussianElimination", "[test2]" )
 }
 
 //-------------------------------------------------------------------------------------------
+udgcd::priv::BinaryPath
+buildBinVect( const char* s )
+{
+	std::string str(s);
+	std::reverse( str.begin(), str.end() );
+	udgcd::priv::BinaryPath bp{str};
+	return bp;
+}
+//-------------------------------------------------------------------------------------------
+#if 0
+TEST_CASE( "test buildMapFromBinaryVector", "[test5]" )
+{
+/*
+graph: 0-1-4-3:
+
+idx:    0  1  2  3  4  5  6  7  8  9
+----------------------------------------
+edges:  0  0  0  0  1  1  1  2  2  3
+        1  2  3  4  2  3  4  3  4  4
+----------------------------------------
+vector: 1  0  1  0  0  0  1  0  0  1
+*/
+	size_t     nb_vertices = 5;
+	udgcd::priv::BinaryPath v_in{ buildBinVect("1010001001") };
+	udgcd::priv::RevBinMap  rev_map = udgcd::priv::buildReverseBinaryMap( nb_vertices );
+
+	auto m = udgcd::priv::buildMapFromBinaryVector<size_t>( v_in, nb_vertices, rev_map );
+	std::map<size_t,size_t> res={
+		{0,1},{3,0},{1,4},{4,3}
+	};
+/*	std::cout << "Expected map:\n";
+	for( auto p: res )
+		std::cout << "f=" << p.first << " s=" << p.second << '\n';
+
+	std::cout << "computed map:\n";
+	for( auto p: m )
+		std::cout << "f=" << p.first << " s=" << p.second << '\n';
+*/
+	REQUIRE( res == m );
+}
+#endif
+//-------------------------------------------------------------------------------------------
