@@ -28,6 +28,7 @@ These are sorted with the smallest vertex in first position, and such as the sec
 
 ### Status
  <a name="s_stat"></a>
+- UPDATE 2020-03-08: finally found some time, issue fixed, is merged into master, "official" 1.0 release planned in a few days
 - UPDATE 2017-10-15: the code is currently undergoing deep refactoring (see branch issue1), it is recommended **not to use it** until further notice.
 - UPDATE 2017-08-28: at present, output is redundant: in some case, can give more cycles than it actually should. See [here](#s_issues).
 After some investigating and coding, this issue is actually pretty bad, thus I would recommend *not to use* this code until I find some fix.
