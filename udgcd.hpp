@@ -11,6 +11,7 @@ Home page: https://github.com/skramm/udgcd
 
 Inspired from http://www.boost.org/doc/libs/1_58_0/libs/graph/example/undirected_dfs.cpp
 
+\todo 2020-03-09: add a data structure that can measure the run-time depth of the recursive functions
 
 See file README.md
 */
@@ -89,18 +90,7 @@ vector:  0  0  0  0  0  1  1  0  0  1
 */
 typedef boost::dynamic_bitset<> BinaryPath;
 
-//-------------------------------------------------------------------------------------------
-/// Counts the number of bits to 1
-size_t
-CountOnes( const BinaryPath& vec )
-{
-/*	size_t nb_ones = 0;
-	for( size_t i=0; i<vec.size(); i++ )
-		if( vec[i] )
-			nb_ones++;
-	return nb_ones;*/
-	return vec.count(); // works with boost::dynamic_bitset
-}
+
 //-------------------------------------------------------------------------------------------
 /// Print vector of bits
 template<typename T>
@@ -113,7 +103,7 @@ printBitVector( std::ostream& f, const T& vec )
 		if( !((i+1)%4) && i != vec.size()-1 )
 			f << '.';
 	}
-	f << ": #=" << CountOnes( vec ) << "\n";
+	f << ": #=" << vec.count() << "\n";   // works with boost::dynamic_bitset << "\n";
 }
 
 template<typename T>
@@ -417,14 +407,14 @@ RemoveIdentical( const std::vector<std::vector<T>>& v_cycles )
 #endif
 
 //-------------------------------------------------------------------------------------------
-#if 0
+#ifdef UDGCD_REMOVE_NONCHORDLESS
 /// Returns true if vertices \c v1 and \c v2 are connected by an edge
 /**
 http://www.boost.org/doc/libs/1_59_0/libs/graph/doc/IncidenceGraph.html#sec:out-edges
 */
 template<typename vertex_t, typename graph_t>
 bool
-AreConnected( const vertex_t& v1, const vertex_t& v2, const graph_t& g )
+areConnected( const vertex_t& v1, const vertex_t& v2, const graph_t& g )
 {
 	auto pair_edge = boost::out_edges( v1, g );                      // get iterator range on edges
 	for( auto it = pair_edge.first; it != pair_edge.second; ++it )
@@ -446,7 +436,7 @@ no two vertices of the cycle are connected by an edge that does not itself belon
 */
 template<typename vertex_t, typename graph_t>
 bool
-IsChordless( const std::vector<vertex_t>& path, const graph_t& g )
+isChordless( const std::vector<vertex_t>& path, const graph_t& g )
 {
 	if( path.size() < 4 ) // no need to test if less than 4 vertices
 		return true;
@@ -455,7 +445,7 @@ IsChordless( const std::vector<vertex_t>& path, const graph_t& g )
 	{
 		for( size_t j=i+2; j<path.size()-1; ++j )
 
-		if( AreConnected( path[i], path[j], g ) )
+		if( areConnected( path[i], path[j], g ) )
 			return false;
 	}
 	return true;
@@ -464,18 +454,18 @@ IsChordless( const std::vector<vertex_t>& path, const graph_t& g )
 /// Third step, remove non-chordless cycles
 template<typename vertex_t, typename graph_t>
 std::vector<std::vector<vertex_t>>
-RemoveNonChordless( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
+removeNonChordless( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 {
 	PRINT_FUNCTION;
 
 	std::vector<std::vector<vertex_t>> v_out;
 	v_out.reserve( v_in.size() ); // to avoid unnecessary memory reallocations and copies
     for( const auto& cycle: v_in )
-		if( IsChordless( cycle, g ) )
+		if( isChordless( cycle, g ) )
 			v_out.push_back( cycle );
 	return v_out;
 }
-#endif
+#endif // UDGCD_REMOVE_NONCHORDLESS
 //-------------------------------------------------------------------------------------------
 /// holds two vertices, used in RemoveRedundant()
 /// \deprecated ???
@@ -1076,12 +1066,15 @@ findCycles( graph_t& g )
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles, "Raw cycles" );
 #endif
+	std::cout << "-Raw cycles: " << v_cycles.size() << " cycles\n";
 
 // post process 0: cleanout the cycles by removing steps that are not part of the cycle
 	auto v_cycles0 = priv::cleanCycles( v_cycles );
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles0, "After cleanCycles()" );
 #endif
+
+	std::cout << "-After cleaning: " << v_cycles0.size() << " cycles\n";
 
 	if( 0 != priv::checkCycles( v_cycles0, g ) )
 	{
@@ -1097,13 +1090,13 @@ findCycles( graph_t& g )
 #endif
 #endif
 
-
 #ifdef UDGCD_REMOVE_NONCHORDLESS
 // post process 3: remove non-chordless cycles
-	std::vector<std::vector<vertex_t>> v_cycles1 = RemoveNonChordless( v_cycles0, g );
+	std::vector<std::vector<vertex_t>> v_cycles1 = priv::removeNonChordless( v_cycles0, g );
+	std::cout << "-After removal of non-chordless cycles: " << v_cycles1.size() << " cycles\n";
 
 #ifdef UDGCD_PRINT_STEPS
-	PrintPaths( std::cout, v_cycles6, "After removal of non-chordless cycles" );
+	PrintPaths( std::cout, v_cycles1, "After removal of non-chordless cycles" );
 #endif
 	auto v_cycles2 = priv::removeRedundant( v_cycles1, g );
 

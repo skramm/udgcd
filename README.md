@@ -84,7 +84,7 @@ Some additional apps are included, that are build by the makefile:
 
 ##### Build options:
  - The provided makefile is not requested to use the library, as it is "header-only".
- It can be uses to show the demos. It has the following targets (for a full list, please enter `make help`):
+ It can be used to show the demos. It has the following targets (for a full list, please enter `make help`):
   - `make` (no targets) : builds the included demos apps
   - `make run` : builds and runs all the included demos
   - `make doc` : builds the doxygen reference file (needs doxygen installed...)
@@ -109,7 +109,8 @@ If Graphviz/dot is installed, the demo samples will render the generated graphs 
  <a name="s_inside"></a>
 
  The algorithm involved here is pretty simple, but probably highly inefficient, thus (very) slow for large graphs.
-Three steps are involved: first we need to check if there **is** at least one cycle. Is this is true, we explore the graph to find it/them.
+Three steps are involved: first we need to check if there **is** at least one cycle.
+Is this is true, we explore the graph to find it/them.
 
 - The first step is done by a Depth First Search (DFS), with  [boost::undirected_dfs()](http://www.boost.org/doc/libs/1_59_0/libs/graph/doc/undirected_dfs.html)
 with passing a visitor of class `CycleDetector`, inherited from
@@ -119,7 +120,8 @@ If this happens, it means that a cycle *has* been encountered.
 
 - The second step is done by exploring recursively the graph, by starting from each of the vertices that have been identified as part of a "back edge".
 
-- The third steps does a lot of post-processing. At present, we have all the possibles paths and we need to filter-out many of them.
+- The third steps does a lot of post-processing.
+At present, we have all the possibles paths and we need to filter-out many of them.
  The 4 steps are:
   1. remove symmetrical paths (i.e. : 1-2-3 is the same as 1-3-2)
   1. remove duplicate paths  (i.e. : 1-2-3 is the same as 2-3-1)
@@ -151,7 +153,8 @@ If this happens, it means that a cycle *has* been encountered.
   ### Notes
   <a name="s_notes"></a>
 
-- In the output vector, the paths are sorted, so you need to have the `<` operator defined for the vertices. Sorting is done such as:
+- In the output vector, the paths are sorted, so you need to have the `<` operator defined for the vertices.
+Sorting is done such as:
  - The smallest element is in first position;
  - The element in second position is smaller than the last one.
 
@@ -161,7 +164,8 @@ If this happens, it means that a cycle *has* been encountered.
 <a name="note_bp"></a>
   #### User properties & graph type
 
-You can use whatever edge and vertices types, the coloring needed by the algorithm is handled by providing color maps as external properties. So if you have no special needs on vertices and edge properties, you can use something as trivial as this:
+You can use whatever edge and vertices types, the coloring needed by the algorithm is handled by providing color maps as external properties.
+So if you have no special needs on vertices and edge properties, you can use something as trivial as this:
 ```C++
     typedef boost::adjacency_list<
 	   boost::vecS,
@@ -186,9 +190,9 @@ struct my_Edge
 Then your graph type definition will become:
 ```C++
 	typedef boost::adjacency_list<
-		boost::vecS,                   // edge container
-		boost::vecS,                   // vertex container
-		boost::undirectedS,            // type of graph
+		boost::vecS,                 // edge container
+		boost::vecS,                 // vertex container
+		boost::undirectedS,          // type of graph
 		my_Vertex,                   // vertex type
 		my_Edge
 		> graph_t;

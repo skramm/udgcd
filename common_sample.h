@@ -11,10 +11,11 @@ Home page: https://github.com/skramm/udgcd
 
 */
 
-
 #include <boost/version.hpp>
 #include "boost/graph/graphviz.hpp"
-//#include <boost/graph/connected_components.hpp>
+
+#define UDGCD_REMOVE_NONCHORDLESS
+//#define UDGCD_PRINT_STEPS
 #include "udgcd.hpp"
 
 #include <string>
