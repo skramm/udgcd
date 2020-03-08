@@ -1,4 +1,4 @@
-// Copyright Sebastien Kramm 2016
+// Copyright Sebastien Kramm, 2016-2017
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -12,7 +12,7 @@
 #include <iostream>
 #include "udgcd.hpp"
 
-int prog_id = 2;
+std::string prog_id = "s2";
 #include "common_sample.h"
 
 /*
@@ -53,7 +53,7 @@ int main(int, char*[])
 
 	add_edge(9, 4, g);
 
-	RenderGraph( g );
+	RenderGraph( g, prog_id );
 
 	std::vector<std::vector<vertex_t>> cycles = udgcd::FindCycles<graph_t,vertex_t>( g );
 	udgcd::PrintPaths( std::cout, cycles );

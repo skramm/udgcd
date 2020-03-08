@@ -1,4 +1,4 @@
-// Copyright Sebastien Kramm 2016
+// Copyright Sebastien Kramm, 2016-2017
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -13,7 +13,7 @@
 #include <algorithm>
 #include "udgcd.hpp"
 
-int prog_id = 3;
+std::string prog_id = "s3";
 #include "common_sample.h"
 
 /*
@@ -56,7 +56,7 @@ void g1()
 	add_edge(3, 1, g);
 	add_edge(2, 3, g);
 
-	RenderGraph( g );
+	RenderGraph( g, prog_id );
 	{
 		std::vector<std::vector<vertex_t>> cycles = udgcd::FindCycles<graph_t,vertex_t>( g );
 		udgcd::PrintPaths( std::cout, cycles );
@@ -64,7 +64,7 @@ void g1()
 	add_edge( 2, 4, g);
 	add_edge( 3, 4, g);
 
-	RenderGraph( g );
+	RenderGraph( g, prog_id );
 	{
 		std::vector<std::vector<vertex_t>> cycles = udgcd::FindCycles<graph_t,vertex_t>( g );
 		udgcd::PrintPaths( std::cout, cycles );
@@ -75,7 +75,7 @@ void g1()
 void g2()
 {
 	graph_t g;
-    std::vector<std::string> v_nodeName;
+//    std::vector<std::string> v_nodeName;
 
 	add_edge( 0, 1, g );
 	add_edge( 1, 2, g );
@@ -86,7 +86,7 @@ void g2()
 	add_edge( 5, 1, g);
 	add_edge( 5, 4, g);
 
-    v_nodeName.resize( boost::num_vertices(g) );
+/*    v_nodeName.resize( boost::num_vertices(g) );
 
 	for( auto& s : v_nodeName )
 	{
@@ -98,10 +98,11 @@ void g2()
 	for( auto s: v_nodeName )
 			std::cout << s << "-";
 	std::cout << "\n";
-
+*/
 
 	{
-        RenderGraph2( g, v_nodeName );
+        RenderGraph( g, "s3g2" );
+//        RenderGraph2( g, v_nodeName );
         std::vector<std::vector<vertex_t>> cycles = udgcd::FindCycles<graph_t,vertex_t>( g );
         udgcd::PrintPaths( std::cout, cycles );
 	}
