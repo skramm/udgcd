@@ -977,7 +977,7 @@ template <typename vertex_t>
 struct CycleDetector : public boost::dfs_visitor<>
 {
 	template<typename T1, typename T2>
-	friend std::vector<std::vector<T2>> FindCycles( T1& g );
+	friend std::vector<std::vector<T2>> findCycles( T1& g );
 
 	public:
 		CycleDetector()
@@ -1033,7 +1033,7 @@ Returns a vector of cycles that have been found in the graph
 */
 template<typename graph_t, typename vertex_t>
 std::vector<std::vector<vertex_t>>
-FindCycles( graph_t& g )
+findCycles( graph_t& g )
 {
 	if( boost::num_vertices(g) < 3 || boost::num_edges(g) < 3 )
 		return std::vector<std::vector<vertex_t>>();

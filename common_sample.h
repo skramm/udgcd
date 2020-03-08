@@ -1,4 +1,4 @@
-// Copyright Sebastien Kramm, 2016-2017
+// Copyright Sebastien Kramm, 2016-2020
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -245,7 +245,7 @@ Process( graph_t& g )
 
 	int expected = PrintGraphInfo( g );
 
-	std::vector<std::vector<vertex_t>> cycles = udgcd::FindCycles<graph_t,vertex_t>( g );
+	std::vector<std::vector<vertex_t>> cycles = udgcd::findCycles<graph_t,vertex_t>( g );
 	udgcd::PrintPaths( std::cout, cycles, "final" );
 	if( expected != (int)cycles.size() )
 		std::cout << "ERROR: computed nb of cycles is not what expected (expected=" << expected << ")\n";

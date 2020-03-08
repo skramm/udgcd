@@ -1,4 +1,4 @@
-// Copyright Sebastien Kramm, 2016-2017
+// Copyright Sebastien Kramm, 2016-2020
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -58,7 +58,7 @@ void g1()
 
 	RenderGraph( g, prog_id );
 	{
-		std::vector<std::vector<vertex_t>> cycles = udgcd::FindCycles<graph_t,vertex_t>( g );
+		std::vector<std::vector<vertex_t>> cycles = udgcd::findCycles<graph_t,vertex_t>( g );
 		udgcd::PrintPaths( std::cout, cycles );
 	}
 	add_edge( 2, 4, g);
@@ -66,7 +66,7 @@ void g1()
 
 	RenderGraph( g, prog_id );
 	{
-		std::vector<std::vector<vertex_t>> cycles = udgcd::FindCycles<graph_t,vertex_t>( g );
+		std::vector<std::vector<vertex_t>> cycles = udgcd::findCycles<graph_t,vertex_t>( g );
 		udgcd::PrintPaths( std::cout, cycles );
 	}
 }
@@ -103,7 +103,7 @@ void g2()
 	{
         RenderGraph( g, "s3g2" );
 //        RenderGraph2( g, v_nodeName );
-        std::vector<std::vector<vertex_t>> cycles = udgcd::FindCycles<graph_t,vertex_t>( g );
+        std::vector<std::vector<vertex_t>> cycles = udgcd::findCycles<graph_t,vertex_t>( g );
         udgcd::PrintPaths( std::cout, cycles );
 	}
 
@@ -111,7 +111,7 @@ void g2()
 	add_edge( 2, 4, g );
 	{
     	RenderGraph( g );
-        std::vector<std::vector<vertex_t>> cycles = udgcd::FindCycles<graph_t,vertex_t>( g );
+        std::vector<std::vector<vertex_t>> cycles = udgcd::findCycles<graph_t,vertex_t>( g );
         udgcd::PrintPaths( std::cout, cycles );
 	}
 
@@ -119,7 +119,7 @@ void g2()
 	add_edge( 1, 4, g );
 	{
     	RenderGraph( g );
-        std::vector<std::vector<vertex_t>> cycles = udgcd::FindCycles<graph_t,vertex_t>( g );
+        std::vector<std::vector<vertex_t>> cycles = udgcd::findCycles<graph_t,vertex_t>( g );
         udgcd::PrintPaths( std::cout, cycles );
 	}
 */
