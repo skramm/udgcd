@@ -59,7 +59,7 @@ Got some help from [sehe](http://stackoverflow.com/a/43481372/193789).
  - Done !
 
 (1) FYI, the type of the returned value is actually
-`std::vector<std::vector<my_vertex_t>>` but with C+11, you don't really need that information...
+`std::vector<std::vector<my_vertex_t>>` but with C+11, you don't really need that information.
 
 See included samples.
 
@@ -94,7 +94,7 @@ To run a single demo, run `bin/sample_X`.
  - If the symbol UDGCD_PRINT_STEPS is defined at build time, then different steps will be printed on `std::cout` (useful only for debugging purposes).
  For the provided samples, this can be done by passing option `PRINT_STEPS=Y` to make.
 
-If Graphviz/dot is installed, the demo samples will render the generated graphs into svg images in the `obj` folder.
+If Graphviz/Dot is installed, the demo samples will render the generated graphs into svg images in the `obj` folder.
 
 
 ### Issues:
@@ -102,13 +102,11 @@ If Graphviz/dot is installed, the demo samples will render the generated graphs 
 
  - At present, this code requires a static allocated variable (done automatically by compiler, as it is templated).
  Thus it is **not** thread safe, neither can it handle multiple graphs simultaneously.
- - A bug has been confirmed: more cycles are been computed than necessary, see https://github.com/skramm/udgcd/issues/1
-. Currently under investigation...
 
 ### How does it work ?
  <a name="s_inside"></a>
 
- The algorithm involved here is pretty simple, but probably highly inefficient, thus (very) slow for large graphs.
+ The algorithm involved here is pretty simple, but probably not very efficient, thus slow for large graphs.
 Three steps are involved: first we need to check if there **is** at least one cycle.
 Is this is true, we explore the graph to find it/them.
 
@@ -120,7 +118,9 @@ If this happens, it means that a cycle *has* been encountered.
 
 - The second step is done by exploring recursively the graph, by starting from each of the vertices that have been identified as part of a "back edge".
 
-- The third steps does a lot of post-processing.
+- The third steps does some post-processing.
+
+**TODO 2020-03-09: this below needs to be updated** <br>
 At present, we have all the possibles paths and we need to filter-out many of them.
  The 4 steps are:
   1. remove symmetrical paths (i.e. : 1-2-3 is the same as 1-3-2)
@@ -132,9 +132,8 @@ At present, we have all the possibles paths and we need to filter-out many of th
  <a name="s_ref"></a>
 
 - BGL: http://www.boost.org/doc/libs/1_59_0/libs/graph/doc
-- [wikipedia.org Graph page](https://en.wikipedia.org/wiki/Graph_%28mathematics%29#Undirected_graph)
 - https://en.wikipedia.org/wiki/Cycle_basis
-- https://en.wikipedia.org/wiki/Cycle_%28graph_theory%29
+
 
 #### Unsorted links on topic
 - http://www.geometrictools.com/Documentation/MinimalCycleBasis.pdf
@@ -147,8 +146,7 @@ At present, we have all the possibles paths and we need to filter-out many of th
 - http://www.lamsade.dauphine.fr/~poc/IMG/pdf/Amaldi.pdf
 - https://people.mpi-inf.mpg.de/~mehlhorn/ftp/CycleBasisImpl.pdf
 - https://www.euro-online.org/gom2008/abstracts/gom08-amaldi.pdf
-- https://stackoverflow.com/a/43481372/193789
-- https://www.me.utexas.edu/~bard/IP/Handouts/cycles.pdf
+
 
   ### Notes
   <a name="s_notes"></a>

@@ -13,6 +13,7 @@ Home page: https://github.com/skramm/udgcd
 
 #include <boost/version.hpp>
 #include "boost/graph/graphviz.hpp"
+#include <boost/graph/connected_components.hpp>
 
 #define UDGCD_REMOVE_NONCHORDLESS
 //#define UDGCD_PRINT_STEPS
@@ -34,7 +35,7 @@ int g_idx = 0;
 */
 template<typename graph_t>
 size_t
-PrintGraphInfo( const graph_t& g )
+printGraphInfo( const graph_t& g )
 {
 	std::cout << "Graph info:"
 		<< "\n -nb of vertices=" << boost::num_vertices(g)
@@ -244,14 +245,15 @@ Process( graph_t& g )
 {
 	typedef typename boost::graph_traits<graph_t>::vertex_descriptor vertex_t;
 
-	int expected = PrintGraphInfo( g );
+	auto expected = printGraphInfo( g );
 
-	std::vector<std::vector<vertex_t>> cycles = udgcd::findCycles<graph_t,vertex_t>( g );
+	udgcd::UdgcdInfo info;
+	std::vector<std::vector<vertex_t>> cycles = udgcd::findCycles<graph_t,vertex_t>( g, info );
 	udgcd::PrintPaths( std::cout, cycles, "final" );
-	if( expected != (int)cycles.size() )
+	if( expected != cycles.size() )
 		std::cout << "ERROR: computed nb of cycles is not what expected (expected=" << expected << ")\n";
 
-	std::cout << "diff=" << expected - (int)cycles.size() << "\n";
+//	std::cout << "diff=" << (int)expected - (int)cycles.size() << "\n";
 
 	auto nbi = udgcd::priv::checkCycles( cycles, g );
 	if( nbi != 0 )
@@ -259,7 +261,8 @@ Process( graph_t& g )
 		std::cout << "ERROR: " << nbi << " incorrect cycles found\n";
 		return -1;
 	}
+	info.print( std::cout );
 
-	return (int)cycles.size() - expected;
+	return (int)cycles.size() - (int)expected;
 }
 //-------------------------------------------------------------------

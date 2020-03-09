@@ -23,7 +23,7 @@ See file README.md
 
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/undirected_dfs.hpp>
-#include <boost/graph/connected_components.hpp>
+//#include <boost/graph/connected_components.hpp>
 
 #include <boost/dynamic_bitset.hpp>       // needed ! Allows bitwise operations on dynamic size boolean vectors
 
@@ -139,10 +139,8 @@ printBitVectors( std::ostream& f, const T& vec )
 //	f << "\n";
 }
 //-------------------------------------------------------------------------------------------
-/// Private, don't use.
+/// Recursive function, explores edges connected to \c v1 until we find a cycle
 /**
-Recursive function, explores edges connected to \c v1 until we find a cycle
-
 \warning Have to be sure there \b is a cycle, else infinite recursion !
 */
 template <class Vertex, class Graph>
@@ -153,7 +151,8 @@ explore(
 	std::vector<std::vector<Vertex>>& vv_paths,
 	std::vector<std::vector<Vertex>>& v_cycles, ///< this is where we store the paths that have cycles
 	int depth = 0
-) {
+)
+{
 	PRINT_FUNCTION_2 << " depth=" << depth << " v1=" << v1 << "\n";
 
 	++depth;
@@ -218,7 +217,7 @@ explore(
 	return found;
 }
 //-------------------------------------------------------------------------------------------
-#if 1
+#if 0
 /// Private, don't use.
 /**
  Remove twins : vector that are the same, but in reverse order
@@ -598,7 +597,7 @@ using RevBinMap = std::vector<std::pair<size_t,size_t>>;
 /// Builds an index map giving from an index in the binary vector the indexes of the two vertices
 /// that are connected. See \ref convertBC2VC()
 /**
-Size: n*(n-1)/2
+Size: \f$ n*(n-1)/2 \f$
 
 Example for n=5 (=> size=10)
 \verbatim
@@ -750,20 +749,19 @@ convertBC2VC(
 /// Gaussian binary elimination
 /**
 Input: a binary matrix
-output: a reduced matrix
+Output: a reduced matrix
 
 - assumes no identical rows
 */
 std::vector<BinaryPath>
-gaussianElim( const std::vector<BinaryPath>& mat )
+gaussianElim( std::vector<BinaryPath>& m_in )
 {
-	assert( mat.size() > 1 );
-	auto m_in = mat; // copy so we can edit it (arg is const)
+	assert( m_in.size() > 1 );
 
 	std::vector<BinaryPath> m_out;
 	size_t col = 0;
-	size_t nb_rows = mat.size();
-	size_t nb_cols = mat[0].size();
+	size_t nb_rows = m_in.size();
+	size_t nb_cols = m_in[0].size();
 	size_t c=0;
 	bool done = false;
 
@@ -775,13 +773,11 @@ gaussianElim( const std::vector<BinaryPath>& mat )
 		COUT << "\n* start iter " << ++c << ", current col=" << col
 			<< " #tagged lines = " << std::count( tag.begin(),tag.end(), true ) << "\n";
 
-		bool found = false;
 		for( size_t row=0; row<nb_rows; row++ )                // search for first row with a 1 in current column
 		{
 			COUT << "considering line " << row << "\n";
 			if( tag[row] == false && m_in[row][col] == 1 )    // AND not tagged
 			{
-				found = true;
 				COUT << "row: " << row << ": found 1 in col " << col << "\n";
 				m_out.push_back( m_in.at(row) );
 				tag[row] = true;
@@ -791,20 +787,12 @@ gaussianElim( const std::vector<BinaryPath>& mat )
 					{
 						if( tag[i] == false )                  // AND that are not tagged.
 							if( m_in[i][col] == 1 )            // it there is, we XOR them with initial line
-							{
-								auto res = m_in[i] ^ m_in[row];
-								m_in[i] = res;
-							}
+								m_in[i] = m_in[i] ^ m_in[row];
 					}
 				}
 				COUT << "BREAK loop\n";
 				break;
 			}
-		}
-		if( !found )
-		{
-			COUT << "no row with 1 in col " << col << ", done!\n";
-//			done = true;
 		}
 		COUT << "switch to next col\n";
 		col++;
@@ -957,6 +945,28 @@ checkCycles( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 } // namespace priv
 
 //-------------------------------------------------------------------------------------------
+/// Holds information on the cycle detection process
+/**
+\todo Add timing information
+*/
+struct UdgcdInfo
+{
+	size_t nbRawCycles = 0;
+	size_t nbCleanedCycles = 0;
+	size_t nbNonChordlessCycles = 0;
+	size_t nbFinalCycles = 0;
+
+	void print( std::ostream& f ) const
+	{
+		f << "UdgcdInfo:"
+			<< "\n - nbRawCycles=" << nbRawCycles
+			<< "\n - nbCleanedCycles=" << nbCleanedCycles
+			<< "\n - nbNonChordlessCycles=" << nbNonChordlessCycles
+			<< "\n - nbFinalCycles=" << nbFinalCycles
+			<< "\n";
+	}
+};
+//-------------------------------------------------------------------------------------------
 /// Cycle detector for an undirected graph
 /**
 Passed by value as visitor to \c boost::undirected_dfs()
@@ -967,7 +977,9 @@ template <typename vertex_t>
 struct CycleDetector : public boost::dfs_visitor<>
 {
 	template<typename T1, typename T2>
-	friend std::vector<std::vector<T2>> findCycles( T1& g );
+	friend std::vector<std::vector<T2>> findCycles( T1& );
+	template<typename T1, typename T2>
+	friend std::vector<std::vector<T2>> findCycles( T1&, UdgcdInfo& );
 
 	public:
 		CycleDetector()
@@ -999,22 +1011,6 @@ struct CycleDetector : public boost::dfs_visitor<>
 template<class T>
 std::vector<T> CycleDetector<T>::v_source_vertex;
 
-//-------------------------------------------------------------------------------------------
-// USELESS ?
-#if 0
-/// Returns nb of cycles of the graph
-template<typename graph_t>
-size_t
-NbCycles( const graph_t& g )
-{
-	std::vector<size_t> component( boost::num_vertices( g ) );
-	auto nb_cc = boost::connected_components( g, &component[0] );
-	return boost::num_edges(g) -  boost::num_vertices(g) + nb_cc;
-}
-
-
-} // namespace priv
-#endif
 
 //-------------------------------------------------------------------------------------------
 /// Main user interface: just call this function to get the cycles inside your graph
@@ -1023,7 +1019,7 @@ Returns a vector of cycles that have been found in the graph
 */
 template<typename graph_t, typename vertex_t>
 std::vector<std::vector<vertex_t>>
-findCycles( graph_t& g )
+findCycles( graph_t& g, UdgcdInfo& info )
 {
 	if( boost::num_vertices(g) < 3 || boost::num_edges(g) < 3 )
 		return std::vector<std::vector<vertex_t>>();
@@ -1063,24 +1059,28 @@ findCycles( graph_t& g )
 
 	}
 
+	info.nbRawCycles = v_cycles.size();
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles, "Raw cycles" );
 #endif
-	std::cout << "-Raw cycles: " << v_cycles.size() << " cycles\n";
+//	std::cout << "-Raw cycles: " << v_cycles.size() << " cycles\n";
 
 // post process 0: cleanout the cycles by removing steps that are not part of the cycle
 	auto v_cycles0 = priv::cleanCycles( v_cycles );
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles0, "After cleanCycles()" );
 #endif
+	info.nbCleanedCycles = v_cycles0.size();
 
-	std::cout << "-After cleaning: " << v_cycles0.size() << " cycles\n";
+//	std::cout << "-After cleaning: " << v_cycles0.size() << " cycles\n";
 
+#ifdef UDGCD_DO_CYCLE_CHECKING
 	if( 0 != priv::checkCycles( v_cycles0, g ) )
 	{
-		std::cout << "ERROR: INVALID CYCLE DETECTED!!!\n";
+		std::cerr << "udgcd: ERROR: INVALID CYCLE DETECTED!!!\n";
 		exit(1);
 	}
+#endif
 
 #if 0
 // post process 1: remove the paths that are identical but reversed
@@ -1098,6 +1098,8 @@ findCycles( graph_t& g )
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles1, "After removal of non-chordless cycles" );
 #endif
+	info.nbNonChordlessCycles = v_cycles1.size();
+
 	auto v_cycles2 = priv::removeRedundant( v_cycles1, g );
 
 #else
@@ -1108,9 +1110,19 @@ findCycles( graph_t& g )
 #endif
 
 #endif
-
+	info.nbFinalCycles = v_cycles2.size();
 	return v_cycles2;
 }
+//-------------------------------------------------------------------------------------------
+/// Version without second argument (default version)
+template<typename graph_t, typename vertex_t>
+std::vector<std::vector<vertex_t>>
+findCycles( graph_t& g )
+{
+	UdgcdInfo info;
+	return findCycles<graph_t,vertex_t>( g, info );
+}
+
 //-------------------------------------------------------------------------------------------
 
 } // udgcd namespace end
