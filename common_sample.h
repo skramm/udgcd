@@ -262,6 +262,7 @@ Process( graph_t& g )
 		return -1;
 	}
 	info.print( std::cout );
+	info.printCSV( std::cerr );
 
 	return (int)cycles.size() - (int)expected;
 }

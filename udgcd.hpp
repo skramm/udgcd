@@ -20,11 +20,10 @@ See file README.md
 #define HG_UDGCD_HPP
 
 #include <vector>
+#include <chrono>
 
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/undirected_dfs.hpp>
-//#include <boost/graph/connected_components.hpp>
-
 #include <boost/dynamic_bitset.hpp>       // needed ! Allows bitwise operations on dynamic size boolean vectors
 
 #ifdef UDGCD_DEV_MODE
@@ -946,15 +945,30 @@ checkCycles( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 
 //-------------------------------------------------------------------------------------------
 /// Holds information on the cycle detection process
-/**
-\todo Add timing information
-*/
+/// (nb of cycles at each step and timing information)
 struct UdgcdInfo
 {
 	size_t nbRawCycles = 0;
 	size_t nbCleanedCycles = 0;
 	size_t nbNonChordlessCycles = 0;
 	size_t nbFinalCycles = 0;
+
+	size_t step = 0;
+	constexpr static int nbSteps = 6;
+	std::array<std::chrono::time_point<std::chrono::high_resolution_clock>,nbSteps> tp;
+
+	void startTiming()
+	{
+		step = 0;
+		for( auto& e: tp )
+			e = std::chrono::high_resolution_clock::now();
+	}
+    void setTimeStamp()
+    {
+		step++;
+		assert( step < nbSteps );
+		tp[step] = std::chrono::high_resolution_clock::now();
+    }
 
 	void print( std::ostream& f ) const
 	{
@@ -964,6 +978,23 @@ struct UdgcdInfo
 			<< "\n - nbNonChordlessCycles=" << nbNonChordlessCycles
 			<< "\n - nbFinalCycles=" << nbFinalCycles
 			<< "\n";
+	}
+
+	void printCSV( std::ostream& f ) const
+	{
+		char sep=';';
+		f << nbRawCycles << sep
+			<< nbCleanedCycles << sep
+			<< nbNonChordlessCycles << sep
+			<< nbFinalCycles << sep;
+		for( size_t i=0; i<nbSteps-1; i++ )
+		{
+			auto d = tp[i+1] - tp[i];
+			f << std::chrono::duration_cast<std::chrono::milliseconds>(d).count();
+			if( i != nbSteps-2 )
+				f << sep;
+		}
+		f << "\n";
 	}
 };
 //-------------------------------------------------------------------------------------------
@@ -1021,6 +1052,8 @@ template<typename graph_t, typename vertex_t>
 std::vector<std::vector<vertex_t>>
 findCycles( graph_t& g, UdgcdInfo& info )
 {
+	info.startTiming();
+
 	if( boost::num_vertices(g) < 3 || boost::num_edges(g) < 3 )
 		return std::vector<std::vector<vertex_t>>();
 
@@ -1037,6 +1070,8 @@ findCycles( graph_t& g, UdgcdInfo& info )
 
 // step 1: do a DFS
 	boost::undirected_dfs( g, cycleDetector, vcmap, ecmap, 0 );
+
+	info.setTimeStamp();
 
 	if( !cycleDetector.cycleDetected() )             // if no detection,
 		return std::vector<std::vector<vertex_t>>(); //  return empty vector, no cycles found
@@ -1059,7 +1094,9 @@ findCycles( graph_t& g, UdgcdInfo& info )
 
 	}
 
+	info.setTimeStamp();
 	info.nbRawCycles = v_cycles.size();
+
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles, "Raw cycles" );
 #endif
@@ -1070,6 +1107,8 @@ findCycles( graph_t& g, UdgcdInfo& info )
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles0, "After cleanCycles()" );
 #endif
+
+	info.setTimeStamp();
 	info.nbCleanedCycles = v_cycles0.size();
 
 //	std::cout << "-After cleaning: " << v_cycles0.size() << " cycles\n";
@@ -1098,6 +1137,8 @@ findCycles( graph_t& g, UdgcdInfo& info )
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles1, "After removal of non-chordless cycles" );
 #endif
+
+	info.setTimeStamp();
 	info.nbNonChordlessCycles = v_cycles1.size();
 
 	auto v_cycles2 = priv::removeRedundant( v_cycles1, g );
@@ -1110,6 +1151,8 @@ findCycles( graph_t& g, UdgcdInfo& info )
 #endif
 
 #endif
+
+	info.setTimeStamp();
 	info.nbFinalCycles = v_cycles2.size();
 	return v_cycles2;
 }
