@@ -671,6 +671,8 @@ Algorithm:
 
 \todo The downside of this approach is that we need to build before the \c rev_map, that can be pretty big...
 Maybe we can find a better way ?
+
+\bug discovered on 2020-03-09. To trigger: bin/read_graph samples2/gen_graph_1583824532.txt
 */
 template<typename vertex_t>
 std::vector<vertex_t>
@@ -683,7 +685,7 @@ convertBC2VC(
 	assert( v_in.size() == rev_map.size() );
 
 	PRINT_FUNCTION;
-//	printBitVector( std::cout, v_in );
+	printBitVector( std::cout, v_in );
 
 // step 1: build map from binary vector
 	auto v_pvertex = buildMapFromBinaryVector<vertex_t>( v_in, rev_map );
@@ -707,6 +709,7 @@ convertBC2VC(
 	do
 	{
 		++iter;
+//		std::cout << "\n* iter " << iter << " v_out size=" << v_out.size() << '\n';
 		COUT << "\n* iter " << iter << " curr_idx=" << curr_idx << " curr_v=" << curr_v << '\n';
 		bool stop = false;
 		for( size_t i=1; i<v_pvertex.size(); i++ )       // search for next one
@@ -743,7 +746,7 @@ convertBC2VC(
 
 //	PrintVector( std::cout, v_out );
 	v_out.pop_back();
-//	PrintVector( std::cout, v_out );
+	PrintVector( std::cout, v_out );
 
 	return v_out;
 }
