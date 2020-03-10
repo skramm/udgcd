@@ -509,7 +509,7 @@ PrintSet( const std::set<VertexPair<vertex_t>>& set_edges, std::string msg )
 #endif
 //-------------------------------------------------------------------------------------------
 /// Builds the binary vector \c binvect associated to the cycle \c cycle.
-/// The index map \c idx_map is used to fetch the index in binary vector from the two vertices indexes
+/// The index vector \c idx_vec is used to fetch the index in binary vector from the two vertices indexes
 /**
 - sample input: 1-3-5
 
@@ -519,13 +519,13 @@ void
 buildBinaryVector(
 	const std::vector<vertex_t>& cycle,    ///< input cycle
 	BinaryPath&                  binvect,  ///< output binary vector (must be allocated)
-	const std::vector<size_t>&   idx_map ) ///< reference index map, see how it is build in \ref buildBinaryVectors() and \ref buildBinaryIndexMap(()
+	const std::vector<size_t>&   idx_vec ) ///< reference index vector, see how it is build in \ref buildBinaryVectors() and \ref buildBinaryIndexVec(()
 {
 	PRINT_FUNCTION;
 	for( size_t i=0; i<cycle.size(); ++i )
 	{
-		VertexPair<vertex_t> vp( (i==0?cycle[cycle.size()-1]:cycle[i-1]), cycle[i] );
-		size_t idx = idx_map[vp.v1] + vp.v2 - 1;
+		VertexPair<vertex_t> vp( (i==0 ? cycle[cycle.size()-1] : cycle[i-1]), cycle[i] );
+		size_t idx = idx_vec[vp.v1] + vp.v2 - 1;
 		assert( idx < binvect.size() );
 		binvect[idx] = 1;
 	}
@@ -547,12 +547,13 @@ This function builds a vector of 6-1=5 elements:
 0-4-7-9-10
 \endverbatim
 With those values, we get the index of a given edge in the binary vector with the formulae:
-\f$ idx = idx_map[v1] + v2 - 1 \f$
+\f$ idx = idx_vec[v1] + v2 - 1 \f$
 with \f$ v1 \f$ being the smallest vertex and \f$ v2 \f$ the other one.
 
+\todo Maybe we can remove the first value, as it is always 0.
 */
 std::vector<size_t>
-buildBinaryIndexMap( size_t nbVertices )
+buildBinaryIndexVec( size_t nbVertices )
 {
 	PRINT_FUNCTION;
 
@@ -578,14 +579,14 @@ buildBinaryVectors(
 	size_t nbCombinations = nbVertices * (nbVertices-1) / 2;
 //	std::cout << "nbCombinations=" << nbCombinations << '\n';
 
-	std::vector<size_t> idx_map = buildBinaryIndexMap( nbVertices );
-//	COUT << "idx_map: "; PrintVector( std::cout, idx_map );
+	std::vector<size_t> idx_vec = buildBinaryIndexVec( nbVertices );
+//	COUT << "idx_vec: "; PrintVector( std::cout, idx_vec );
 
     for( auto& binvect: v_binvect )
 		binvect.resize( nbCombinations );
 
 	for( size_t i=0; i<v_cycles.size(); i++ )
-		buildBinaryVector( v_cycles[i], v_binvect[i], idx_map );
+		buildBinaryVector( v_cycles[i], v_binvect[i], idx_vec );
 }
 //-------------------------------------------------------------------------------------------
 
@@ -860,6 +861,7 @@ removeRedundant( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 // build for each cycle its associated binary vector
 	std::vector<BinaryPath> v_binvect( v_in.size() );  // one binary vector per cycle
 	buildBinaryVectors( v_in, v_binvect, boost::num_vertices(g) );
+
 	printBitMatrix( std::cout, v_binvect, "removeRedundant(): input binary matrix" );
 
 	size_t nbIter1 = 0;
@@ -867,7 +869,7 @@ removeRedundant( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 	std::cout << "gaussianElim: nbIter=" << nbIter1 << '\n';
 
 	printBitMatrix( std::cout, v_bpaths, "removeRedundant(): output binary matrix" );
-	printBitVectors( std::cout, v_bpaths );
+//	printBitVectors( std::cout, v_bpaths );
 
 	std::cout << "v_bpaths size=" << v_bpaths.size() << '\n';
 // convert back binary cycles to vertex-based cycles, using a reverse map
@@ -1156,7 +1158,7 @@ findCycles( graph_t& g, UdgcdInfo& info )
 #ifdef UDGCD_DO_CYCLE_CHECKING
 	if( 0 != priv::checkCycles( v_cycles0, g ) )
 	{
-		std::cerr << "udgcd: ERROR: INVALID CYCLE DETECTED!!!\n";
+		std::cerr << "udgcd: ERROR: INVALID CYCLE DETECTED, line " << __LINE__ << "\n";
 		exit(1);
 	}
 #endif
@@ -1181,7 +1183,16 @@ findCycles( graph_t& g, UdgcdInfo& info )
 	info.setTimeStamp();
 	info.nbNonChordlessCycles = v_cycles1.size();
 
+#ifdef UDGCD_DO_CYCLE_CHECKING
+	if( 0 != priv::checkCycles( v_cycles1, g ) )
+	{
+		std::cerr << "udgcd: ERROR: INVALID CYCLE DETECTED, line " << __LINE__ << "\n";
+		exit(1);
+	}
+#endif
+
 	auto v_cycles2 = priv::removeRedundant( v_cycles1, g );
+
 
 #else
 
@@ -1190,6 +1201,14 @@ findCycles( graph_t& g, UdgcdInfo& info )
 	PrintPaths( std::cout, v_cycles2, "After removeRedundant()" );
 #endif
 
+#endif
+
+#ifdef UDGCD_DO_CYCLE_CHECKING
+	if( 0 != priv::checkCycles( v_cycles2, g ) )
+	{
+		std::cerr << "udgcd: ERROR: INVALID CYCLE DETECTED, line " << __LINE__ << "\n";
+		exit(1);
+	}
 #endif
 
 	info.setTimeStamp();

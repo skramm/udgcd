@@ -13,12 +13,29 @@ https://github.com/philsquared/Catch/
 
 
 //-------------------------------------------------------------------------------------------
+TEST_CASE( "test buildBinaryIndexVec", "[testbiv]" )
+{
+	size_t nbVertices = 6;
+	{
+		std::vector<size_t> expected = {0,4,7,9,10};
+		std::vector<size_t> idx_vec = udgcd::priv::buildBinaryIndexVec( nbVertices );
+		REQUIRE( idx_vec == expected );
+	}
+	{
+		nbVertices = 7;
+		std::vector<size_t> expected = {0,5,9,12,14,15};
+		std::vector<size_t> idx_vec = udgcd::priv::buildBinaryIndexVec( nbVertices );
+		REQUIRE( idx_vec == expected );
+	}
+}
+
+//-------------------------------------------------------------------------------------------
 /// Process test: converts input cycle (expressed as a vector of vertices) into
 /// a binary vector, converts it back, and checks that it is the same as input cycme
 void
 ProcessTest( std::vector<size_t>& cycle, size_t nbVertices )
 {
-	auto bim = udgcd::priv::buildBinaryIndexMap( nbVertices );
+	auto bim = udgcd::priv::buildBinaryIndexVec( nbVertices );
 	REQUIRE( bim.size() == nbVertices-1 );
 
 	auto nbCombinations = nbVertices * (nbVertices-1) / 2;
@@ -31,7 +48,8 @@ ProcessTest( std::vector<size_t>& cycle, size_t nbVertices )
 	auto rev_map = udgcd::priv::buildReverseBinaryMap( nbVertices );
 	REQUIRE( rev_map.size() == nbCombinations );
 
-	auto cycle2 = udgcd::priv::convertBC2VC<size_t>( bpa, rev_map );
+	size_t iter;
+	auto cycle2 = udgcd::priv::convertBC2VC<size_t>( bpa, rev_map, iter );
 	REQUIRE( cycle == cycle2 );
 
 }
@@ -184,6 +202,7 @@ buildBinMat( const std::vector<std::string>& m )
 //-------------------------------------------------------------------------------------------
 TEST_CASE( "test GaussianElimination", "[test2]" )
 {
+	size_t iter;
 	{
 		std::vector<std::string> m1{
 			"1100",
@@ -194,7 +213,7 @@ TEST_CASE( "test GaussianElimination", "[test2]" )
 		std::vector<udgcd::priv::BinaryPath> m_in= buildBinMat( m1 );
 
 		udgcd::priv::printBitMatrix( std::cout, m_in, "m_in" );
-		auto out = udgcd::priv::gaussianElim( m_in );
+		auto out = udgcd::priv::gaussianElim( m_in, iter );
 		udgcd::priv::printBitMatrix( std::cout, out, "out" );
 
 	}
@@ -210,7 +229,7 @@ TEST_CASE( "test GaussianElimination", "[test2]" )
 		std::vector<udgcd::priv::BinaryPath> m_in= buildBinMat( m1 );
 
 		udgcd::priv::printBitMatrix( std::cout, m_in, "m_in" );
-		auto out = udgcd::priv::gaussianElim( m_in );
+		auto out = udgcd::priv::gaussianElim( m_in, iter );
 		udgcd::priv::printBitMatrix( std::cout, out, "out" );
 	}
 }
