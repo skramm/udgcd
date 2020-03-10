@@ -676,7 +676,8 @@ template<typename vertex_t>
 std::vector<vertex_t>
 convertBC2VC(
 	const BinaryPath& v_in,         ///< input binary path
-	const RevBinMap&  rev_map       ///< required map, has to be build before, see buildReverseBinaryMap()
+	const RevBinMap&  rev_map,       ///< required map, has to be build before, see buildReverseBinaryMap()
+	size_t&           iter
 )
 {
 	assert( v_in.size() == rev_map.size() );
@@ -701,10 +702,12 @@ convertBC2VC(
 	v_out[1] = v_pvertex[0].second;
 	size_t curr_idx = 0;
 	size_t curr_v   = v_out[1];
-	size_t iter =0;
+//	size_t iter = 0;
+	iter = 0;
 	do
 	{
-		COUT << "\n* iter " << ++iter << " curr_idx=" << curr_idx << " curr_v=" << curr_v << '\n';
+		++iter;
+		COUT << "\n* iter " << iter << " curr_idx=" << curr_idx << " curr_v=" << curr_v << '\n';
 		bool stop = false;
 		for( size_t i=1; i<v_pvertex.size(); i++ )       // search for next one
 		{
@@ -747,13 +750,13 @@ convertBC2VC(
 //-------------------------------------------------------------------------------------------
 /// Gaussian binary elimination
 /**
-Input: a binary matrix
-Output: a reduced matrix
+- Input: a binary matrix
+- Output: a reduced matrix
 
-- assumes no identical rows
+Assumes no identical rows
 */
 std::vector<BinaryPath>
-gaussianElim( std::vector<BinaryPath>& m_in )
+gaussianElim( std::vector<BinaryPath>& m_in, size_t& nbIter )
 {
 	assert( m_in.size() > 1 );
 
@@ -761,7 +764,7 @@ gaussianElim( std::vector<BinaryPath>& m_in )
 	size_t col = 0;
 	size_t nb_rows = m_in.size();
 	size_t nb_cols = m_in[0].size();
-	size_t c=0;
+	nbIter = 0;
 	bool done = false;
 
 //	printBitMatrix( std::cout, m_in, "m_in INITIAL" );
@@ -769,7 +772,8 @@ gaussianElim( std::vector<BinaryPath>& m_in )
 	std::vector<bool> tag(nb_rows,false);
 	do
 	{
-		COUT << "\n* start iter " << ++c << ", current col=" << col
+		++nbIter;
+		COUT << "\n* start iter " << nbIter << ", current col=" << col
 			<< " #tagged lines = " << std::count( tag.begin(),tag.end(), true ) << "\n";
 
 		for( size_t row=0; row<nb_rows; row++ )                // search for first row with a 1 in current column
@@ -828,26 +832,35 @@ removeRedundant( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 	if( v_in.size() < 3 )
 		return v_in;
 
-	std::vector<std::vector<vertex_t>> v_out;
-	v_out.reserve( v_in.size() ); // to avoid unnecessary memory reallocations and copies
 
 // build for each cycle its associated binary vector
 	std::vector<BinaryPath> v_binvect( v_in.size() );  // one binary vector per cycle
 	buildBinaryVectors( v_in, v_binvect, boost::num_vertices(g) );
 //	printBitMatrix( std::cout, v_binvect, "removeRedundant(): input binary matrix" );
 
-	std::vector<BinaryPath> v_bpaths = gaussianElim( v_binvect );
+	size_t nbIter1 = 0;
+	std::vector<BinaryPath> v_bpaths = gaussianElim( v_binvect, nbIter1 );
+	std::cout << "gaussianElim: nbIter=" << nbIter1 << '\n';
 
 //	printBitMatrix( std::cout, v_bpaths, "removeRedundant(): output binary matrix" );
 //	printBitVectors( std::cout, v_bpaths );
 
+	std::cout << "v_bpaths size=" << v_bpaths.size() << '\n';
 // convert back binary cycles to vertex-based cycles, using a reverse map
 	size_t nb_vertices = boost::num_vertices(g);
 
 	auto rev_map = buildReverseBinaryMap( nb_vertices );
+	std::cout << "revmap size=" << rev_map.size() << '\n';
+
+	std::vector<std::vector<vertex_t>> v_out;
+	v_out.reserve( v_in.size() ); // to avoid unnecessary memory reallocations and copies
+
+	size_t i=0;
 	for( auto bcycle: v_bpaths )
 	{
-		auto cycle = convertBC2VC<vertex_t>( bcycle, rev_map );
+		size_t nbIter2 = 0;
+		auto cycle = convertBC2VC<vertex_t>( bcycle, rev_map, nbIter2 );
+		std::cout << ++i << ": convertBC2VC: nbIter=" << nbIter2 << '\n';
 		v_out.push_back( cycle );
 	}
 	return v_out;
@@ -1076,6 +1089,7 @@ findCycles( graph_t& g, UdgcdInfo& info )
 	if( !cycleDetector.cycleDetected() )             // if no detection,
 		return std::vector<std::vector<vertex_t>>(); //  return empty vector, no cycles found
 
+	std::cout << "-nbSourceVertices=" << cycleDetector.v_source_vertex.size() << '\n';
 	std::vector<std::vector<vertex_t>> v_cycles;     // else, get the cycles.
 
 // search paths only starting from vertices that were registered as source vertex
@@ -1096,6 +1110,7 @@ findCycles( graph_t& g, UdgcdInfo& info )
 
 	info.setTimeStamp();
 	info.nbRawCycles = v_cycles.size();
+	std::cout << "-Nb initial cycles: " << info.nbRawCycles << '\n';
 
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles, "Raw cycles" );
@@ -1110,8 +1125,7 @@ findCycles( graph_t& g, UdgcdInfo& info )
 
 	info.setTimeStamp();
 	info.nbCleanedCycles = v_cycles0.size();
-
-//	std::cout << "-After cleaning: " << v_cycles0.size() << " cycles\n";
+	std::cout << "-Nb cleaned cycles: " << info.nbCleanedCycles << '\n';
 
 #ifdef UDGCD_DO_CYCLE_CHECKING
 	if( 0 != priv::checkCycles( v_cycles0, g ) )

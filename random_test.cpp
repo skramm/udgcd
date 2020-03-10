@@ -15,7 +15,6 @@ Arguments can be given (default values provided):
 */
 
 #include <iostream>
-#include "udgcd.hpp"
 
 std::string prog_id = "random";
 
