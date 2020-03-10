@@ -109,7 +109,7 @@ template<typename T>
 void
 printBitMatrix( std::ostream& f, const T& mat, std::string msg )
 {
-	f << "Matrix " << msg << ", nbLines=" << mat.size() << "\n";
+	f << "Matrix " << msg << ", nbLines=" << mat.size() << " nbCols=" << mat[0].size() << "\n";
     for( auto line: mat )
     {
 		f << " | ";
@@ -635,10 +635,29 @@ buildReverseBinaryMap( size_t nb_vertices )
 	return out;
 }
 //-------------------------------------------------------------------------------------------
+template<typename vertex_t>
+bool
+checkVertexPairSet( const std::vector<std::pair<vertex_t,vertex_t>>& vp )
+{
+	std::map<vertex_t,int> vmap;
+    for( auto p: vp )
+    {
+		vmap[p.first]++;
+		vmap[p.second]++;
+		if( vmap[p.first] == 3 )
+			return false;
+		if( vmap[p.second] == 3 )
+			return false;
+	}
+	return true;
+}
+//-------------------------------------------------------------------------------------------
 /// Fill map with adjacent nodes
 /**
-The idea here is to avoid doing an extensive search each time to see if node is already present, witch
+The idea here is to avoid doing an extensive search each time to see if node is already present, which
 can be costly for large cycles
+
+\bug here 2020-03-10
 */
 template<typename vertex_t>
 std::vector<std::pair<vertex_t,vertex_t>>
@@ -672,13 +691,13 @@ Algorithm:
 \todo The downside of this approach is that we need to build before the \c rev_map, that can be pretty big...
 Maybe we can find a better way ?
 
-\bug discovered on 2020-03-09. To trigger: bin/read_graph samples2/gen_graph_1583824532.txt
+\bug discovered on 2020-03-09. To trigger: bin/read_graph samples2/graph_1583824532.txt.
 */
 template<typename vertex_t>
 std::vector<vertex_t>
 convertBC2VC(
 	const BinaryPath& v_in,         ///< input binary path
-	const RevBinMap&  rev_map,       ///< required map, has to be build before, see buildReverseBinaryMap()
+	const RevBinMap&  rev_map,      ///< required map, has to be build before, see buildReverseBinaryMap()
 	size_t&           iter
 )
 {
@@ -690,12 +709,14 @@ convertBC2VC(
 // step 1: build map from binary vector
 	auto v_pvertex = buildMapFromBinaryVector<vertex_t>( v_in, rev_map );
 
-#if 0
-	COUT << "VERTEX MAP:\n";
+#if 1
+	std::cout << "VERTEX MAP: size=" << v_pvertex.size() << "\n";
 	size_t i = 0;
 	for( const auto& vp: v_pvertex )
-		COUT << i++ << ":" << vp.first << "-" << vp.second << "\n";
+		std::cout << i++ << ":" << vp.first << "-" << vp.second << "\n";
 #endif
+
+	assert( checkVertexPairSet( v_pvertex ) );
 
 // step 2: extract vertices from map
 	COUT << "step2:\n";
@@ -709,14 +730,14 @@ convertBC2VC(
 	do
 	{
 		++iter;
-//		std::cout << "\n* iter " << iter << " v_out size=" << v_out.size() << '\n';
+//		std::cout << "\n* iter " << iter << " v_out size=" << v_out.size() << " curr_idx=" << curr_idx << " curr_v=" << curr_v << '\n';
 		COUT << "\n* iter " << iter << " curr_idx=" << curr_idx << " curr_v=" << curr_v << '\n';
 		bool stop = false;
 		for( size_t i=1; i<v_pvertex.size(); i++ )       // search for next one
 		{
 			if( i != curr_idx )
 			{
-				COUT << " start "<< i << "/" << v_pvertex.size()-1 << '\n';
+//				std::cout << " start "<< i << "/" << v_pvertex.size()-1  << " pair:" << v_pvertex[i].first << "-" << v_pvertex[i].second <<  '\n';
 				auto p = v_pvertex[i];
 				if( curr_v == p.first )
 				{
@@ -724,7 +745,7 @@ convertBC2VC(
 					curr_v   = p.second;
 					curr_idx = i;
 					stop     = true;
-					COUT << i << ": found first, v_out(size)=" << v_out.size() << " curr_idx=" << curr_idx << " curr_v=" << curr_v << '\n';
+//					std::cout << i << ": found first, v_out(size)=" << v_out.size() << " curr_idx=" << curr_idx << " curr_v=" << curr_v << '\n';
 				}
 				else
 				{
@@ -734,7 +755,7 @@ convertBC2VC(
 						curr_v   = p.first;
 						curr_idx = i;
 						stop     = true;
-						COUT << i << ": found second, v_out(size)=" << v_out.size() << " curr_idx=" << curr_idx << " curr_v=" << curr_v << '\n';
+//						std::cout << i << ": found second, v_out(size)=" << v_out.size() << " curr_idx=" << curr_idx << " curr_v=" << curr_v << '\n';
 					}
 				}
 			}
@@ -746,7 +767,7 @@ convertBC2VC(
 
 //	PrintVector( std::cout, v_out );
 	v_out.pop_back();
-	PrintVector( std::cout, v_out );
+//	PrintVector( std::cout, v_out );
 
 	return v_out;
 }
@@ -839,14 +860,14 @@ removeRedundant( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 // build for each cycle its associated binary vector
 	std::vector<BinaryPath> v_binvect( v_in.size() );  // one binary vector per cycle
 	buildBinaryVectors( v_in, v_binvect, boost::num_vertices(g) );
-//	printBitMatrix( std::cout, v_binvect, "removeRedundant(): input binary matrix" );
+	printBitMatrix( std::cout, v_binvect, "removeRedundant(): input binary matrix" );
 
 	size_t nbIter1 = 0;
 	std::vector<BinaryPath> v_bpaths = gaussianElim( v_binvect, nbIter1 );
 	std::cout << "gaussianElim: nbIter=" << nbIter1 << '\n';
 
-//	printBitMatrix( std::cout, v_bpaths, "removeRedundant(): output binary matrix" );
-//	printBitVectors( std::cout, v_bpaths );
+	printBitMatrix( std::cout, v_bpaths, "removeRedundant(): output binary matrix" );
+	printBitVectors( std::cout, v_bpaths );
 
 	std::cout << "v_bpaths size=" << v_bpaths.size() << '\n';
 // convert back binary cycles to vertex-based cycles, using a reverse map
@@ -862,8 +883,10 @@ removeRedundant( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 	for( auto bcycle: v_bpaths )
 	{
 		size_t nbIter2 = 0;
+		++i;
+		std::cout << i << ": **** calling convertBC2VC with :"; printBitVector( std::cout, bcycle );
 		auto cycle = convertBC2VC<vertex_t>( bcycle, rev_map, nbIter2 );
-		std::cout << ++i << ": convertBC2VC: nbIter=" << nbIter2 << '\n';
+//		std::cout << i << ": **** result: nbIter=" << nbIter2 << '\n';
 		v_out.push_back( cycle );
 	}
 	return v_out;
