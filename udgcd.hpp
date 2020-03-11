@@ -351,6 +351,10 @@ findTrueCycle( const std::vector<T>& cycle )
 Example:
 - in: 1-2-3-4-5-3
 - out: 3-4-5
+
+\todo We make a preallocation of the output vector, using the size of the input vector.
+However, the output vector has a size usually less than 10 times less the size of the input vector.
+Thus there might be some memory saving to do here.
 */
 template<typename T>
 std::vector<std::vector<T>>
@@ -566,15 +570,17 @@ buildBinaryIndexVec( size_t nbVertices )
 //-------------------------------------------------------------------------------------------
 /// Builds all the binary vectors for all the cycles
 template<typename vertex_t>
-void
+std::vector<BinaryPath>
+//void
 buildBinaryVectors(
 	const std::vector<std::vector<vertex_t>>& v_cycles,     ///< input cycles
-	std::vector<BinaryPath>&                  v_binvect,    ///< output vector of binary vectors
+//	std::vector<BinaryPath>&                  v_binvect,    ///< output vector of binary vectors
 	size_t                                    nbVertices    ///< nb of vertices of the graph
 )
 {
 	PRINT_FUNCTION;
-	assert( v_cycles.size() == v_binvect.size() );
+	std::vector<BinaryPath> v_binPath( v_cycles.size() );
+//	assert( v_cycles.size() == v_binvect.size() );
 
 	size_t nbCombinations = nbVertices * (nbVertices-1) / 2;
 //	std::cout << "nbCombinations=" << nbCombinations << '\n';
@@ -582,11 +588,13 @@ buildBinaryVectors(
 	std::vector<size_t> idx_vec = buildBinaryIndexVec( nbVertices );
 //	COUT << "idx_vec: "; PrintVector( std::cout, idx_vec );
 
-    for( auto& binvect: v_binvect )
+    for( auto& binvect: v_binPath )
 		binvect.resize( nbCombinations );
 
 	for( size_t i=0; i<v_cycles.size(); i++ )
-		buildBinaryVector( v_cycles[i], v_binvect[i], idx_vec );
+		buildBinaryVector( v_cycles[i], v_binPath[i], idx_vec );
+
+	return v_binPath;
 }
 //-------------------------------------------------------------------------------------------
 
@@ -594,7 +602,7 @@ buildBinaryVectors(
 using RevBinMap = std::vector<std::pair<size_t,size_t>>;
 
 //-------------------------------------------------------------------------------------------
-/// Builds an index map giving from an index in the binary vector the indexes of the two vertices
+/// Builds an table giving from an index in the binary vector the indexes of the two vertices
 /// that are connected. See \ref convertBC2VC()
 /**
 Size: \f$ n*(n-1)/2 \f$
@@ -610,7 +618,7 @@ Example for n=5 (=> size=10)
 6 | 1 4
 7 | 2 3
 8 | 2 4
-9 | 2 5
+9 | 3 4
 \endverbatim
 */
 RevBinMap
@@ -636,33 +644,39 @@ buildReverseBinaryMap( size_t nb_vertices )
 	return out;
 }
 //-------------------------------------------------------------------------------------------
+/// Returns false if a given vertex appears more than once in the vector \c vp
 template<typename vertex_t>
 bool
 checkVertexPairSet( const std::vector<std::pair<vertex_t,vertex_t>>& vp )
 {
 	std::map<vertex_t,int> vmap;
+	bool correct = true;
     for( auto p: vp )
     {
 		vmap[p.first]++;
 		vmap[p.second]++;
-		if( vmap[p.first] == 3 )
-			return false;
-		if( vmap[p.second] == 3 )
-			return false;
+		if( vmap[p.first] > 2 )
+		{
+			std::cerr << __FUNCTION__ << "(): Error, vertex " << p.first << " appears " << vmap[p.first] << " times in set\n";
+			correct = false;
+		}
+		if( vmap[p.second] > 2 )
+		{
+			std::cerr << __FUNCTION__ << "(): Error, vertex " << p.second << " appears " << vmap[p.second] << " times in set\n";
+			correct = false;
+		}
 	}
-	return true;
+	return correct;
 }
 //-------------------------------------------------------------------------------------------
 /// Fill map with adjacent nodes
 /**
 The idea here is to avoid doing an extensive search each time to see if node is already present, which
 can be costly for large cycles
-
-\bug here 2020-03-10
 */
 template<typename vertex_t>
 std::vector<std::pair<vertex_t,vertex_t>>
-buildMapFromBinaryVector(
+buildPairSetFromBinaryVec(
 	const BinaryPath& v_in,          ///< A binary vector holding 1 at each position where there is an edge
 	const RevBinMap&  rev_map        ///< Reverse map, see buildReverseBinaryMap()
 )
@@ -707,8 +721,8 @@ convertBC2VC(
 	PRINT_FUNCTION;
 	printBitVector( std::cout, v_in );
 
-// step 1: build map from binary vector
-	auto v_pvertex = buildMapFromBinaryVector<vertex_t>( v_in, rev_map );
+// step 1: build set of pairs from binary vector
+	auto v_pvertex = buildPairSetFromBinaryVec<vertex_t>( v_in, rev_map );
 
 #if 1
 	std::cout << "VERTEX MAP: size=" << v_pvertex.size() << "\n";
@@ -717,7 +731,11 @@ convertBC2VC(
 		std::cout << i++ << ":" << vp.first << "-" << vp.second << "\n";
 #endif
 
-	assert( checkVertexPairSet( v_pvertex ) );
+	if( false == checkVertexPairSet( v_pvertex ) )
+	{
+		std::cout << "Fatal error: invalid set of pairs\n";
+		std::exit(1);
+	}
 
 // step 2: extract vertices from map
 	COUT << "step2:\n";
@@ -843,13 +861,40 @@ gaussianElim( std::vector<BinaryPath>& m_in, size_t& nbIter )
 	return m_out;
 }
 //-------------------------------------------------------------------------------------------
+/// Convert vector of cycles expressed as binary vectors to vector of cycles expressed as a vector of vertices
+template<typename vertex_t>
+std::vector<std::vector<vertex_t>>
+convertBinary2Vertex(
+	const std::vector<BinaryPath>& v_bpath,
+	size_t nbVertices
+)
+{
+	std::vector<std::vector<vertex_t>> v_out;
+	v_out.reserve( v_bpath.size() ); // to avoid unnecessary memory reallocations and copies
+
+	auto rev_map = buildReverseBinaryMap( nbVertices );
+	std::cout << "revmap size=" << rev_map.size() << '\n';
+
+	size_t i=0;
+	for( auto bcycle: v_bpath )
+	{
+		size_t nbIter2 = 0;
+		++i;
+		std::cout << i << ": **** calling convertBC2VC()\nInput:"; printBitVector( std::cout, bcycle );
+		auto cycle = convertBC2VC<vertex_t>( bcycle, rev_map, nbIter2 );
+		std::cout << i << ": **** result: nbIter=" << nbIter2 << '\n';
+		v_out.push_back( cycle );
+	}
+	return v_out;
+}
+//-------------------------------------------------------------------------------------------
 /// Post-process step: removes cycles based on Gaussian Elimination
 /**
 arg is not const, because it gets sorted here.
 */
-template<typename vertex_t, typename graph_t>
+template<typename vertex_t>
 std::vector<std::vector<vertex_t>>
-removeRedundant( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
+removeRedundant( std::vector<std::vector<vertex_t>>& v_in, size_t nbVertices )
 {
 	PRINT_FUNCTION;
 
@@ -857,41 +902,25 @@ removeRedundant( std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 	if( v_in.size() < 3 )
 		return v_in;
 
-
 // build for each cycle its associated binary vector
-	std::vector<BinaryPath> v_binvect( v_in.size() );  // one binary vector per cycle
-	buildBinaryVectors( v_in, v_binvect, boost::num_vertices(g) );
+	auto v_binvect = buildBinaryVectors( v_in, nbVertices );
+
+// just for checking purposes
+	convertBinary2Vertex<vertex_t>( v_binvect, nbVertices );
 
 	printBitMatrix( std::cout, v_binvect, "removeRedundant(): input binary matrix" );
 
 	size_t nbIter1 = 0;
-	std::vector<BinaryPath> v_bpaths = gaussianElim( v_binvect, nbIter1 );
+	auto v_bpaths = gaussianElim( v_binvect, nbIter1 );
 	std::cout << "gaussianElim: nbIter=" << nbIter1 << '\n';
 
 	printBitMatrix( std::cout, v_bpaths, "removeRedundant(): output binary matrix" );
-//	printBitVectors( std::cout, v_bpaths );
 
 	std::cout << "v_bpaths size=" << v_bpaths.size() << '\n';
-// convert back binary cycles to vertex-based cycles, using a reverse map
-	size_t nb_vertices = boost::num_vertices(g);
 
-	auto rev_map = buildReverseBinaryMap( nb_vertices );
-	std::cout << "revmap size=" << rev_map.size() << '\n';
+// convert back binary cycles to vertex-based cycles,
 
-	std::vector<std::vector<vertex_t>> v_out;
-	v_out.reserve( v_in.size() ); // to avoid unnecessary memory reallocations and copies
-
-	size_t i=0;
-	for( auto bcycle: v_bpaths )
-	{
-		size_t nbIter2 = 0;
-		++i;
-		std::cout << i << ": **** calling convertBC2VC with :"; printBitVector( std::cout, bcycle );
-		auto cycle = convertBC2VC<vertex_t>( bcycle, rev_map, nbIter2 );
-//		std::cout << i << ": **** result: nbIter=" << nbIter2 << '\n';
-		v_out.push_back( cycle );
-	}
-	return v_out;
+	return convertBinary2Vertex<vertex_t>( v_bpaths, nbVertices );
 }
 
 //-------------------------------------------------------------------------------------------
@@ -1143,7 +1172,6 @@ findCycles( graph_t& g, UdgcdInfo& info )
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles, "Raw cycles" );
 #endif
-//	std::cout << "-Raw cycles: " << v_cycles.size() << " cycles\n";
 
 // post process 0: cleanout the cycles by removing steps that are not part of the cycle
 	auto v_cycles0 = priv::cleanCycles( v_cycles );
@@ -1191,12 +1219,12 @@ findCycles( graph_t& g, UdgcdInfo& info )
 	}
 #endif
 
-	auto v_cycles2 = priv::removeRedundant( v_cycles1, g );
+	auto v_cycles2 = priv::removeRedundant( v_cycles1, boost::num_vertices(g) );
 
 
 #else
 
-	auto v_cycles2 = priv::removeRedundant( v_cycles0, g );
+	auto v_cycles2 = priv::removeRedundant( v_cycles0, boost::num_vertices(g) );
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles2, "After removeRedundant()" );
 #endif

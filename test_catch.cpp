@@ -245,7 +245,7 @@ buildBinVect( const char* s )
 }
 //-------------------------------------------------------------------------------------------
 #if 0
-TEST_CASE( "test buildMapFromBinaryVector", "[test5]" )
+TEST_CASE( "test buildPairSetFromBinaryVec", "[test5]" )
 {
 /*
 graph: 0-1-4-3:
@@ -261,7 +261,7 @@ vector: 1  0  1  0  0  0  1  0  0  1
 	udgcd::priv::BinaryPath v_in{ buildBinVect("1010001001") };
 	udgcd::priv::RevBinMap  rev_map = udgcd::priv::buildReverseBinaryMap( nb_vertices );
 
-	auto m = udgcd::priv::buildMapFromBinaryVector<size_t>( v_in, rev_map );
+	auto m = udgcd::priv::buildPairSetFromBinaryVec<size_t>( v_in, rev_map );
 	std::map<size_t,size_t> res={
 		{0,1},{3,0},{1,4},{4,3}
 	};
