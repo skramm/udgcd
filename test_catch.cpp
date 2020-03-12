@@ -96,6 +96,13 @@ TEST_CASE( "test isACycle", "[test4]" )
 			std::vector<size_t> in{0,1,2,3,4};
 			REQUIRE( !udgcd::priv::isACycle( in, g ) );
 		}
+
+		{  // erroneous cycle: node appears multiple times
+			std::vector<size_t> in{0,1,2,3,2,3,4};
+			REQUIRE( !udgcd::priv::isACycle( in, g ) );
+		}
+
+
 	}
 	{
 		graph_t g( 5 );

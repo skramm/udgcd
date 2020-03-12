@@ -89,7 +89,47 @@ vector:  0  0  0  0  0  1  1  0  0  1
 */
 typedef boost::dynamic_bitset<> BinaryPath;
 
+#ifdef UDGCD_NEW_BIN_MAT_TYPE
+struct BinaryMatInfo
+{
+    size_t nbLines = 0;
+    size_t nbCols = 0;
+    size_t nbOnes = 0;
+    size_t nb0Cols = 0;   ///< nb of columns with only 0 values
+    size_t nb0Lines = 0;  ///< nb of lines with only 0 values
+};
 
+/// A binary matrix \todo WIP!!!
+/**
+This type will allow to fetch some relevant information on what the matrix holds
+*/
+struct BinaryMatrix
+{
+	std::vector<BinaryPath> _data;
+	BinaryMatrix( size_t nbLines, size_t nbCols )
+	{
+        _data.resize( nbLines );
+        std::for_each( _data.begin(), _data.end(), (BinaryPath& bv)[nbCols]{ bv.resize(nbCols) } );
+	}
+	BinaryPath& operator []
+	{
+		return _data[i];
+	}
+	void addLine( size_t idx, const BinaryPath& bvec )
+	{
+		assert( idx< _data.size() );
+		_data[i] = bvec;
+	}
+    BinaryMatInfo getInfo() const
+    {
+		BinaryMatInfo info;
+		info.nbLines = _data.size();
+		std::assert( _data.size() );
+		info.nbCols = _data[0].size();
+		return info;
+    }
+};
+#endif
 //-------------------------------------------------------------------------------------------
 /// Print vector of bits
 template<typename T>
@@ -570,35 +610,48 @@ buildBinaryIndexVec( size_t nbVertices )
 //-------------------------------------------------------------------------------------------
 /// Builds all the binary vectors for all the cycles
 template<typename vertex_t>
+#ifdef UDGCD_NEW_BIN_MAT_TYPE
+BinaryMatrix
+#else
 std::vector<BinaryPath>
-//void
+#endif
 buildBinaryVectors(
 	const std::vector<std::vector<vertex_t>>& v_cycles,     ///< input cycles
-//	std::vector<BinaryPath>&                  v_binvect,    ///< output vector of binary vectors
 	size_t                                    nbVertices    ///< nb of vertices of the graph
 )
 {
 	PRINT_FUNCTION;
-	std::vector<BinaryPath> v_binPath( v_cycles.size() );
-//	assert( v_cycles.size() == v_binvect.size() );
 
 	size_t nbCombinations = nbVertices * (nbVertices-1) / 2;
-//	std::cout << "nbCombinations=" << nbCombinations << '\n';
+
+#ifdef UDGCD_NEW_BIN_MAT_TYPE
+	BinaryMatrix out( v_cycles.size(), nbCombinations );  // lines x cols
+#else
+	std::vector<BinaryPath> out( v_cycles.size() );
+#endif
+
+//	assert( v_cycles.size() == v_binvect.size() );
+
 
 	std::vector<size_t> idx_vec = buildBinaryIndexVec( nbVertices );
 //	COUT << "idx_vec: "; PrintVector( std::cout, idx_vec );
 
-    for( auto& binvect: v_binPath )
+#ifdef UDGCD_NEW_BIN_MAT_TYPE
+	for( size_t i=0; i<v_cycles.size(); i++ )
+		out.addLine( i, buildBinaryVector( v_cycles[i], idx_vec );
+#else
+    for( auto& binvect: out )
 		binvect.resize( nbCombinations );
 
 	for( size_t i=0; i<v_cycles.size(); i++ )
-		buildBinaryVector( v_cycles[i], v_binPath[i], idx_vec );
-
-	return v_binPath;
+		buildBinaryVector( v_cycles[i], out[i], idx_vec );
+#endif
+	return out;
 }
 //-------------------------------------------------------------------------------------------
 
 //-------------------------------------------------------------------------------------------
+/// See buildReverseBinaryMap()
 using RevBinMap = std::vector<std::pair<size_t,size_t>>;
 
 //-------------------------------------------------------------------------------------------
@@ -798,8 +851,14 @@ convertBC2VC(
 
 Assumes no identical rows
 */
+
+#ifdef UDGCD_NEW_BIN_MAT_TYPE
+BinaryMatrix
+gaussianElim( BinaryMatrix& m_in, size_t& nbIter )
+#else
 std::vector<BinaryPath>
 gaussianElim( std::vector<BinaryPath>& m_in, size_t& nbIter )
+#endif
 {
 	assert( m_in.size() > 1 );
 
@@ -924,7 +983,7 @@ removeRedundant( std::vector<std::vector<vertex_t>>& v_in, size_t nbVertices )
 }
 
 //-------------------------------------------------------------------------------------------
-/// Recursive function, will iterate in graph and return true
+/// Recursive function, will iterate in graph and return true if cycle is correct
 /**
 End condition
  - we found the initial node as \c next
