@@ -31,6 +31,8 @@ ifeq "$(DEVMODE)" "Y"
 endif
 
 SHELL=/bin/bash
+CFLAGS += -DUDGCD_NEW_BIN_MAT_TYPE
+
 
 # files and folders
 SRC_DIR=.

@@ -109,22 +109,24 @@ struct BinaryMatrix
 	BinaryMatrix( size_t nbLines, size_t nbCols )
 	{
         _data.resize( nbLines );
-        std::for_each( _data.begin(), _data.end(), (BinaryPath& bv)[nbCols]{ bv.resize(nbCols) } );
+//        std::for_each( _data.begin(), _data.end(), (BinaryPath& bv)[nbCols]{ bv.resize(nbCols) } );
 	}
-	BinaryPath& operator []
+	size_t nbLines() const { return _data.size(); }
+	size_t nbCols()  const { return _data.at(0).size(); }
+	BinaryPath& operator []( size_t i )
 	{
 		return _data[i];
 	}
 	void addLine( size_t idx, const BinaryPath& bvec )
 	{
 		assert( idx< _data.size() );
-		_data[i] = bvec;
+		_data[idx] = bvec;
 	}
     BinaryMatInfo getInfo() const
     {
 		BinaryMatInfo info;
 		info.nbLines = _data.size();
-		std::assert( _data.size() );
+		assert( _data.size() );
 		info.nbCols = _data[0].size();
 		return info;
     }
@@ -638,7 +640,7 @@ buildBinaryVectors(
 
 #ifdef UDGCD_NEW_BIN_MAT_TYPE
 	for( size_t i=0; i<v_cycles.size(); i++ )
-		out.addLine( i, buildBinaryVector( v_cycles[i], idx_vec );
+		out.addLine( i, buildBinaryVector( v_cycles[i], idx_vec ) );
 #else
     for( auto& binvect: out )
 		binvect.resize( nbCombinations );
@@ -844,7 +846,7 @@ convertBC2VC(
 	return v_out;
 }
 //-------------------------------------------------------------------------------------------
-/// Gaussian binary elimination
+/// Gaussian binary elimination (WIP: second version, uses a specific type to store the matrix
 /**
 - Input: a binary matrix
 - Output: a reduced matrix
@@ -855,10 +857,71 @@ Assumes no identical rows
 #ifdef UDGCD_NEW_BIN_MAT_TYPE
 BinaryMatrix
 gaussianElim( BinaryMatrix& m_in, size_t& nbIter )
+{
+
+	std::vector<BinaryPath> m_out;
+	size_t col = 0;
+	size_t nb_rows = m_in.nbLines();
+	size_t nb_cols = m_in.nbCols();
+	assert( nb_rows > 1 );
+
+	nbIter = 0;
+	bool done = false;
+
+//	printBitMatrix( std::cout, m_in, "m_in INITIAL" );
+
+	std::vector<bool> tag(nb_rows,false);
+	do
+	{
+		++nbIter;
+		COUT << "\n* start iter " << nbIter << ", current col=" << col
+			<< " #tagged lines = " << std::count( tag.begin(),tag.end(), true ) << "\n";
+
+		for( size_t row=0; row<nb_rows; row++ )                // search for first row with a 1 in current column
+		{
+			COUT << "considering line " << row << "\n";
+			if( tag[row] == false && m_in[row][col] == 1 )    // AND not tagged
+			{
+				COUT << "row: " << row << ": found 1 in col " << col << "\n";
+				m_out.push_back( m_in.at(row) );
+				tag[row] = true;
+				if( row < nb_rows-1 )
+				{
+					for( size_t i=row+1; i<nb_rows; i++ )      // search for all following rows that have a 1 in that column
+					{
+						if( tag[i] == false )                  // AND that are not tagged.
+							if( m_in[i][col] == 1 )            // it there is, we XOR them with initial line
+								m_in[i] = m_in[i] ^ m_in[row];
+					}
+				}
+				COUT << "BREAK loop\n";
+				break;
+			}
+		}
+		COUT << "switch to next col\n";
+		col++;
+		if( col == nb_cols )
+		{
+			COUT << "All columns done, end\n";
+			done = true;
+		}
+		if( std::find(tag.begin(),tag.end(), false ) == tag.end() )
+		{
+			COUT << "All lines tagged, end\n";
+			done = true;
+		}
+#ifdef UDGCD_DEV_MODE
+		printBitMatrix( std::cout, m_in, "m_in" );
+		printBitMatrix( std::cout, m_out, "m_out" );
+#endif
+	}
+	while( !done );
+	return m_out;
+}
 #else
+/// first version, uses a vector to store the matrix
 std::vector<BinaryPath>
 gaussianElim( std::vector<BinaryPath>& m_in, size_t& nbIter )
-#endif
 {
 	assert( m_in.size() > 1 );
 
@@ -919,6 +982,8 @@ gaussianElim( std::vector<BinaryPath>& m_in, size_t& nbIter )
 	while( !done );
 	return m_out;
 }
+#endif
+
 //-------------------------------------------------------------------------------------------
 /// Convert vector of cycles expressed as binary vectors to vector of cycles expressed as a vector of vertices
 template<typename vertex_t>
