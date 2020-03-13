@@ -18,8 +18,8 @@ COLOR_OFF="\e[0m"
 #--------------------------------
 # general compiler flags
 # -Wno-unused-result is to avoid the warning on call to std::system() when calling dot (see void CallDot() )
-#CFLAGS = -std=c++0x -Wall -O2 -Iinclude -Wno-unused-result
-CFLAGS = -g -std=c++0x -Wall -O2 -Iinclude -Wno-unused-result
+CFLAGS = -std=c++0x -Wall -O2 -Iinclude -Wno-unused-result
+#CFLAGS = -g -std=c++0x -Wall -O2 -Iinclude -Wno-unused-result
 
 
 ifeq "$(PRINT_STEPS)" "Y"
@@ -31,7 +31,6 @@ ifeq "$(DEVMODE)" "Y"
 endif
 
 SHELL=/bin/bash
-CFLAGS += -DUDGCD_NEW_BIN_MAT_TYPE
 
 
 # files and folders
@@ -109,6 +108,7 @@ show: $(SRC_FILES)
 	@echo DOT_FILES =$(DOT_FILES)
 	@echo SVG_FILES =$(SVG_FILES)
 
+
 doc:
 	doxygen doxyfile 1>$(OBJ_DIR)/doxygen_stdout.txt 2>$(OBJ_DIR)/doxygen_stderr.txt
 	xdg-open html/index.html
@@ -144,9 +144,11 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(HEADERS)
 	$(L)$(CXX) -o $@ -c $< $(CFLAGS)
 
 # linking
+# -s option: strip symbol (don't add if debugging)
 $(BIN_DIR)/%: $(OBJ_DIR)/%.o
 	@echo $(COLOR_1) " - Link demo $@." $(COLOR_OFF)
 	$(L)$(CXX) -o $@ -s $<  $(LDFLAGS)
+#	$(L)$(CXX) -o $@ $<  $(LDFLAGS)
 
 bin/test_catch: obj/test_catch.o
 	$(CXX) -o bin/test_catch obj/test_catch.o -s

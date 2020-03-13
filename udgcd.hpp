@@ -92,7 +92,7 @@ printBitVector( std::ostream& f, const T& vec )
 	f << ": #=" << vec.count() << "\n";   // works with boost::dynamic_bitset << "\n";
 }
 
-#ifdef UDGCD_NEW_BIN_MAT_TYPE
+
 template<typename T>
 void
 printBitMatrix( std::ostream& f, const T& mat, std::string msg )
@@ -110,25 +110,7 @@ printBitMatrix( std::ostream& f, const T& mat, std::string msg )
 		f << " |\n";
 	}
 }
-#else
-template<typename T>
-void
-printBitMatrix( std::ostream& f, const T& mat, std::string msg )
-{
-	f << "Matrix " << msg << ", nbLines=" << mat.size() << " nbCols=" << mat[0].size() << "\n";
-    for( auto line: mat )
-    {
-		f << " | ";
-		for( size_t i=0; i<line.size(); i++ )
-		{
-			f << line[i];
-			if( !((i+1)%4) && i != line.size()-1 )
-				f << '.';
-		}
-		f << " |\n";
-	}
-}
-#endif
+
 
 /// holds a path as a binary vector.
 /**
@@ -145,7 +127,8 @@ vector:  0  0  0  0  0  1  1  0  0  1
 */
 typedef boost::dynamic_bitset<> BinaryPath;
 
-#ifdef UDGCD_NEW_BIN_MAT_TYPE
+
+//-------------------------------------------------------------------------------------------
 struct BinaryMatInfo
 {
     size_t nbLines = 0;
@@ -155,6 +138,7 @@ struct BinaryMatInfo
     size_t nb0Lines = 0;  ///< nb of lines with only 0 values
 };
 
+//-------------------------------------------------------------------------------------------
 /// A binary matrix \todo WIP!!!
 /**
 This type will allow to fetch some relevant information on what the matrix holds
@@ -164,11 +148,14 @@ struct BinaryMatrix
 	std::vector<BinaryPath> _data;
 	BinaryMatrix( size_t nbLines, size_t nbCols )
 	{
+		assert( nbLines>0 );
+		assert( nbCols>0 );
         _data.resize( nbLines );
         std::for_each( _data.begin(), _data.end(), [nbCols](BinaryPath& bv){ bv.resize(nbCols); } );
+        std::cout << __FUNCTION__ << "(): nb cols=" << _data[0].size() << '\n';
 	}
+
 	size_t nbLines() const { return _data.size(); }
-//	size_t size()    const { return _data.size(); }
 	size_t nbCols()  const { assert( nbLines() ); return _data.at(0).size(); }
 
 	auto begin() -> decltype(_data.begin()) { return _data.begin(); }
@@ -215,7 +202,6 @@ struct BinaryMatrix
 		}
 	}
 };
-#endif
 
 //-------------------------------------------------------------------------------------------
 /// Print vector of vectors of bits
@@ -671,12 +657,7 @@ buildBinaryVectors(
 	PRINT_FUNCTION;
 
 	size_t nbCombinations = nbVertices * (nbVertices-1) / 2;
-
-#ifdef UDGCD_NEW_BIN_MAT_TYPE
 	BinaryMatrix out( v_cycles.size(), nbCombinations );  // lines x cols
-#else
-	std::vector<BinaryPath> out( v_cycles.size() );
-#endif
 
 //	assert( v_cycles.size() == v_binvect.size() );
 
@@ -684,16 +665,9 @@ buildBinaryVectors(
 	std::vector<size_t> idx_vec = buildBinaryIndexVec( nbVertices );
 //	COUT << "idx_vec: "; PrintVector( std::cout, idx_vec );
 
-
-#ifdef UDGCD_NEW_BIN_MAT_TYPE
 	for( size_t i=0; i<v_cycles.size(); i++ )
 		buildBinaryVector( v_cycles[i], out.line(i), idx_vec );
-#else
-    for( auto& binvect: out )
-		binvect.resize( nbCombinations );
-	for( size_t i=0; i<v_cycles.size(); i++ )
-		buildBinaryVector( v_cycles[i], out[i], idx_vec );
-#endif
+
 	return out;
 }
 //-------------------------------------------------------------------------------------------
@@ -824,6 +798,7 @@ convertBC2VC(
 
 // step 1: build set of pairs from binary vector
 	auto v_pvertex = buildPairSetFromBinaryVec<vertex_t>( v_in, rev_map );
+	assert( v_pvertex.size()>0 );
 
 #if 1
 	std::cout << "VERTEX MAP: size=" << v_pvertex.size() << "\n";
@@ -975,11 +950,7 @@ convertBinary2Vertex
 {
 	std::vector<std::vector<vertex_t>> v_out;
 
-#ifdef UDGCD_NEW_BIN_MAT_TYPE
 	v_out.reserve( binmat.nbCols() ); // to avoid unnecessary memory reallocations and copies
-#else
-	v_out.reserve( binmat.size() ); // to avoid unnecessary memory reallocations and copies
-#endif
 
 	auto rev_map = buildReverseBinaryMap( nbVertices );
 	std::cout << "revmap size=" << rev_map.size() << '\n';

@@ -8,7 +8,6 @@
 \brief This file is used only to build the provided samples
 
 Home page: https://github.com/skramm/udgcd
-
 */
 
 #include <boost/version.hpp>
