@@ -70,9 +70,65 @@ PrintPaths( std::ostream& f, const std::vector<std::vector<T>>& v_paths, const c
 		PrintVector( f, v_paths[i] );
 	}
 }
+
+
 //-------------------------------------------------------------------------------------------
 /// holds private types and functions, unneeded to use this library
 namespace priv {
+
+
+//-------------------------------------------------------------------------------------------
+/// Print vector of bits
+template<typename T>
+void
+printBitVector( std::ostream& f, const T& vec )
+{
+	for( size_t i=0; i<vec.size(); i++ )
+	{
+		f << vec[i];
+		if( !((i+1)%4) && i != vec.size()-1 )
+			f << '.';
+	}
+	f << ": #=" << vec.count() << "\n";   // works with boost::dynamic_bitset << "\n";
+}
+
+#ifdef UDGCD_NEW_BIN_MAT_TYPE
+template<typename T>
+void
+printBitMatrix( std::ostream& f, const T& mat, std::string msg )
+{
+	f << "Matrix " << msg << ", nbLines=" << mat.size() << " nbCols=" << mat[0].size() << "\n";
+    for( auto line: mat )
+    {
+		f << " | ";
+		for( size_t i=0; i<line.size(); i++ )
+		{
+			f << line[i];
+			if( !((i+1)%4) && i != line.size()-1 )
+				f << '.';
+		}
+		f << " |\n";
+	}
+}
+#else
+template<typename T>
+void
+printBitMatrix( std::ostream& f, const T& mat, std::string msg )
+{
+	f << "Matrix " << msg << ", nbLines=" << mat.size() << " nbCols=" << mat[0].size() << "\n";
+    for( auto line: mat )
+    {
+		f << " | ";
+		for( size_t i=0; i<line.size(); i++ )
+		{
+			f << line[i];
+			if( !((i+1)%4) && i != line.size()-1 )
+				f << '.';
+		}
+		f << " |\n";
+	}
+}
+#endif
 
 /// holds a path as a binary vector.
 /**
@@ -109,18 +165,30 @@ struct BinaryMatrix
 	BinaryMatrix( size_t nbLines, size_t nbCols )
 	{
         _data.resize( nbLines );
-//        std::for_each( _data.begin(), _data.end(), (BinaryPath& bv)[nbCols]{ bv.resize(nbCols) } );
+        std::for_each( _data.begin(), _data.end(), [nbCols](BinaryPath& bv){ bv.resize(nbCols); } );
 	}
 	size_t nbLines() const { return _data.size(); }
-	size_t nbCols()  const { return _data.at(0).size(); }
-	BinaryPath& operator []( size_t i )
+//	size_t size()    const { return _data.size(); }
+	size_t nbCols()  const { assert( nbLines() ); return _data.at(0).size(); }
+
+	auto begin() -> decltype(_data.begin()) { return _data.begin(); }
+	auto end()   -> decltype(_data.end())   { return _data.end();   }
+	const auto begin() const -> decltype(_data.begin()) { return _data.begin(); }
+	const auto end()   const -> decltype(_data.end())   { return _data.end();   }
+
+/*	BinaryPath& operator []( size_t i )
 	{
 		return _data[i];
-	}
+	}*/
 	void addLine( size_t idx, const BinaryPath& bvec )
 	{
-		assert( idx< _data.size() );
+		assert( idx<_data.size() );
 		_data[idx] = bvec;
+	}
+	BinaryPath& line( size_t idx )
+	{
+		assert( idx<nbLines() );
+		return _data[idx];
 	}
     BinaryMatInfo getInfo() const
     {
@@ -130,40 +198,24 @@ struct BinaryMatrix
 		info.nbCols = _data[0].size();
 		return info;
     }
+
+	void print( std::ostream& f, std::string msg ) const
+	{
+		f << "BinaryMatrix: " << msg << ", nbLines=" << nbLines() << " nbCols=" << nbCols() << "\n";
+		for( auto line: *this )
+		{
+			f << " | ";
+			for( size_t i=0; i<line.size(); i++ )
+			{
+				f << line[i];
+				if( !((i+1)%4) && i != line.size()-1 )
+					f << '.';
+			}
+			f << " |\n";
+		}
+	}
 };
 #endif
-//-------------------------------------------------------------------------------------------
-/// Print vector of bits
-template<typename T>
-void
-printBitVector( std::ostream& f, const T& vec )
-{
-	for( size_t i=0; i<vec.size(); i++ )
-	{
-		f << vec[i];
-		if( !((i+1)%4) && i != vec.size()-1 )
-			f << '.';
-	}
-	f << ": #=" << vec.count() << "\n";   // works with boost::dynamic_bitset << "\n";
-}
-
-template<typename T>
-void
-printBitMatrix( std::ostream& f, const T& mat, std::string msg )
-{
-	f << "Matrix " << msg << ", nbLines=" << mat.size() << " nbCols=" << mat[0].size() << "\n";
-    for( auto line: mat )
-    {
-		f << " | ";
-		for( size_t i=0; i<line.size(); i++ )
-		{
-			f << line[i];
-			if( !((i+1)%4) && i != line.size()-1 )
-				f << '.';
-		}
-		f << " |\n";
-	}
-}
 
 //-------------------------------------------------------------------------------------------
 /// Print vector of vectors of bits
@@ -217,7 +269,6 @@ explore(
 #endif
 
 	bool found = false;
-//	for( ; ei != ei_end; ++ei ) //, ++edge_idx )         // iterating on all the output edges
 	for( auto oei = boost::out_edges( v1, g ); oei.first != oei.second; ++oei.first ) //, ++edge_idx )         // iterating on all the output edges
 	{
 		bool b = false;
@@ -558,7 +609,6 @@ PrintSet( const std::set<VertexPair<vertex_t>>& set_edges, std::string msg )
 /// The index vector \c idx_vec is used to fetch the index in binary vector from the two vertices indexes
 /**
 - sample input: 1-3-5
-
 */
 template<typename vertex_t>
 void
@@ -612,11 +662,7 @@ buildBinaryIndexVec( size_t nbVertices )
 //-------------------------------------------------------------------------------------------
 /// Builds all the binary vectors for all the cycles
 template<typename vertex_t>
-#ifdef UDGCD_NEW_BIN_MAT_TYPE
 BinaryMatrix
-#else
-std::vector<BinaryPath>
-#endif
 buildBinaryVectors(
 	const std::vector<std::vector<vertex_t>>& v_cycles,     ///< input cycles
 	size_t                                    nbVertices    ///< nb of vertices of the graph
@@ -638,13 +684,13 @@ buildBinaryVectors(
 	std::vector<size_t> idx_vec = buildBinaryIndexVec( nbVertices );
 //	COUT << "idx_vec: "; PrintVector( std::cout, idx_vec );
 
+
 #ifdef UDGCD_NEW_BIN_MAT_TYPE
 	for( size_t i=0; i<v_cycles.size(); i++ )
-		out.addLine( i, buildBinaryVector( v_cycles[i], idx_vec ) );
+		buildBinaryVector( v_cycles[i], out.line(i), idx_vec );
 #else
     for( auto& binvect: out )
 		binvect.resize( nbCombinations );
-
 	for( size_t i=0; i<v_cycles.size(); i++ )
 		buildBinaryVector( v_cycles[i], out[i], idx_vec );
 #endif
@@ -853,18 +899,16 @@ convertBC2VC(
 
 Assumes no identical rows
 */
-
-#ifdef UDGCD_NEW_BIN_MAT_TYPE
 BinaryMatrix
 gaussianElim( BinaryMatrix& m_in, size_t& nbIter )
 {
-
-	std::vector<BinaryPath> m_out;
 	size_t col = 0;
 	size_t nb_rows = m_in.nbLines();
 	size_t nb_cols = m_in.nbCols();
 	assert( nb_rows > 1 );
 
+	BinaryMatrix m_out( nb_rows, nb_cols );
+
 	nbIter = 0;
 	bool done = false;
 
@@ -880,18 +924,18 @@ gaussianElim( BinaryMatrix& m_in, size_t& nbIter )
 		for( size_t row=0; row<nb_rows; row++ )                // search for first row with a 1 in current column
 		{
 			COUT << "considering line " << row << "\n";
-			if( tag[row] == false && m_in[row][col] == 1 )    // AND not tagged
+			if( tag[row] == false && m_in.line(row)[col] == 1 )    // AND not tagged
 			{
 				COUT << "row: " << row << ": found 1 in col " << col << "\n";
-				m_out.push_back( m_in.at(row) );
+				m_out.line(row) = m_in.line(row);
 				tag[row] = true;
 				if( row < nb_rows-1 )
 				{
 					for( size_t i=row+1; i<nb_rows; i++ )      // search for all following rows that have a 1 in that column
 					{
 						if( tag[i] == false )                  // AND that are not tagged.
-							if( m_in[i][col] == 1 )            // it there is, we XOR them with initial line
-								m_in[i] = m_in[i] ^ m_in[row];
+							if( m_in.line(i)[col] == 1 )            // it there is, we XOR them with initial line
+								m_in.line(i) = m_in.line(i) ^ m_in.line(row);
 					}
 				}
 				COUT << "BREAK loop\n";
@@ -911,96 +955,37 @@ gaussianElim( BinaryMatrix& m_in, size_t& nbIter )
 			done = true;
 		}
 #ifdef UDGCD_DEV_MODE
-		printBitMatrix( std::cout, m_in, "m_in" );
-		printBitMatrix( std::cout, m_out, "m_out" );
+		m_in.print( std::cout,  "m_in" );
+		m_out.print( std::cout, "m_out" );
 #endif
 	}
 	while( !done );
 	return m_out;
 }
-#else
-/// first version, uses a vector to store the matrix
-std::vector<BinaryPath>
-gaussianElim( std::vector<BinaryPath>& m_in, size_t& nbIter )
-{
-	assert( m_in.size() > 1 );
-
-	std::vector<BinaryPath> m_out;
-	size_t col = 0;
-	size_t nb_rows = m_in.size();
-	size_t nb_cols = m_in[0].size();
-	nbIter = 0;
-	bool done = false;
-
-//	printBitMatrix( std::cout, m_in, "m_in INITIAL" );
-
-	std::vector<bool> tag(nb_rows,false);
-	do
-	{
-		++nbIter;
-		COUT << "\n* start iter " << nbIter << ", current col=" << col
-			<< " #tagged lines = " << std::count( tag.begin(),tag.end(), true ) << "\n";
-
-		for( size_t row=0; row<nb_rows; row++ )                // search for first row with a 1 in current column
-		{
-			COUT << "considering line " << row << "\n";
-			if( tag[row] == false && m_in[row][col] == 1 )    // AND not tagged
-			{
-				COUT << "row: " << row << ": found 1 in col " << col << "\n";
-				m_out.push_back( m_in.at(row) );
-				tag[row] = true;
-				if( row < nb_rows-1 )
-				{
-					for( size_t i=row+1; i<nb_rows; i++ )      // search for all following rows that have a 1 in that column
-					{
-						if( tag[i] == false )                  // AND that are not tagged.
-							if( m_in[i][col] == 1 )            // it there is, we XOR them with initial line
-								m_in[i] = m_in[i] ^ m_in[row];
-					}
-				}
-				COUT << "BREAK loop\n";
-				break;
-			}
-		}
-		COUT << "switch to next col\n";
-		col++;
-		if( col == nb_cols )
-		{
-			COUT << "All columns done, end\n";
-			done = true;
-		}
-		if( std::find(tag.begin(),tag.end(), false ) == tag.end() )
-		{
-			COUT << "All lines tagged, end\n";
-			done = true;
-		}
-#ifdef UDGCD_DEV_MODE
-		printBitMatrix( std::cout, m_in, "m_in" );
-		printBitMatrix( std::cout, m_out, "m_out" );
-#endif
-	}
-	while( !done );
-	return m_out;
-}
-#endif
 
 //-------------------------------------------------------------------------------------------
 /// Convert vector of cycles expressed as binary vectors to vector of cycles expressed as a vector of vertices
 template<typename vertex_t>
 std::vector<std::vector<vertex_t>>
-convertBinary2Vertex(
-	const std::vector<BinaryPath>& v_bpath,
-	size_t nbVertices
+convertBinary2Vertex
+(
+	const BinaryMatrix& binmat,
+	size_t              nbVertices
 )
 {
 	std::vector<std::vector<vertex_t>> v_out;
-	v_out.reserve( v_bpath.size() ); // to avoid unnecessary memory reallocations and copies
+
+#ifdef UDGCD_NEW_BIN_MAT_TYPE
+	v_out.reserve( binmat.nbCols() ); // to avoid unnecessary memory reallocations and copies
+#else
+	v_out.reserve( binmat.size() ); // to avoid unnecessary memory reallocations and copies
+#endif
 
 	auto rev_map = buildReverseBinaryMap( nbVertices );
 	std::cout << "revmap size=" << rev_map.size() << '\n';
 
 	size_t i=0;
-	for( auto bcycle: v_bpath )
+	for( auto bcycle: binmat )
 	{
 		size_t nbIter2 = 0;
 		++i;
@@ -1032,15 +1017,15 @@ removeRedundant( std::vector<std::vector<vertex_t>>& v_in, size_t nbVertices )
 // just for checking purposes
 	convertBinary2Vertex<vertex_t>( v_binvect, nbVertices );
 
-	printBitMatrix( std::cout, v_binvect, "removeRedundant(): input binary matrix" );
+//	printBitMatrix( std::cout, v_binvect, "removeRedundant(): input binary matrix" );
 
 	size_t nbIter1 = 0;
 	auto v_bpaths = gaussianElim( v_binvect, nbIter1 );
 	std::cout << "gaussianElim: nbIter=" << nbIter1 << '\n';
 
-	printBitMatrix( std::cout, v_bpaths, "removeRedundant(): output binary matrix" );
+//	printBitMatrix( std::cout, v_bpaths, "removeRedundant(): output binary matrix" );
 
-	std::cout << "v_bpaths size=" << v_bpaths.size() << '\n';
+//	std::cout << "v_bpaths size=" << v_bpaths.size() << '\n';
 
 // convert back binary cycles to vertex-based cycles,
 
@@ -1056,7 +1041,8 @@ End condition
 */
 template<typename vertex_t, typename graph_t>
 bool
-checkNextNode(
+checkNextNode
+(
 	const std::vector<vertex_t>& cycle,  ///< the cycle we are exploring
 	size_t idx_curr,                     ///< current vertex index in above vector
 	const graph_t& g                     ///< graph

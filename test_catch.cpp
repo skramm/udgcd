@@ -207,6 +207,7 @@ buildBinMat( const std::vector<std::string>& m )
 	return out;
 }
 //-------------------------------------------------------------------------------------------
+#if 0
 TEST_CASE( "test GaussianElimination", "[test2]" )
 {
 	size_t iter;
@@ -240,7 +241,7 @@ TEST_CASE( "test GaussianElimination", "[test2]" )
 		udgcd::priv::printBitMatrix( std::cout, out, "out" );
 	}
 }
-
+#endif
 //-------------------------------------------------------------------------------------------
 udgcd::priv::BinaryPath
 buildBinVect( const char* s )
