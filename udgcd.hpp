@@ -125,17 +125,28 @@ edge:    0  0  0  0  1  1  1  2  2  3
 vector:  0  0  0  0  0  1  1  0  0  1
 \endverbatim
 */
-typedef boost::dynamic_bitset<> BinaryPath;
+typedef boost::dynamic_bitset<> BinaryVec;
 
 
 //-------------------------------------------------------------------------------------------
 struct BinaryMatInfo
 {
-    size_t nbLines = 0;
-    size_t nbCols = 0;
-    size_t nbOnes = 0;
-    size_t nb0Cols = 0;   ///< nb of columns with only 0 values
+    size_t nbLines  = 0;
+    size_t nbCols   = 0;
+    size_t nbOnes   = 0;
+    size_t nb0Cols  = 0;   ///< nb of columns with only 0 values
     size_t nb0Lines = 0;  ///< nb of lines with only 0 values
+
+    void print( std::ostream& f ) const
+    {
+		f << "BinaryMatInfo:"
+			<< "\n-nbLines ="  << nbLines
+			<< "\n-nbCols ="   << nbCols
+			<< "\n-nbOnes ="   << nbOnes
+			<< "\n-nb0Lines =" << nb0Lines
+			<< "\n-nb0Cols ="  << nb0Cols
+			<< '\n';
+    }
 };
 
 //-------------------------------------------------------------------------------------------
@@ -145,34 +156,38 @@ This type will allow to fetch some relevant information on what the matrix holds
 */
 struct BinaryMatrix
 {
-	std::vector<BinaryPath> _data;
+	std::vector<BinaryVec> _data;
+
 	BinaryMatrix( size_t nbLines, size_t nbCols )
 	{
 		assert( nbLines>0 );
 		assert( nbCols>0 );
         _data.resize( nbLines );
-        std::for_each( _data.begin(), _data.end(), [nbCols](BinaryPath& bv){ bv.resize(nbCols); } );
+        std::for_each( _data.begin(), _data.end(), [nbCols](BinaryVec& bv){ bv.resize(nbCols); } ); // lambda
         std::cout << __FUNCTION__ << "(): nb cols=" << _data[0].size() << '\n';
 	}
 
+	BinaryMatrix()
+	{}
+
 	size_t nbLines() const { return _data.size(); }
-	size_t nbCols()  const { assert( nbLines() ); return _data.at(0).size(); }
+	size_t nbCols()  const
+	{
+		if( 0==nbLines() )
+			return 0;
+		return _data.at(0).size();
+	}
 
 	auto begin() -> decltype(_data.begin()) { return _data.begin(); }
 	auto end()   -> decltype(_data.end())   { return _data.end();   }
 	const auto begin() const -> decltype(_data.begin()) { return _data.begin(); }
 	const auto end()   const -> decltype(_data.end())   { return _data.end();   }
 
-/*	BinaryPath& operator []( size_t i )
+	void addLine( const BinaryVec& bvec )
 	{
-		return _data[i];
-	}*/
-	void addLine( size_t idx, const BinaryPath& bvec )
-	{
-		assert( idx<_data.size() );
-		_data[idx] = bvec;
+		_data.push_back(bvec);
 	}
-	BinaryPath& line( size_t idx )
+	BinaryVec& line( size_t idx )
 	{
 		assert( idx<nbLines() );
 		return _data[idx];
@@ -180,9 +195,25 @@ struct BinaryMatrix
     BinaryMatInfo getInfo() const
     {
 		BinaryMatInfo info;
-		info.nbLines = _data.size();
+		info.nbLines = nbLines();
 		assert( _data.size() );
-		info.nbCols = _data[0].size();
+		info.nbCols = nbCols();
+		std::for_each( _data.begin(), _data.end(), [&info](const BinaryVec& v){ info.nbOnes+= v.count();} ); // count 1
+
+		for( size_t i=0; i<nbCols(); i++ )
+		{
+			bool foundOne=false;
+			for( size_t j=0; j<nbLines(); j++ )
+			{
+				if( _data[j][i] == 1 )
+				{
+					foundOne = true;
+					break;
+				}
+			}
+			if( !foundOne )
+				info.nb0Cols++;
+		}
 		return info;
     }
 
@@ -198,8 +229,24 @@ struct BinaryMatrix
 				if( !((i+1)%4) && i != line.size()-1 )
 					f << '.';
 			}
-			f << " |\n";
+			f << " | #" << line.count() << "\n";
 		}
+	}
+
+	std::vector<size_t> getColumnCount() const
+	{
+		std::vector<size_t> out( nbCols(), 0 );
+		for( size_t col=0; col<nbCols(); col++ )
+		{
+			size_t n=0;
+			for( size_t row=0; row<nbLines(); row++ )
+			{
+				if( _data[row][col] == 1 )
+					n++;
+			}
+			out[col] = n;
+		}
+		return out;
 	}
 };
 
@@ -600,10 +647,11 @@ template<typename vertex_t>
 void
 buildBinaryVector(
 	const std::vector<vertex_t>& cycle,    ///< input cycle
-	BinaryPath&                  binvect,  ///< output binary vector (must be allocated)
-	const std::vector<size_t>&   idx_vec ) ///< reference index vector, see how it is build in \ref buildBinaryVectors() and \ref buildBinaryIndexVec(()
+	BinaryVec&                  binvect,  ///< output binary vector (must be allocated)
+	const std::vector<size_t>&   idx_vec ) ///< reference index vector, see how it is build in \ref buildBinaryMatrix() and \ref buildBinaryIndexVec(()
 {
 	PRINT_FUNCTION;
+	assert( binvect.size()>0 );
 	for( size_t i=0; i<cycle.size(); ++i )
 	{
 		VertexPair<vertex_t> vp( (i==0 ? cycle[cycle.size()-1] : cycle[i-1]), cycle[i] );
@@ -611,7 +659,7 @@ buildBinaryVector(
 		assert( idx < binvect.size() );
 		binvect[idx] = 1;
 	}
-//	PrintVector( std::cout, binvect );
+	printBitVector( std::cout, binvect );
 }
 //-------------------------------------------------------------------------------------------
 /// Build table of series $y_n = y_{n-1}+N-n-1$
@@ -649,7 +697,7 @@ buildBinaryIndexVec( size_t nbVertices )
 /// Builds all the binary vectors for all the cycles
 template<typename vertex_t>
 BinaryMatrix
-buildBinaryVectors(
+buildBinaryMatrix(
 	const std::vector<std::vector<vertex_t>>& v_cycles,     ///< input cycles
 	size_t                                    nbVertices    ///< nb of vertices of the graph
 )
@@ -752,7 +800,7 @@ can be costly for large cycles
 template<typename vertex_t>
 std::vector<std::pair<vertex_t,vertex_t>>
 buildPairSetFromBinaryVec(
-	const BinaryPath& v_in,          ///< A binary vector holding 1 at each position where there is an edge
+	const BinaryVec& v_in,          ///< A binary vector holding 1 at each position where there is an edge
 	const RevBinMap&  rev_map        ///< Reverse map, see buildReverseBinaryMap()
 )
 {
@@ -786,7 +834,7 @@ Maybe we can find a better way ?
 template<typename vertex_t>
 std::vector<vertex_t>
 convertBC2VC(
-	const BinaryPath& v_in,         ///< input binary path
+	const BinaryVec& v_in,         ///< input binary path
 	const RevBinMap&  rev_map,      ///< required map, has to be build before, see buildReverseBinaryMap()
 	size_t&           iter
 )
@@ -794,7 +842,7 @@ convertBC2VC(
 	assert( v_in.size() == rev_map.size() );
 
 	PRINT_FUNCTION;
-	printBitVector( std::cout, v_in );
+//	printBitVector( std::cout, v_in );
 
 // step 1: build set of pairs from binary vector
 	auto v_pvertex = buildPairSetFromBinaryVec<vertex_t>( v_in, rev_map );
@@ -877,17 +925,18 @@ Assumes no identical rows
 BinaryMatrix
 gaussianElim( BinaryMatrix& m_in, size_t& nbIter )
 {
+	PRINT_FUNCTION;
 	size_t col = 0;
 	size_t nb_rows = m_in.nbLines();
 	size_t nb_cols = m_in.nbCols();
 	assert( nb_rows > 1 );
 
-	BinaryMatrix m_out( nb_rows, nb_cols );
+	BinaryMatrix m_out;
 
 	nbIter = 0;
 	bool done = false;
 
-//	printBitMatrix( std::cout, m_in, "m_in INITIAL" );
+//	m_in.print( std::cout, "m_in INITIAL" );
 
 	std::vector<bool> tag(nb_rows,false);
 	do
@@ -902,7 +951,10 @@ gaussianElim( BinaryMatrix& m_in, size_t& nbIter )
 			if( tag[row] == false && m_in.line(row)[col] == 1 )    // AND not tagged
 			{
 				COUT << "row: " << row << ": found 1 in col " << col << "\n";
-				m_out.line(row) = m_in.line(row);
+//				printBitVector( std::cout, m_out.line(row) );
+				m_out.addLine( m_in.line(row) );
+				COUT << "OUTMAT nblines=" << m_out.nbLines() << '\n';
+//				printBitVector( std::cout, m_out.line(row) );
 				tag[row] = true;
 				if( row < nb_rows-1 )
 				{
@@ -929,8 +981,10 @@ gaussianElim( BinaryMatrix& m_in, size_t& nbIter )
 			COUT << "All lines tagged, end\n";
 			done = true;
 		}
-#ifdef UDGCD_DEV_MODE
+#if 0
+	COUT << "-m_in: " << m_in.nbLines() << "x" << m_in.nbCols() << '\n';
 		m_in.print( std::cout,  "m_in" );
+	COUT << "-m_out: " << m_out.nbLines() << "x" << m_out.nbCols() << '\n';
 		m_out.print( std::cout, "m_out" );
 #endif
 	}
@@ -983,24 +1037,40 @@ removeRedundant( std::vector<std::vector<vertex_t>>& v_in, size_t nbVertices )
 		return v_in;
 
 // build for each cycle its associated binary vector
-	auto v_binvect = buildBinaryVectors( v_in, nbVertices );
+	auto binMat_in = buildBinaryMatrix( v_in, nbVertices );
 
 // just for checking purposes
-	convertBinary2Vertex<vertex_t>( v_binvect, nbVertices );
+	convertBinary2Vertex<vertex_t>( binMat_in, nbVertices );
 
-//	printBitMatrix( std::cout, v_binvect, "removeRedundant(): input binary matrix" );
+//	printBitMatrix( std::cout, binMat_in, "removeRedundant(): input binary matrix" );
 
 	size_t nbIter1 = 0;
-	auto v_bpaths = gaussianElim( v_binvect, nbIter1 );
+
+	binMat_in.print( std::cout, "removeRedundant(): input binary matrix" );
+	binMat_in.getInfo().print( std::cout );//, "removeRedundant(): input binary matrix" );
+
+	auto cc_in = binMat_in.getColumnCount();
+	auto binMat_out = gaussianElim( binMat_in, nbIter1 );
 	std::cout << "gaussianElim: nbIter=" << nbIter1 << '\n';
 
-//	printBitMatrix( std::cout, v_bpaths, "removeRedundant(): output binary matrix" );
+	binMat_out.print( std::cout, "removeRedundant(): output binary matrix" );
+	binMat_out.getInfo().print( std::cout );//, "removeRedundant(): output binary matrix" );
+	auto cc_out = binMat_out.getColumnCount();
+
+	RevBinMap revbinmap = buildReverseBinaryMap( nbVertices );
+
+	std::cout << "col | in | out\n";
+	for( size_t i=0; i<cc_in.size(); i++ )
+	{
+		if( cc_in[i] != 0 || cc_out[i] != 0 )
+			std::cout << i <<  ": " << revbinmap[i].first << "-" << revbinmap[i].second <<  " | " <<  cc_in[i] << " | " <<  cc_out[i] << '\n';
+	}
 
 //	std::cout << "v_bpaths size=" << v_bpaths.size() << '\n';
 
 // convert back binary cycles to vertex-based cycles,
 
-	return convertBinary2Vertex<vertex_t>( v_bpaths, nbVertices );
+	return convertBinary2Vertex<vertex_t>( binMat_out, nbVertices );
 }
 
 //-------------------------------------------------------------------------------------------
@@ -1251,13 +1321,13 @@ findCycles( graph_t& g, UdgcdInfo& info )
 	std::cout << "-Nb initial cycles: " << info.nbRawCycles << '\n';
 
 #ifdef UDGCD_PRINT_STEPS
-	PrintPaths( std::cout, v_cycles, "Raw cycles" );
+//	PrintPaths( std::cout, v_cycles, "Raw cycles" );
 #endif
 
 // post process 0: cleanout the cycles by removing steps that are not part of the cycle
 	auto v_cycles0 = priv::cleanCycles( v_cycles );
 #ifdef UDGCD_PRINT_STEPS
-	PrintPaths( std::cout, v_cycles0, "After cleanCycles()" );
+//	PrintPaths( std::cout, v_cycles0, "After cleanCycles()" );
 #endif
 
 	info.setTimeStamp();
@@ -1286,7 +1356,7 @@ findCycles( graph_t& g, UdgcdInfo& info )
 	std::cout << "-After removal of non-chordless cycles: " << v_cycles1.size() << " cycles\n";
 
 #ifdef UDGCD_PRINT_STEPS
-	PrintPaths( std::cout, v_cycles1, "After removal of non-chordless cycles" );
+//	PrintPaths( std::cout, v_cycles1, "After removal of non-chordless cycles" );
 #endif
 
 	info.setTimeStamp();

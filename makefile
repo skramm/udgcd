@@ -85,10 +85,11 @@ rungen: $(GEN_GSAMPLES_OUTPUT) bin/read_graph
 runsam: $(GEN_SAMPLES_OUTPUT) bin/read_graph | clearlogfile
 	@echo "target $@ done"
 
+
 clearlogfile:
 	@echo "Running make target 'runsam', results:" > runsam.log
 
-out/stdout_graph_%.txt: samples/graph_%.txt $(EXEC_FILES)
+out/stdout_graph_%.txt: samples/graph_%.txt bin/read_graph
 	-bin/read_graph $< > $@;\
 	STATUS=$$?; echo "file $<: exit with $$STATUS" >> runsam.log
 

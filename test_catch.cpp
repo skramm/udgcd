@@ -39,7 +39,7 @@ ProcessTest( std::vector<size_t>& cycle, size_t nbVertices )
 	REQUIRE( bim.size() == nbVertices-1 );
 
 	auto nbCombinations = nbVertices * (nbVertices-1) / 2;
-	udgcd::priv::BinaryPath bpa( nbCombinations );
+	udgcd::priv::BinaryVec bpa( nbCombinations );
 	udgcd::priv::buildBinaryVector( cycle, bpa, bim );
 
 //	std::cout << "binary vector:"
@@ -195,13 +195,13 @@ TEST_CASE( "test 1", "[test1]" )
 	}
 }
 //-------------------------------------------------------------------------------------------
-std::vector<udgcd::priv::BinaryPath>
+std::vector<udgcd::priv::BinaryVec>
 buildBinMat( const std::vector<std::string>& m )
 {
-	std::vector<udgcd::priv::BinaryPath> out;
+	std::vector<udgcd::priv::BinaryVec> out;
 	for( auto s: m )
 	{
-		udgcd::priv::BinaryPath bp(s);
+		udgcd::priv::BinaryVec bp(s);
 		out.push_back(bp);
 	}
 	return out;
@@ -218,7 +218,7 @@ TEST_CASE( "test GaussianElimination", "[test2]" )
 			"1001",
 			"1111"
 		};
-		std::vector<udgcd::priv::BinaryPath> m_in= buildBinMat( m1 );
+		std::vector<udgcd::priv::BinaryVec> m_in= buildBinMat( m1 );
 
 		udgcd::priv::printBitMatrix( std::cout, m_in, "m_in" );
 		auto out = udgcd::priv::gaussianElim( m_in, iter );
@@ -234,7 +234,7 @@ TEST_CASE( "test GaussianElimination", "[test2]" )
 			"0011",
 			"1001"
 		};
-		std::vector<udgcd::priv::BinaryPath> m_in= buildBinMat( m1 );
+		std::vector<udgcd::priv::BinaryVec> m_in= buildBinMat( m1 );
 
 		udgcd::priv::printBitMatrix( std::cout, m_in, "m_in" );
 		auto out = udgcd::priv::gaussianElim( m_in, iter );
@@ -243,12 +243,12 @@ TEST_CASE( "test GaussianElimination", "[test2]" )
 }
 #endif
 //-------------------------------------------------------------------------------------------
-udgcd::priv::BinaryPath
+udgcd::priv::BinaryVec
 buildBinVect( const char* s )
 {
 	std::string str(s);
 	std::reverse( str.begin(), str.end() );
-	udgcd::priv::BinaryPath bp{str};
+	udgcd::priv::BinaryVec bp{str};
 	return bp;
 }
 //-------------------------------------------------------------------------------------------
@@ -266,7 +266,7 @@ edges:  0  0  0  0  1  1  1  2  2  3
 vector: 1  0  1  0  0  0  1  0  0  1
 */
 	size_t     nb_vertices = 5;
-	udgcd::priv::BinaryPath v_in{ buildBinVect("1010001001") };
+	udgcd::priv::BinaryVec v_in{ buildBinVect("1010001001") };
 	udgcd::priv::RevBinMap  rev_map = udgcd::priv::buildReverseBinaryMap( nb_vertices );
 
 	auto m = udgcd::priv::buildPairSetFromBinaryVec<size_t>( v_in, rev_map );
