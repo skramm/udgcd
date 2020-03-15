@@ -27,8 +27,8 @@ These are sorted with the smallest vertex in first position, and such as the sec
 
 ### Status
  <a name="s_stat"></a>
-- 2020-03-10: bug discovered, investigating
-- UPDATE 2020-03-16: implemented a binary matrix reduction step, but bug still left, see bug20200316.md
+- UPDATE 2020-03-16: implemented a binary matrix reduction step, but bug still left, see [here](bug20200316.md)
+- UPDATE 2020-03-10: bug discovered, investigating
 - UPDATE 2020-03-08: finally found some time, issue fixed, is merged into master, "official" 1.0 release planned in a few days, some cleaning todo
 - UPDATE 2017-10-15: the code is currently undergoing deep refactoring (see branch issue1), it is recommended **not to use it** until further notice.
 - UPDATE 2017-08-28: at present, output is redundant: in some case, can give more cycles than it actually should. See [here](#s_issues).
