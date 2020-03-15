@@ -21,6 +21,8 @@ COLOR_OFF="\e[0m"
 CFLAGS = -std=c++0x -Wall -O2 -Iinclude -Wno-unused-result
 #CFLAGS = -g -std=c++0x -Wall -O2 -Iinclude -Wno-unused-result
 
+# TEMP
+CFLAGS += -DUDGCD_REDUCE_MATRIX
 
 ifeq "$(PRINT_STEPS)" "Y"
 	CFLAGS += -DUDGCD_PRINT_STEPS

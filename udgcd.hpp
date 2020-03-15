@@ -166,7 +166,11 @@ struct BinaryMatrix
         std::for_each( _data.begin(), _data.end(), [nbCols](BinaryVec& bv){ bv.resize(nbCols); } ); // lambda
         std::cout << __FUNCTION__ << "(): nb cols=" << _data[0].size() << '\n';
 	}
-
+	BinaryMatrix( size_t nbLines )
+	{
+		assert( nbLines>0 );
+		_data.resize( nbLines );
+	}
 	BinaryMatrix()
 	{}
 
@@ -186,6 +190,28 @@ struct BinaryMatrix
 	void addLine( const BinaryVec& bvec )
 	{
 		_data.push_back(bvec);
+	}
+
+	void addCol( const BinaryVec& vin )
+	{
+        assert( vin.size() == nbLines() );
+        for( size_t i=0; i<vin.size(); i++ )
+			_data[i].push_back( vin[i] );
+	}
+
+	BinaryVec getCol( size_t col ) const
+	{
+		assert( col<nbCols() );
+		BinaryVec out( nbLines() );
+		for( size_t i=0; i<nbLines(); i++ )
+			out[i] = line(i)[col];
+		return out;
+	}
+
+	const BinaryVec& line( size_t idx ) const
+	{
+		assert( idx<nbLines() );
+		return _data[idx];
 	}
 	BinaryVec& line( size_t idx )
 	{
@@ -217,7 +243,27 @@ struct BinaryMatrix
 		return info;
     }
 
-	void print( std::ostream& f, std::string msg ) const
+	std::vector<size_t> getNonEmptyCols() const
+	{
+		std::vector<size_t> out;
+		for( size_t col=0; col<nbCols(); col++ )
+		{
+			bool foundOne=false;
+			for( size_t row=0; row<nbLines(); row++ )
+			{
+				if( _data[row][col] == 1 )
+				{
+					foundOne = true;
+					break;
+				}
+			}
+			if( foundOne )
+				out.push_back(col);
+		}
+		return out;
+	}
+
+	void print( std::ostream& f, std::string msg=std::string() ) const
 	{
 		f << "BinaryMatrix: " << msg << ", nbLines=" << nbLines() << " nbCols=" << nbCols() << "\n";
 		for( auto line: *this )
@@ -233,6 +279,7 @@ struct BinaryMatrix
 		}
 	}
 
+/// Returns a vector having as size the number of columns and holding the number of "1" the column has
 	std::vector<size_t> getColumnCount() const
 	{
 		std::vector<size_t> out( nbCols(), 0 );
@@ -792,6 +839,28 @@ checkVertexPairSet( const std::vector<std::pair<vertex_t,vertex_t>>& vp )
 	return correct;
 }
 //-------------------------------------------------------------------------------------------
+template<typename vertex_t>
+std::vector<std::pair<vertex_t,vertex_t>>
+buildPairSetFromBinaryVec_v2(
+	const BinaryVec& v_in,          ///< A binary vector holding 1 at each position where there is an edge
+	const RevBinMap& rev_map,       ///< Reverse map, see buildReverseBinaryMap()
+	const std::vector<size_t>& nec  ///< non-empty columns of the original matrix
+)
+{
+	std::vector<std::pair<vertex_t,vertex_t>> v_out;
+	for( size_t i=0; i<v_in.size(); ++i )
+	{
+		if( v_in[i] == 1 ) // if we find a '1', then we have found a connection
+		{
+			vertex_t v1 = rev_map[nec[i]].first;   // the two nodes
+			vertex_t v2 = rev_map[nec[i]].second;  // that are connected
+			v_out.push_back( std::make_pair(v1,v2) );
+		}
+	}
+	return v_out;
+}
+
+//-------------------------------------------------------------------------------------------
 /// Fill map with adjacent nodes
 /**
 The idea here is to avoid doing an extensive search each time to see if node is already present, which
@@ -801,7 +870,7 @@ template<typename vertex_t>
 std::vector<std::pair<vertex_t,vertex_t>>
 buildPairSetFromBinaryVec(
 	const BinaryVec& v_in,          ///< A binary vector holding 1 at each position where there is an edge
-	const RevBinMap&  rev_map        ///< Reverse map, see buildReverseBinaryMap()
+	const RevBinMap& rev_map        ///< Reverse map, see buildReverseBinaryMap()
 )
 {
 	std::vector<std::pair<vertex_t,vertex_t>> v_out;
@@ -816,6 +885,102 @@ buildPairSetFromBinaryVec(
 	}
 	return v_out;
 }
+//-------------------------------------------------------------------------------------------
+/// Builds the final cycle
+/**
+Takes as input a set of pairs:
+\verbatim
+12-18
+12-22
+9-18
+9-4
+4-22
+\endverbatim
+and will return the cycle: 4-9-18-12-22
+*/
+template<typename vertex_t>
+std::vector<vertex_t>
+buildFinalCycle( const std::vector<std::pair<vertex_t,vertex_t>>& v_pvertex )
+{
+	PRINT_FUNCTION;
+
+	assert( !v_pvertex.empty() );
+	std::vector<vertex_t> v_out(2);
+	v_out[0] = v_pvertex[0].first;
+	v_out[1] = v_pvertex[0].second;
+	size_t curr_idx = 0;
+	size_t curr_v   = v_out[1];
+	size_t iter = 0;
+	do
+	{
+		++iter;
+//		COUT << "\n* iter " << iter << " curr_idx=" << curr_idx << " curr_v=" << curr_v << '\n';
+		bool stop = false;
+		for( size_t i=1; i<v_pvertex.size(); i++ )       // search for next one
+		{
+			if( i != curr_idx )
+			{
+				auto p = v_pvertex[i];
+				if( curr_v == p.first )
+				{
+					v_out.push_back( p.second );
+					curr_v   = p.second;
+					curr_idx = i;
+					stop     = true;
+				}
+				else
+				{
+					if( curr_v == p.second )
+					{
+						v_out.push_back( p.first );
+						curr_v   = p.first;
+						curr_idx = i;
+						stop     = true;
+					}
+				}
+			}
+			if( stop )
+				break;
+		}
+	}
+	while( curr_v != v_out[0] );      // while we don't cycle
+
+//	PrintVector( std::cout, v_out );
+	v_out.pop_back();
+//	PrintVector( std::cout, v_out );
+
+	return v_out;
+}
+//-------------------------------------------------------------------------------------------
+template<typename vertex_t>
+std::vector<vertex_t>
+convertBC2VC_v2(
+	const BinaryVec& v_in,          ///< input binary path
+	const RevBinMap&  rev_map,      ///< required map, has to be build before, see buildReverseBinaryMap()
+	const std::vector<size_t>& nec, ///< non-empty columns
+	size_t&           iter
+)
+{
+	PRINT_FUNCTION;
+// step 1: build set of pairs from binary vector
+	auto v_pvertex = buildPairSetFromBinaryVec_v2<vertex_t>( v_in, rev_map, nec );
+	assert( v_pvertex.size()>0 );
+
+#if 1
+	std::cout << "VERTEX MAP v2: size=" << v_pvertex.size() << "\n";
+	size_t i = 0;
+	for( const auto& vp: v_pvertex )
+		std::cout << i++ << ":" << vp.first << "-" << vp.second << "\n";
+#endif
+	if( false == checkVertexPairSet( v_pvertex ) )
+	{
+		std::cout << "Fatal error: invalid set of pairs\n";
+		std::exit(1);
+	}
+
+	return buildFinalCycle( v_pvertex );
+}
+
 //-------------------------------------------------------------------------------------------
 /// Convert, for a given graph, a Binary Cycle (BC) \c v_in to a Vertex Cycle (VC)
 /**
@@ -862,60 +1027,10 @@ convertBC2VC(
 	}
 
 // step 2: extract vertices from map
-	COUT << "step2:\n";
-	std::vector<vertex_t> v_out(2);
-	v_out[0] = v_pvertex[0].first;
-	v_out[1] = v_pvertex[0].second;
-	size_t curr_idx = 0;
-	size_t curr_v   = v_out[1];
-//	size_t iter = 0;
-	iter = 0;
-	do
-	{
-		++iter;
-//		std::cout << "\n* iter " << iter << " v_out size=" << v_out.size() << " curr_idx=" << curr_idx << " curr_v=" << curr_v << '\n';
-		COUT << "\n* iter " << iter << " curr_idx=" << curr_idx << " curr_v=" << curr_v << '\n';
-		bool stop = false;
-		for( size_t i=1; i<v_pvertex.size(); i++ )       // search for next one
-		{
-			if( i != curr_idx )
-			{
-//				std::cout << " start "<< i << "/" << v_pvertex.size()-1  << " pair:" << v_pvertex[i].first << "-" << v_pvertex[i].second <<  '\n';
-				auto p = v_pvertex[i];
-				if( curr_v == p.first )
-				{
-					v_out.push_back( p.second );
-					curr_v   = p.second;
-					curr_idx = i;
-					stop     = true;
-//					std::cout << i << ": found first, v_out(size)=" << v_out.size() << " curr_idx=" << curr_idx << " curr_v=" << curr_v << '\n';
-				}
-				else
-				{
-					if( curr_v == p.second )
-					{
-						v_out.push_back( p.first );
-						curr_v   = p.first;
-						curr_idx = i;
-						stop     = true;
-//						std::cout << i << ": found second, v_out(size)=" << v_out.size() << " curr_idx=" << curr_idx << " curr_v=" << curr_v << '\n';
-					}
-				}
-			}
-			if( stop )
-				break;
-		}
-	}
-	while( curr_v != v_out[0] );      // while we don't cycle
-
-//	PrintVector( std::cout, v_out );
-	v_out.pop_back();
-//	PrintVector( std::cout, v_out );
-
-	return v_out;
+	return buildFinalCycle( v_pvertex );
 }
 //-------------------------------------------------------------------------------------------
-/// Gaussian binary elimination (WIP: second version, uses a specific type to store the matrix
+/// Gaussian binary elimination
 /**
 - Input: a binary matrix
 - Output: a reduced matrix
@@ -996,12 +1111,44 @@ gaussianElim( BinaryMatrix& m_in, size_t& nbIter )
 /// Convert vector of cycles expressed as binary vectors to vector of cycles expressed as a vector of vertices
 template<typename vertex_t>
 std::vector<std::vector<vertex_t>>
+convertBinary2Vertex_v2
+(
+	const BinaryMatrix& binmat,
+	size_t              nbVertices,
+	const std::vector<size_t>& nec      ///< Non Empty Columns
+)
+{
+	PRINT_FUNCTION;
+	std::vector<std::vector<vertex_t>> v_out;
+
+	v_out.reserve( binmat.nbCols() ); // to avoid unnecessary memory reallocations and copies
+
+	auto rev_map = buildReverseBinaryMap( nbVertices );
+	std::cout << "revmap size=" << rev_map.size() << '\n';
+
+	size_t i=0;
+	for( auto bcycle: binmat )
+	{
+		size_t nbIter2 = 0;
+		++i;
+		std::cout << i << ": **** calling convertBC2VC_v2()\nInput:"; printBitVector( std::cout, bcycle );
+		auto cycle = convertBC2VC_v2<vertex_t>( bcycle, rev_map, nec, nbIter2 );
+		std::cout << i << ": **** result: nbIter=" << nbIter2 << '\n';
+		v_out.push_back( cycle );
+	}
+	return v_out;
+}
+//-------------------------------------------------------------------------------------------
+/// Convert vector of cycles expressed as binary vectors to vector of cycles expressed as a vector of vertices
+template<typename vertex_t>
+std::vector<std::vector<vertex_t>>
 convertBinary2Vertex
 (
 	const BinaryMatrix& binmat,
 	size_t              nbVertices
 )
 {
+	PRINT_FUNCTION;
 	std::vector<std::vector<vertex_t>> v_out;
 
 	v_out.reserve( binmat.nbCols() ); // to avoid unnecessary memory reallocations and copies
@@ -1021,6 +1168,17 @@ convertBinary2Vertex
 	}
 	return v_out;
 }
+//-------------------------------------------------------------------------------------------
+/// Returns the same matrix but with empty cols removed
+BinaryMatrix
+reduceMatrix( const BinaryMatrix& m_in, const std::vector<size_t>& nonEmptyCols )
+{
+	BinaryMatrix out( m_in.nbLines() );
+	for( auto idx: nonEmptyCols )
+		out.addCol( m_in.getCol(idx) );
+	return out;
+}
+
 //-------------------------------------------------------------------------------------------
 /// Post-process step: removes cycles based on Gaussian Elimination
 /**
@@ -1050,7 +1208,20 @@ removeRedundant( std::vector<std::vector<vertex_t>>& v_in, size_t nbVertices )
 	binMat_in.getInfo().print( std::cout );//, "removeRedundant(): input binary matrix" );
 
 	auto cc_in = binMat_in.getColumnCount();
+
+#ifdef UDGCD_REDUCE_MATRIX
+	auto nec = binMat_in.getNonEmptyCols();
+	auto bm_in2 = reduceMatrix( binMat_in, nec );
+	COUT << "bm_in2:\n"; bm_in2.print( std::cout );
+	auto bm_out2 = gaussianElim( bm_in2, nbIter1 );
+	COUT << "bm_out2:\n"; bm_out2.print( std::cout );
+// convert back binary cycles to vertex-based cycles,
+
+	return convertBinary2Vertex_v2<vertex_t>( bm_out2, nbVertices, nec );
+
+#else
 	auto binMat_out = gaussianElim( binMat_in, nbIter1 );
+
 	std::cout << "gaussianElim: nbIter=" << nbIter1 << '\n';
 
 	binMat_out.print( std::cout, "removeRedundant(): output binary matrix" );
@@ -1071,6 +1242,8 @@ removeRedundant( std::vector<std::vector<vertex_t>>& v_in, size_t nbVertices )
 // convert back binary cycles to vertex-based cycles,
 
 	return convertBinary2Vertex<vertex_t>( binMat_out, nbVertices );
+
+#endif
 }
 
 //-------------------------------------------------------------------------------------------
