@@ -16,7 +16,7 @@ Home page: https://github.com/skramm/udgcd
 
 #define UDGCD_REMOVE_NONCHORDLESS
 #define UDGCD_DO_CYCLE_CHECKING
-#define UDGCD_PRINT_STEPS
+//#define UDGCD_PRINT_STEPS
 //#define UDGCD_DEV_MODE
 
 #include "udgcd.hpp"

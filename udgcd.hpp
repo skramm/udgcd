@@ -162,9 +162,9 @@ struct BinaryMatrix
 	{
 		assert( nbLines>0 );
 		assert( nbCols>0 );
-        _data.resize( nbLines );
-        std::for_each( _data.begin(), _data.end(), [nbCols](BinaryVec& bv){ bv.resize(nbCols); } ); // lambda
-        std::cout << __FUNCTION__ << "(): nb cols=" << _data[0].size() << '\n';
+		_data.resize( nbLines );
+		std::for_each( _data.begin(), _data.end(), [nbCols](BinaryVec& bv){ bv.resize(nbCols); } ); // lambda
+//		std::cout << __FUNCTION__ << "(): nb cols=" << _data[0].size() << '\n';
 	}
 	BinaryMatrix( size_t nbLines )
 	{
@@ -265,10 +265,12 @@ struct BinaryMatrix
 
 	void print( std::ostream& f, std::string msg=std::string() ) const
 	{
+		size_t i=0;
 		f << "BinaryMatrix: " << msg << ", nbLines=" << nbLines() << " nbCols=" << nbCols() << "\n";
 		for( auto line: *this )
 		{
-			f << " | ";
+			f << std::setw(4) << i++ << ": | ";
+
 			for( size_t i=0; i<line.size(); i++ )
 			{
 				f << line[i];
@@ -299,6 +301,7 @@ struct BinaryMatrix
 
 //-------------------------------------------------------------------------------------------
 /// Print vector of vectors of bits
+#if 0
 template<typename T>
 void
 printBitVectors( std::ostream& f, const T& vec )
@@ -311,6 +314,7 @@ printBitVectors( std::ostream& f, const T& vec )
 	}
 //	f << "\n";
 }
+#endif
 //-------------------------------------------------------------------------------------------
 /// Recursive function, explores edges connected to \c v1 until we find a cycle
 /**
@@ -326,7 +330,7 @@ explore(
 	int depth = 0
 )
 {
-	PRINT_FUNCTION_2 << " depth=" << depth << " v1=" << v1 << "\n";
+//	PRINT_FUNCTION_2 << " depth=" << depth << " v1=" << v1 << "\n";
 
 	++depth;
 	static int max_depth = std::max( depth, max_depth );
@@ -342,7 +346,7 @@ explore(
 	std::vector<Vertex> src_path = vv_paths.back();
 
 #ifdef UDGCD_DEV_MODE
-	COUT << "src_path: "; PrintVector( std::cout, src_path );
+//	COUT << "src_path: "; PrintVector( std::cout, src_path );
 //	int iter=0;
 //	auto tmp = boost::out_edges( v1, g );
 //	size_t nbedges = tmp.second - tmp.first;
@@ -706,7 +710,7 @@ buildBinaryVector(
 		assert( idx < binvect.size() );
 		binvect[idx] = 1;
 	}
-	printBitVector( std::cout, binvect );
+//	printBitVector( std::cout, binvect );
 }
 //-------------------------------------------------------------------------------------------
 /// Build table of series $y_n = y_{n-1}+N-n-1$
@@ -817,7 +821,7 @@ buildReverseBinaryMap( size_t nb_vertices )
 /// Returns false if a given vertex appears more than once in the vector \c vp
 template<typename vertex_t>
 bool
-checkVertexPairSet( const std::vector<std::pair<vertex_t,vertex_t>>& vp )
+checkVertexPairSet( const std::vector<std::pair<vertex_t,vertex_t>>& vp, bool print=true )
 {
 	std::map<vertex_t,int> vmap;
 	bool correct = true;
@@ -827,12 +831,14 @@ checkVertexPairSet( const std::vector<std::pair<vertex_t,vertex_t>>& vp )
 		vmap[p.second]++;
 		if( vmap[p.first] > 2 )
 		{
-			std::cerr << __FUNCTION__ << "(): Error, vertex " << p.first << " appears " << vmap[p.first] << " times in set\n";
+			if( print )
+				std::cout << __FUNCTION__ << "(): Error, vertex " << p.first << " appears " << vmap[p.first] << " times in set\n";
 			correct = false;
 		}
 		if( vmap[p.second] > 2 )
 		{
-			std::cerr << __FUNCTION__ << "(): Error, vertex " << p.second << " appears " << vmap[p.second] << " times in set\n";
+			if( print )
+				std::cout << __FUNCTION__ << "(): Error, vertex " << p.second << " appears " << vmap[p.second] << " times in set\n";
 			correct = false;
 		}
 	}
@@ -966,7 +972,7 @@ convertBC2VC_v2(
 	auto v_pvertex = buildPairSetFromBinaryVec_v2<vertex_t>( v_in, rev_map, nec );
 	assert( v_pvertex.size()>0 );
 
-#if 1
+#if 0
 	std::cout << "VERTEX MAP v2: size=" << v_pvertex.size() << "\n";
 	size_t i = 0;
 	for( const auto& vp: v_pvertex )
@@ -978,6 +984,7 @@ convertBC2VC_v2(
 		std::exit(1);
 	}
 
+// step 2: build cycle from set of pairs
 	return buildFinalCycle( v_pvertex );
 }
 
@@ -1013,7 +1020,7 @@ convertBC2VC(
 	auto v_pvertex = buildPairSetFromBinaryVec<vertex_t>( v_in, rev_map );
 	assert( v_pvertex.size()>0 );
 
-#if 1
+#if 0
 	std::cout << "VERTEX MAP: size=" << v_pvertex.size() << "\n";
 	size_t i = 0;
 	for( const auto& vp: v_pvertex )
@@ -1037,8 +1044,9 @@ convertBC2VC(
 
 Assumes no identical rows
 */
+template<typename vertex_t> // TEMP
 BinaryMatrix
-gaussianElim( BinaryMatrix& m_in, size_t& nbIter )
+gaussianElim( BinaryMatrix& m_in, size_t& nbIter /* TEMP */, size_t nbVertices, const std::vector<size_t>& nec )
 {
 	PRINT_FUNCTION;
 	size_t col = 0;
@@ -1053,6 +1061,9 @@ gaussianElim( BinaryMatrix& m_in, size_t& nbIter )
 
 //	m_in.print( std::cout, "m_in INITIAL" );
 
+// TEMP
+	auto rev_map = buildReverseBinaryMap( nbVertices );
+
 	std::vector<bool> tag(nb_rows,false);
 	do
 	{
@@ -1062,22 +1073,34 @@ gaussianElim( BinaryMatrix& m_in, size_t& nbIter )
 
 		for( size_t row=0; row<nb_rows; row++ )                // search for first row with a 1 in current column
 		{
-			COUT << "considering line " << row << "\n";
+//			COUT << "considering line " << row << "\n";
 			if( tag[row] == false && m_in.line(row)[col] == 1 )    // AND not tagged
 			{
-				COUT << "row: " << row << ": found 1 in col " << col << "\n";
+				COUT << "row: " << row << ": found 1 in col " << col << "\n"; // found pivot
 //				printBitVector( std::cout, m_out.line(row) );
 				m_out.addLine( m_in.line(row) );
-				COUT << "OUTMAT nblines=" << m_out.nbLines() << '\n';
-//				printBitVector( std::cout, m_out.line(row) );
+				COUT << "Adding line " << row << " to OUTMAT at line " << m_out.nbLines()-1 << '\n';
+
+//				printBitVector( std::cout, m_in.line(row) );
+//				printBitVector( std::cout, m_out.line(m_out.nbLines()-1) );
 				tag[row] = true;
 				if( row < nb_rows-1 )
 				{
+//					for( size_t i=0; i<nb_rows; i++ )      // search for all following rows that have a 1 in that column
+//						if( i != row )
 					for( size_t i=row+1; i<nb_rows; i++ )      // search for all following rows that have a 1 in that column
 					{
 						if( tag[i] == false )                  // AND that are not tagged.
 							if( m_in.line(i)[col] == 1 )            // it there is, we XOR them with initial line
+							{
+//								std::cout << " -row " << i << " changes:\nwas: "; printBitVector( std::cout, m_in.line(i) );
 								m_in.line(i) = m_in.line(i) ^ m_in.line(row);
+//								std::cout << "now: "; printBitVector( std::cout, m_in.line(i) );
+// TEMP
+								auto v_pvertex = buildPairSetFromBinaryVec_v2<vertex_t>( m_in.line(i), rev_map, nec );
+								if( false == checkVertexPairSet( v_pvertex, false ) )
+									COUT << "Invalid vector!\n";
+							}
 					}
 				}
 				COUT << "BREAK loop\n";
@@ -1131,9 +1154,9 @@ convertBinary2Vertex_v2
 	{
 		size_t nbIter2 = 0;
 		++i;
-		std::cout << i << ": **** calling convertBC2VC_v2()\nInput:"; printBitVector( std::cout, bcycle );
+//		std::cout << i << ": **** calling convertBC2VC_v2()\nInput:"; printBitVector( std::cout, bcycle );
 		auto cycle = convertBC2VC_v2<vertex_t>( bcycle, rev_map, nec, nbIter2 );
-		std::cout << i << ": **** result: nbIter=" << nbIter2 << '\n';
+//		std::cout << i << ": **** result: nbIter=" << nbIter2 << '\n';
 		v_out.push_back( cycle );
 	}
 	return v_out;
@@ -1161,9 +1184,9 @@ convertBinary2Vertex
 	{
 		size_t nbIter2 = 0;
 		++i;
-		std::cout << i << ": **** calling convertBC2VC()\nInput:"; printBitVector( std::cout, bcycle );
+//		std::cout << i << ": **** calling convertBC2VC()\nInput:"; printBitVector( std::cout, bcycle );
 		auto cycle = convertBC2VC<vertex_t>( bcycle, rev_map, nbIter2 );
-		std::cout << i << ": **** result: nbIter=" << nbIter2 << '\n';
+//		std::cout << i << ": **** result: nbIter=" << nbIter2 << '\n';
 		v_out.push_back( cycle );
 	}
 	return v_out;
@@ -1204,7 +1227,7 @@ removeRedundant( std::vector<std::vector<vertex_t>>& v_in, size_t nbVertices )
 
 	size_t nbIter1 = 0;
 
-	binMat_in.print( std::cout, "removeRedundant(): input binary matrix" );
+//	binMat_in.print( std::cout, "removeRedundant(): input binary matrix" );
 	binMat_in.getInfo().print( std::cout );//, "removeRedundant(): input binary matrix" );
 
 	auto cc_in = binMat_in.getColumnCount();
@@ -1212,9 +1235,12 @@ removeRedundant( std::vector<std::vector<vertex_t>>& v_in, size_t nbVertices )
 #ifdef UDGCD_REDUCE_MATRIX
 	auto nec = binMat_in.getNonEmptyCols();
 	auto bm_in2 = reduceMatrix( binMat_in, nec );
-	COUT << "bm_in2:\n"; bm_in2.print( std::cout );
-	auto bm_out2 = gaussianElim( bm_in2, nbIter1 );
-	COUT << "bm_out2:\n"; bm_out2.print( std::cout );
+
+convertBinary2Vertex_v2<vertex_t>( bm_in2, nbVertices, nec ); // for checking
+
+//	COUT << "bm_in2:\n"; bm_in2.print( std::cout );
+	auto bm_out2 = gaussianElim<vertex_t>( bm_in2, nbIter1, nbVertices, nec );
+//	COUT << "bm_out2:\n"; bm_out2.print( std::cout );
 // convert back binary cycles to vertex-based cycles,
 
 	return convertBinary2Vertex_v2<vertex_t>( bm_out2, nbVertices, nec );
@@ -1222,12 +1248,13 @@ removeRedundant( std::vector<std::vector<vertex_t>>& v_in, size_t nbVertices )
 #else
 	auto binMat_out = gaussianElim( binMat_in, nbIter1 );
 
-	std::cout << "gaussianElim: nbIter=" << nbIter1 << '\n';
+	COUT << "gaussianElim: nbIter=" << nbIter1 << '\n';
 
 	binMat_out.print( std::cout, "removeRedundant(): output binary matrix" );
 	binMat_out.getInfo().print( std::cout );//, "removeRedundant(): output binary matrix" );
 	auto cc_out = binMat_out.getColumnCount();
 
+#if 0
 	RevBinMap revbinmap = buildReverseBinaryMap( nbVertices );
 
 	std::cout << "col | in | out\n";
@@ -1236,6 +1263,7 @@ removeRedundant( std::vector<std::vector<vertex_t>>& v_in, size_t nbVertices )
 		if( cc_in[i] != 0 || cc_out[i] != 0 )
 			std::cout << i <<  ": " << revbinmap[i].first << "-" << revbinmap[i].second <<  " | " <<  cc_in[i] << " | " <<  cc_out[i] << '\n';
 	}
+#endif
 
 //	std::cout << "v_bpaths size=" << v_bpaths.size() << '\n';
 
@@ -1258,7 +1286,7 @@ bool
 checkNextNode
 (
 	const std::vector<vertex_t>& cycle,  ///< the cycle we are exploring
-	size_t idx_curr,                     ///< current vertex index in above vector
+	size_t idx_curr,                     ///< current vertex index in \c cycle
 	const graph_t& g                     ///< graph
 )
 {
