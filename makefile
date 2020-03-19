@@ -40,7 +40,7 @@ SRC_DIR=.
 APP=udgcd.hpp
 HEADERS=$(wildcard $(SRC_DIR)/*.h*)
 BIN_DIR=bin
-OBJ_DIR=obj
+OBJ_DIR=build/obj
 
 SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)
 OBJ_FILES = $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRC_FILES))
@@ -113,8 +113,8 @@ show: $(SRC_FILES)
 
 
 doc:
-	doxygen doxyfile 1>$(OBJ_DIR)/doxygen_stdout.txt 2>$(OBJ_DIR)/doxygen_stderr.txt
-	xdg-open html/index.html
+	doxygen doxyfile 1>$(OBJ_DIR)/doxygen.stdout 2>$(OBJ_DIR)/doxygen.stderr
+	xdg-open build/html/index.html
 
 clean:
 	@-rm $(OBJ_DIR)/*
@@ -153,11 +153,13 @@ $(BIN_DIR)/%: $(OBJ_DIR)/%.o
 	$(L)$(CXX) -o $@ -s $<  $(LDFLAGS)
 #	$(L)$(CXX) -o $@ $<  $(LDFLAGS)
 
-bin/test_catch: obj/test_catch.o
-	$(CXX) -o bin/test_catch obj/test_catch.o -s
+bin/test_catch: $(OBJ_DIR)/test_catch.o
+	$(CXX) -o bin/test_catch $(OBJ_DIR)/test_catch.o -s
 	@echo "done target $@"
 
 # -s option: also shows successful test results
 test: bin/test_catch
 	bin/test_catch -s
 
+bug: bin/read_graph
+	bin/read_graph samples2/graph_1583824532.txt>stdout

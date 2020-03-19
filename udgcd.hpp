@@ -28,7 +28,7 @@ See file README.md
 
 #ifdef UDGCD_DEV_MODE
 	#include <iostream>
-	#define COUT if(1) std::cout
+	#define COUT if(1) std::cout << std::setw(4) << __LINE__ << ": "
 	#define PRINT_FUNCTION std::cout << "*** start function " <<  __FUNCTION__ << "()\n"
 	#define PRINT_FUNCTION_2 if(1) std::cout << "*** start function " <<  __FUNCTION__ << "()"
 	#define UDGCD_PRINT_STEPS
@@ -813,7 +813,7 @@ buildReverseBinaryMap( size_t nb_vertices )
 		}
 		out[i].first  = v1;
 		out[i].second = v2++;
-		COUT << i << ": (" << out[i].first << " - " << out[i].second << ")\n";
+//		COUT << i << ": (" << out[i].first << " - " << out[i].second << ")\n";
 	}
 	return out;
 }
@@ -891,6 +891,8 @@ buildPairSetFromBinaryVec(
 	}
 	return v_out;
 }
+
+
 //-------------------------------------------------------------------------------------------
 /// Builds the final cycle
 /**
@@ -957,7 +959,63 @@ buildFinalCycle( const std::vector<std::pair<vertex_t,vertex_t>>& v_pvertex )
 
 	return v_out;
 }
+
 //-------------------------------------------------------------------------------------------
+/// TEMP !!!
+template<typename vertex_t>
+std::vector<vertex_t>
+buildFinalCycle_TEMP( const std::vector<std::pair<vertex_t,vertex_t>>& v_pvertex )
+{
+	assert( !v_pvertex.empty() );
+	std::vector<vertex_t> v_out(2);
+	v_out[0] = v_pvertex[0].first;
+	v_out[1] = v_pvertex[0].second;
+	size_t curr_idx = 0;
+	size_t curr_v   = v_out[1];
+	size_t iter = 0;
+	do
+	{
+		++iter;
+//		COUT << "\n* iter " << iter << " curr_idx=" << curr_idx << " curr_v=" << curr_v << '\n';
+		bool stop = false;
+		for( size_t i=1; i<v_pvertex.size(); i++ )       // search for next one
+		{
+			if( i != curr_idx )
+			{
+				auto p = v_pvertex[i];
+				if( curr_v == p.first )
+				{
+					v_out.push_back( p.second );
+					curr_v   = p.second;
+					curr_idx = i;
+					stop     = true;
+				}
+				else
+				{
+					if( curr_v == p.second )
+					{
+						v_out.push_back( p.first );
+						curr_v   = p.first;
+						curr_idx = i;
+						stop     = true;
+					}
+				}
+			}
+			if( stop )
+				break;
+		}
+	}
+	while( curr_v != v_out[0] && iter<20 );      // while we don't cycle
+
+//	PrintVector( std::cout, v_out );
+	v_out.pop_back();
+//	PrintVector( std::cout, v_out );
+
+	return v_out;
+}
+
+//-------------------------------------------------------------------------------------------
+/// Similar to convertBC2VC() but to be used in case we do the "matrix reduction" trick
 template<typename vertex_t>
 std::vector<vertex_t>
 convertBC2VC_v2(
@@ -972,7 +1030,7 @@ convertBC2VC_v2(
 	auto v_pvertex = buildPairSetFromBinaryVec_v2<vertex_t>( v_in, rev_map, nec );
 	assert( v_pvertex.size()>0 );
 
-#if 0
+#if 1
 	std::cout << "VERTEX MAP v2: size=" << v_pvertex.size() << "\n";
 	size_t i = 0;
 	for( const auto& vp: v_pvertex )
@@ -981,7 +1039,7 @@ convertBC2VC_v2(
 	if( false == checkVertexPairSet( v_pvertex ) )
 	{
 		std::cout << "Fatal error: invalid set of pairs\n";
-		std::exit(1);
+//		std::exit(1);
 	}
 
 // step 2: build cycle from set of pairs
@@ -1131,7 +1189,47 @@ gaussianElim( BinaryMatrix& m_in, size_t& nbIter /* TEMP */, size_t nbVertices, 
 }
 
 //-------------------------------------------------------------------------------------------
-/// Convert vector of cycles expressed as binary vectors to vector of cycles expressed as a vector of vertices
+/// Similar tp convertBinary2Vertex_v2() but only returns a set of vertex pairs. ONLY for CHECKING !
+template<typename vertex_t,typename graph_t /* TEMP */>
+std::vector<std::pair<vertex_t,vertex_t>>
+convertBinary2Vertex_v3
+(
+	const BinaryMatrix& binmat,
+	size_t              nbVertices,
+	const std::vector<size_t>& nec,      ///< Non Empty Columns
+	const graph_t& g       ///< TEMP
+)
+{
+	PRINT_FUNCTION;
+	std::vector<std::vector<vertex_t>> v_out;
+
+	v_out.reserve( binmat.nbCols() ); // to avoid unnecessary memory reallocations and copies
+
+	auto rev_map = buildReverseBinaryMap( nbVertices );
+	COUT << "revmap size=" << rev_map.size() << '\n';
+
+	int cnc=0;
+	int i=0;
+	for( auto bcycle: binmat )
+	{
+		std::cout << "* converting line " << i++ << "\n";
+		auto pset = buildPairSetFromBinaryVec_v2<vertex_t>( bcycle, rev_map, nec );
+		for( const auto& p: pset )
+			std::cout << p.first << "-" << p.second << "\n";
+		std::cout << "Cycle: ";
+		auto cycle = buildFinalCycle_TEMP( pset );
+		PrintVector( std::cout, cycle );
+		if( !isChordless(cycle, g) )
+			std::cout << "is NOT chordless: " << ++cnc << "\n";
+		
+	}
+	std::exit(1);
+}
+
+
+//-------------------------------------------------------------------------------------------
+/// Convert vector of cycles expressed as binary vectors to vector of cycles expressed as a vector of vertices.
+/// Similar to convertBinary2Vertex() but to be called when using the "binary matrix reduction" trick
 template<typename vertex_t>
 std::vector<std::vector<vertex_t>>
 convertBinary2Vertex_v2
@@ -1147,16 +1245,17 @@ convertBinary2Vertex_v2
 	v_out.reserve( binmat.nbCols() ); // to avoid unnecessary memory reallocations and copies
 
 	auto rev_map = buildReverseBinaryMap( nbVertices );
-	std::cout << "revmap size=" << rev_map.size() << '\n';
+	COUT << "revmap size=" << rev_map.size() << '\n';
 
 	size_t i=0;
 	for( auto bcycle: binmat )
 	{
 		size_t nbIter2 = 0;
 		++i;
-//		std::cout << i << ": **** calling convertBC2VC_v2()\nInput:"; printBitVector( std::cout, bcycle );
+		COUT << i << ": **** calling convertBC2VC_v2()\nInput:"; printBitVector( std::cout, bcycle );
 		auto cycle = convertBC2VC_v2<vertex_t>( bcycle, rev_map, nec, nbIter2 );
-//		std::cout << i << ": **** result: nbIter=" << nbIter2 << '\n';
+		COUT << i << ": **** result: nbIter=" << nbIter2 << '\n';
+		PrintVector( std::cout, cycle );
 		v_out.push_back( cycle );
 	}
 	return v_out;
@@ -1177,7 +1276,7 @@ convertBinary2Vertex
 	v_out.reserve( binmat.nbCols() ); // to avoid unnecessary memory reallocations and copies
 
 	auto rev_map = buildReverseBinaryMap( nbVertices );
-	std::cout << "revmap size=" << rev_map.size() << '\n';
+	COUT << "heckVertexPairSet" << rev_map.size() << '\n';
 
 	size_t i=0;
 	for( auto bcycle: binmat )
@@ -1207,9 +1306,10 @@ reduceMatrix( const BinaryMatrix& m_in, const std::vector<size_t>& nonEmptyCols 
 /**
 arg is not const, because it gets sorted here.
 */
-template<typename vertex_t>
+template<typename vertex_t,typename graph_t /* TEMP */>
 std::vector<std::vector<vertex_t>>
-removeRedundant( std::vector<std::vector<vertex_t>>& v_in, size_t nbVertices )
+removeRedundant( std::vector<std::vector<vertex_t>>& v_in, size_t nbVertices,
+const graph_t& g /* TEMP */ )
 {
 	PRINT_FUNCTION;
 
@@ -1236,16 +1336,22 @@ removeRedundant( std::vector<std::vector<vertex_t>>& v_in, size_t nbVertices )
 	auto nec = binMat_in.getNonEmptyCols();
 	auto bm_in2 = reduceMatrix( binMat_in, nec );
 
+	COUT << "CHECK bm_in2\n";
 convertBinary2Vertex_v2<vertex_t>( bm_in2, nbVertices, nec ); // for checking
 
 //	COUT << "bm_in2:\n"; bm_in2.print( std::cout );
 	auto bm_out2 = gaussianElim<vertex_t>( bm_in2, nbIter1, nbVertices, nec );
-//	COUT << "bm_out2:\n"; bm_out2.print( std::cout );
-// convert back binary cycles to vertex-based cycles,
+#if 1	
+	COUT << "bm_out2:\n"; bm_out2.print( std::cout );
+#endif
 
+	COUT << "CHECK bm_out2\n";
+	convertBinary2Vertex_v3<vertex_t>( bm_out2, nbVertices, nec, g ); // for checking
+
+// convert back binary cycles to vertex-based cycles,
 	return convertBinary2Vertex_v2<vertex_t>( bm_out2, nbVertices, nec );
 
-#else
+#else // UDGCD_REDUCE_MATRIX
 	auto binMat_out = gaussianElim( binMat_in, nbIter1 );
 
 	COUT << "gaussianElim: nbIter=" << nbIter1 << '\n';
@@ -1571,12 +1677,12 @@ findCycles( graph_t& g, UdgcdInfo& info )
 	}
 #endif
 
-	auto v_cycles2 = priv::removeRedundant( v_cycles1, boost::num_vertices(g) );
+	auto v_cycles2 = priv::removeRedundant( v_cycles1, boost::num_vertices(g), g );
 
 
-#else
+#else // UDGCD_REMOVE_NONCHORDLESS
 
-	auto v_cycles2 = priv::removeRedundant( v_cycles0, boost::num_vertices(g) );
+	auto v_cycles2 = priv::removeRedundant<( v_cycles0, boost::num_vertices(g), g);
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles2, "After removeRedundant()" );
 #endif
