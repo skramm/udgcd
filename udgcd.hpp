@@ -1105,9 +1105,10 @@ convertBC2VC(
 
 Assumes no identical rows
 */
-template<typename vertex_t> // TEMP
+//template<typename vertex_t> // TEMP
+inline
 BinaryMatrix
-gaussianElim( BinaryMatrix& m_in, size_t& nbIter /* TEMP */, size_t nbVertices, const std::vector<size_t>& nec )
+gaussianElim( BinaryMatrix& m_in, size_t& nbIter ) // /* TEMP */, size_t nbVertices, const std::vector<size_t>& nec )
 {
 	PRINT_FUNCTION;
 	size_t col = 0;
@@ -1123,7 +1124,7 @@ gaussianElim( BinaryMatrix& m_in, size_t& nbIter /* TEMP */, size_t nbVertices, 
 //	m_in.print( std::cout, "m_in INITIAL" );
 
 // TEMP
-	auto rev_map = buildReverseBinaryMap( nbVertices );
+//	auto rev_map = buildReverseBinaryMap( nbVertices );
 
 	std::vector<bool> tag(nb_rows,false);
 	do
@@ -1157,10 +1158,11 @@ gaussianElim( BinaryMatrix& m_in, size_t& nbIter /* TEMP */, size_t nbVertices, 
 //								std::cout << " -row " << i << " changes:\nwas: "; printBitVector( std::cout, m_in.line(i) );
 								m_in.line(i) = m_in.line(i) ^ m_in.line(row);
 //								std::cout << "now: "; printBitVector( std::cout, m_in.line(i) );
-// TEMP
+#if 0
 								auto v_pvertex = buildPairSetFromBinaryVec_v2<vertex_t>( m_in.line(i), rev_map, nec );
 								if( false == checkVertexPairSet( v_pvertex, false ) )
 									COUT << "Invalid vector!\n";
+#endif
 							}
 					}
 				}
@@ -1343,7 +1345,10 @@ const graph_t& g /* TEMP */ )
 convertBinary2Vertex_v2<vertex_t>( bm_in2, nbVertices, nec ); // for checking
 
 //	COUT << "bm_in2:\n"; bm_in2.print( std::cout );
-	auto bm_out2 = gaussianElim<vertex_t>( bm_in2, nbIter1, nbVertices, nec );
+//	auto bm_out2 = gaussianElim<vertex_t>( bm_in2, nbIter1, nbVertices, nec );
+	auto bm_out2 = gaussianElim( bm_in2, nbIter1 );
+
+
 #if 1
 	COUT << "bm_out2:\n"; bm_out2.print( std::cout );
 #endif
