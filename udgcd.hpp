@@ -21,6 +21,7 @@ See file README.md
 
 #include <vector>
 #include <chrono>
+#include <iomanip>
 
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/undirected_dfs.hpp>
@@ -112,8 +113,10 @@ printBitMatrix( std::ostream& f, const T& mat, std::string msg )
 }
 
 
-/// holds a path as a binary vector.
+/// Holds a path as a binary vector
 /**
+Based on https://www.boost.org/doc/libs/release/libs/dynamic_bitset/dynamic_bitset.html
+
 For a graph of \f$n\f$ vertices, its size needs to be \f$ n.(n-1)/2 \f$
 
 Example: for the path 1-3-4 on a graph of 5 vertices (0 - 4), the vector will have a size of 10 elements:
@@ -150,7 +153,7 @@ struct BinaryMatInfo
 };
 
 //-------------------------------------------------------------------------------------------
-/// A binary matrix \todo WIP!!!
+/// A binary matrix, implemented as a vector of BinaryVec
 /**
 This type will allow to fetch some relevant information on what the matrix holds
 */
@@ -1219,9 +1222,9 @@ convertBinary2Vertex_v3
 		std::cout << "Cycle: ";
 		auto cycle = buildFinalCycle_TEMP( pset );
 		PrintVector( std::cout, cycle );
-		if( !isChordless(cycle, g) )
-			std::cout << "is NOT chordless: " << ++cnc << "\n";
-		
+//		if( !isChordless(cycle, g) )
+//			std::cout << "is NOT chordless: " << ++cnc << "\n";
+
 	}
 	std::exit(1);
 }
@@ -1341,7 +1344,7 @@ convertBinary2Vertex_v2<vertex_t>( bm_in2, nbVertices, nec ); // for checking
 
 //	COUT << "bm_in2:\n"; bm_in2.print( std::cout );
 	auto bm_out2 = gaussianElim<vertex_t>( bm_in2, nbIter1, nbVertices, nec );
-#if 1	
+#if 1
 	COUT << "bm_out2:\n"; bm_out2.print( std::cout );
 #endif
 
@@ -1669,20 +1672,20 @@ findCycles( graph_t& g, UdgcdInfo& info )
 	info.setTimeStamp();
 	info.nbNonChordlessCycles = v_cycles1.size();
 
-#ifdef UDGCD_DO_CYCLE_CHECKING
+	#ifdef UDGCD_DO_CYCLE_CHECKING
 	if( 0 != priv::checkCycles( v_cycles1, g ) )
 	{
 		std::cerr << "udgcd: ERROR: INVALID CYCLE DETECTED, line " << __LINE__ << "\n";
 		exit(1);
 	}
-#endif
+	#endif
 
 	auto v_cycles2 = priv::removeRedundant( v_cycles1, boost::num_vertices(g), g );
 
 
 #else // UDGCD_REMOVE_NONCHORDLESS
 
-	auto v_cycles2 = priv::removeRedundant<( v_cycles0, boost::num_vertices(g), g);
+	auto v_cycles2 = priv::removeRedundant( v_cycles0, boost::num_vertices(g), g);
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles2, "After removeRedundant()" );
 #endif

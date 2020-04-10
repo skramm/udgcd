@@ -22,7 +22,12 @@ CFLAGS = -std=c++0x -Wall -O2 -Iinclude -Wno-unused-result
 #CFLAGS = -g -std=c++0x -Wall -O2 -Iinclude -Wno-unused-result
 
 # TEMP
+CFLAGS += -std=c++11
 CFLAGS += -DUDGCD_REDUCE_MATRIX
+
+test_m4ri.cpp: wrapper_m4ri.hpp
+
+LDFLAGS +=-lm4ri
 
 ifeq "$(PRINT_STEPS)" "Y"
 	CFLAGS += -DUDGCD_PRINT_STEPS
@@ -38,8 +43,9 @@ SHELL=/bin/bash
 # files and folders
 SRC_DIR=.
 APP=udgcd.hpp
-HEADERS=$(wildcard $(SRC_DIR)/*.h*)
-BIN_DIR=bin
+#HEADERS=$(wildcard $(SRC_DIR)/*.h*)
+HEADER=udgcd.hpp
+BIN_DIR=build/bin
 OBJ_DIR=build/obj
 
 SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)
@@ -142,15 +148,15 @@ install:
 	-cp $(APP) /usr/local/include/$(APP)
 
 # generic compile rule
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(HEADERS)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(HEADER) wrapper_m4ri.hpp
 	@echo $(COLOR_2) " - Compiling app file $<." $(COLOR_OFF)
-	$(L)$(CXX) -o $@ -c $< $(CFLAGS)
+	$(CXX) -o $@ -c $< $(CFLAGS)
 
 # linking
 # -s option: strip symbol (don't add if debugging)
 $(BIN_DIR)/%: $(OBJ_DIR)/%.o
 	@echo $(COLOR_1) " - Link demo $@." $(COLOR_OFF)
-	$(L)$(CXX) -o $@ -s $<  $(LDFLAGS)
+	$(CXX) -o $@ -s $<  $(LDFLAGS)
 #	$(L)$(CXX) -o $@ $<  $(LDFLAGS)
 
 bin/test_catch: $(OBJ_DIR)/test_catch.o

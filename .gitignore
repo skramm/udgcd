@@ -1,8 +1,5 @@
 # list of ignored files
 
-# ignore content of folders:
-obj/
-bin/
 
 # ignore backup files
 *~
