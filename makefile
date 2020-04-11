@@ -25,7 +25,7 @@ CFLAGS = -std=c++0x -Wall -O2 -Iinclude -Wno-unused-result
 CFLAGS += -std=c++11
 CFLAGS += -DUDGCD_REDUCE_MATRIX
 
-test_m4ri.cpp: wrapper_m4ri.hpp
+# test_m4ri.cpp: wrapper_m4ri.hpp
 
 LDFLAGS +=-lm4ri
 

@@ -2,6 +2,8 @@
 \file wrapper_m4ri.hpp
 \brief C++ wrapper, see https://bitbucket.org/malb/m4ri/
 */
+#ifndef HG_WRAPPER_M4RI_HPP
+#define HG_WRAPPER_M4RI_HPP
 
 #include <cassert>
 #include <iostream>
@@ -10,7 +12,7 @@
 //#include <m4ri/config.h>
 #include <m4ri/m4ri.h>
 
-#include "udgcd.hpp"
+//#include "udgcd.hpp"
 
 /// Wrapper over the m4ri dense matrix datatype
 struct MatM4ri
@@ -108,42 +110,6 @@ int MatM4ri::get( size_t row, size_t col )
 	return mzd_read_bit( _data, row, col );
 }
 
-#if 1
-/// UNTESTED !!
-MatM4ri convertToM4ri( const udgcd::priv::BinaryMatrix& mat_in )
-{
-	MatM4ri out( mat_in.nbLines(), mat_in.nbCols() );
-	size_t row = 0;
-	for( const auto& line: mat_in )
-	{
-		for( size_t col=0; col<line.size(); col++ )
-			out.set( row, col, line[col] );
-
-		row++;
-	}
-	return out;
-}
-#endif
-
-/// UNTESTED !!
-udgcd::priv::BinaryMatrix
-convertFromM4ri( const MatM4ri& mat_in )
-{
-	udgcd::priv::BinaryMatrix out( mat_in.nbRows(), mat_in.nbCols() );
-	std::cout << "#r=" << out.nbLines() << " #c=" << out.nbCols() << "\n";
-	std::cout << mat_in;
-
-	for( size_t row=0; row<mat_in.nbRows(); row++ )
-	{
-		udgcd::priv::BinaryVec& vec = *(out.begin() + row);
-		for( size_t col=0; col<out.nbCols(); col++ )
-		{
-			vec[col] = mzd_read_bit( mat_in._data, row, col );
-//			std::cout << "r=" << row << " col=" << col << " v=" << mzd_read_bit( mat_in._data, row, col ) << "=" << vec[col] << "\n";
-		}
-	}
-	return out;
-}
 
 std::ostream&
 operator << ( std::ostream& f, const MatM4ri& mat )
@@ -165,3 +131,4 @@ operator << ( std::ostream& f, const MatM4ri& mat )
 	}
 	return f;
 }
+#endif // HG_WRAPPER_M4RI_HPP

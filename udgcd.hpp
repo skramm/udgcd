@@ -27,6 +27,10 @@ See file README.md
 #include <boost/graph/undirected_dfs.hpp>
 #include <boost/dynamic_bitset.hpp>       // needed ! Allows bitwise operations on dynamic size boolean vectors
 
+// TEMP
+#include "wrapper_m4ri.hpp"
+#include "wrapper_m4ri_convert.hpp"
+
 #ifdef UDGCD_DEV_MODE
 	#include <iostream>
 	#define COUT if(1) std::cout << std::setw(4) << __LINE__ << ": "
@@ -1346,8 +1350,11 @@ convertBinary2Vertex_v2<vertex_t>( bm_in2, nbVertices, nec ); // for checking
 
 //	COUT << "bm_in2:\n"; bm_in2.print( std::cout );
 //	auto bm_out2 = gaussianElim<vertex_t>( bm_in2, nbIter1, nbVertices, nec );
-	auto bm_out2 = gaussianElim( bm_in2, nbIter1 );
+//	auto bm_out2 = gaussianElim( bm_in2, nbIter1 );
 
+	MatM4ri m4rmi = convertToM4ri( bm_in2 );
+	mzd_echelonize_naive( m4rmi._data, 0 );
+	auto bm_out2 = convertFromM4ri( m4rmi );
 
 #if 1
 	COUT << "bm_out2:\n"; bm_out2.print( std::cout );
@@ -1722,5 +1729,8 @@ findCycles( graph_t& g )
 //-------------------------------------------------------------------------------------------
 
 } // udgcd namespace end
+
+// TEMP
+//#include "wrapper_m4ri_convert.hpp"
 
 #endif // HG_UDGCD_HPP
