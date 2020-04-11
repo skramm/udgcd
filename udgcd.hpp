@@ -76,7 +76,6 @@ PrintPaths( std::ostream& f, const std::vector<std::vector<T>>& v_paths, const c
 	}
 }
 
-
 //-------------------------------------------------------------------------------------------
 /// holds private types and functions, unneeded to use this library
 namespace priv {
@@ -868,6 +867,8 @@ buildPairSetFromBinaryVec_v2(
 	const std::vector<size_t>& nec  ///< non-empty columns of the original matrix
 )
 {
+	PRINT_FUNCTION;
+	std::cout << v_in << "\n";
 	std::vector<std::pair<vertex_t,vertex_t>> v_out;
 	for( size_t i=0; i<v_in.size(); ++i )
 	{
@@ -1034,13 +1035,14 @@ buildFinalCycle_TEMP( const std::vector<std::pair<vertex_t,vertex_t>>& v_pvertex
 template<typename vertex_t>
 std::vector<vertex_t>
 convertBC2VC_v2(
-	const BinaryVec& v_in,          ///< input binary path
+	const BinaryVec&  v_in,         ///< input binary path
 	const RevBinMap&  rev_map,      ///< required map, has to be build before, see buildReverseBinaryMap()
 	const std::vector<size_t>& nec, ///< non-empty columns
 	size_t&           iter
 )
 {
 	PRINT_FUNCTION;
+
 // step 1: build set of pairs from binary vector
 	auto v_pvertex = buildPairSetFromBinaryVec_v2<vertex_t>( v_in, rev_map, nec );
 	assert( v_pvertex.size()>0 );
@@ -1270,11 +1272,14 @@ convertBinary2Vertex_v2
 	{
 		size_t nbIter2 = 0;
 		++i;
-		COUT << i << ": **** calling convertBC2VC_v2()\nInput:"; printBitVector( std::cout, bcycle );
-		auto cycle = convertBC2VC_v2<vertex_t>( bcycle, rev_map, nec, nbIter2 );
-		COUT << i << ": **** result: nbIter=" << nbIter2 << '\n';
-		PrintVector( std::cout, cycle );
-		v_out.push_back( cycle );
+		if( bcycle.count() )
+		{
+			COUT << i << ": **** calling convertBC2VC_v2()\nInput:"; printBitVector( std::cout, bcycle );
+			auto cycle = convertBC2VC_v2<vertex_t>( bcycle, rev_map, nec, nbIter2 );
+			COUT << i << ": **** result: nbIter=" << nbIter2 << '\n';
+			PrintVector( std::cout, cycle );
+			v_out.push_back( cycle );
+		}
 	}
 	return v_out;
 }
@@ -1364,7 +1369,7 @@ convertBinary2Vertex_v2<vertex_t>( bm_in2, nbVertices, nec ); // for checking
 	auto bm_out2 = gaussianElim( bm_in2, nbIter1 );
 #else
 	MatM4ri m4rmi = convertToM4ri( bm_in2 );
-	mzd_echelonize_naive( m4rmi._data, 1 );
+	mzd_echelonize_naive( m4rmi._data, 0 );
 	auto bm_out2 = convertFromM4ri( m4rmi );
 #endif
 
@@ -1480,6 +1485,10 @@ checkCycles( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 	size_t c = 0;
 	for( auto cycle: v_in )
 	{
+		assert( cycle.size() );
+
+		std::cout << "cycle:\n"; PrintVector( std::cout, cycle );
+
 #if 0
 		c += (size_t)isACycle( cycle, g );
 #else

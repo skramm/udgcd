@@ -18,11 +18,9 @@ COLOR_OFF="\e[0m"
 #--------------------------------
 # general compiler flags
 # -Wno-unused-result is to avoid the warning on call to std::system() when calling dot (see void CallDot() )
-CFLAGS = -std=c++0x -Wall -O2 -Iinclude -Wno-unused-result
-#CFLAGS = -g -std=c++0x -Wall -O2 -Iinclude -Wno-unused-result
+CFLAGS = -std=c++11 -Wall -O2 -Iinclude -Wno-unused-result
 
 # TEMP
-CFLAGS += -std=c++11
 CFLAGS += -DUDGCD_REDUCE_MATRIX
 
 # test_m4ri.cpp: wrapper_m4ri.hpp
@@ -35,6 +33,13 @@ endif
 
 ifeq "$(DEVMODE)" "Y"
 	CFLAGS += -DUDGCD_DEV_MODE
+endif
+
+ifeq "$(DEBUG)" "Y"
+	CFLAGS += -g
+	LDFLAGS += -g
+else
+	LDFLAGS += -s
 endif
 
 SHELL=/bin/bash
@@ -156,7 +161,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(HEADER) wrapper_m4ri.hpp
 # -s option: strip symbol (don't add if debugging)
 $(BIN_DIR)/%: $(OBJ_DIR)/%.o
 	@echo $(COLOR_1) " - Link demo $@." $(COLOR_OFF)
-	$(CXX) -o $@ -s $<  $(LDFLAGS)
+	$(CXX) -o $@ $<  $(LDFLAGS)
 #	$(L)$(CXX) -o $@ $<  $(LDFLAGS)
 
 $(BIN_DIR)/test_catch: $(OBJ_DIR)/test_catch.o
