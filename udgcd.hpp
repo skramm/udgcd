@@ -29,7 +29,7 @@ See file README.md
 
 // TEMP
 #include "wrapper_m4ri.hpp"
-#include "wrapper_m4ri_convert.hpp"
+//#include "wrapper_m4ri_convert.hpp"
 
 #ifdef UDGCD_DEV_MODE
 	#include <iostream>
@@ -305,6 +305,14 @@ struct BinaryMatrix
 		return out;
 	}
 };
+
+// TEMP
+} // namespace priv
+} // namespace udgcd
+
+#include "wrapper_m4ri_convert.hpp"
+namespace udgcd {
+namespace priv {
 
 //-------------------------------------------------------------------------------------------
 /// Print vector of vectors of bits
@@ -1043,10 +1051,11 @@ convertBC2VC_v2(
 	for( const auto& vp: v_pvertex )
 		std::cout << i++ << ":" << vp.first << "-" << vp.second << "\n";
 #endif
+
 	if( false == checkVertexPairSet( v_pvertex ) )
 	{
 		std::cout << "Fatal error: invalid set of pairs\n";
-//		std::exit(1);
+		std::exit(1);
 	}
 
 // step 2: build cycle from set of pairs
@@ -1350,18 +1359,21 @@ convertBinary2Vertex_v2<vertex_t>( bm_in2, nbVertices, nec ); // for checking
 
 //	COUT << "bm_in2:\n"; bm_in2.print( std::cout );
 //	auto bm_out2 = gaussianElim<vertex_t>( bm_in2, nbIter1, nbVertices, nec );
-//	auto bm_out2 = gaussianElim( bm_in2, nbIter1 );
 
+#if 0
+	auto bm_out2 = gaussianElim( bm_in2, nbIter1 );
+#else
 	MatM4ri m4rmi = convertToM4ri( bm_in2 );
-	mzd_echelonize_naive( m4rmi._data, 0 );
+	mzd_echelonize_naive( m4rmi._data, 1 );
 	auto bm_out2 = convertFromM4ri( m4rmi );
+#endif
 
 #if 1
 	COUT << "bm_out2:\n"; bm_out2.print( std::cout );
 #endif
 
 	COUT << "CHECK bm_out2\n";
-	convertBinary2Vertex_v3<vertex_t>( bm_out2, nbVertices, nec, g ); // for checking
+//	convertBinary2Vertex_v3<vertex_t>( bm_out2, nbVertices, nec, g ); // for checking
 
 // convert back binary cycles to vertex-based cycles,
 	return convertBinary2Vertex_v2<vertex_t>( bm_out2, nbVertices, nec );

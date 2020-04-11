@@ -86,19 +86,19 @@ run: all
 	$(addsuffix ;,$(EXEC_FILES))
 
 # runs on all generated samples
-rungen: $(GEN_GSAMPLES_OUTPUT) bin/read_graph
+rungen: $(GEN_GSAMPLES_OUTPUT) $(BIN_DIR)/read_graph
 	@echo "target $@ done"
 
 # runs cycle detection process on all provided samples
-runsam: $(GEN_SAMPLES_OUTPUT) bin/read_graph | clearlogfile
+runsam: $(GEN_SAMPLES_OUTPUT) $(BIN_DIR)/read_graph | clearlogfile
 	@echo "target $@ done"
 
 
 clearlogfile:
 	@echo "Running make target 'runsam', results:" > runsam.log
 
-out/stdout_graph_%.txt: samples/graph_%.txt bin/read_graph
-	-bin/read_graph $< > $@;\
+out/stdout_graph_%.txt: samples/graph_%.txt $(BIN_DIR)/read_graph
+	-$(BIN_DIR)/read_graph $< > $@;\
 	STATUS=$$?; echo "file $<: exit with $$STATUS" >> runsam.log
 
 out/%.svg : out/%.dot
@@ -159,7 +159,7 @@ $(BIN_DIR)/%: $(OBJ_DIR)/%.o
 	$(CXX) -o $@ -s $<  $(LDFLAGS)
 #	$(L)$(CXX) -o $@ $<  $(LDFLAGS)
 
-bin/test_catch: $(OBJ_DIR)/test_catch.o
+$(BIN_DIR)/test_catch: $(OBJ_DIR)/test_catch.o
 	$(CXX) -o bin/test_catch $(OBJ_DIR)/test_catch.o -s
 	@echo "done target $@"
 

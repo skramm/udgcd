@@ -6,8 +6,8 @@
 #define HG_WRAPPER_M4RI_CONVERT_HPP
 
 
-#include <m4ri/m4ri.h>
-#include "udgcd.hpp"
+//#include <m4ri/m4ri.h>
+//#include "udgcd.hpp"
 
 
 MatM4ri convertToM4ri( const udgcd::priv::BinaryMatrix& mat_in )

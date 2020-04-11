@@ -7,6 +7,7 @@
 
 #include <cassert>
 #include <iostream>
+#include <iomanip>
 #include <utility> // needed for std::move
 
 //#include <m4ri/config.h>

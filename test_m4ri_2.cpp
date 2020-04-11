@@ -5,6 +5,7 @@
 */
 
 #include <iostream>
+#include "udgcd.hpp"
 #include "wrapper_m4ri.hpp"
 
 using namespace udgcd;
