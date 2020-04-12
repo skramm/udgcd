@@ -13,6 +13,7 @@ Inspired from http://www.boost.org/doc/libs/1_58_0/libs/graph/example/undirected
 
 \todo 2020-03-09: add a data structure that can measure the run-time depth of the recursive functions
 
+\todo 2020-04-12: see sample 41: seems we have a non chordless cycle !!!
 See file README.md
 */
 
@@ -662,10 +663,9 @@ removeNonChordless( const std::vector<std::vector<vertex_t>>& v_in, const graph_
 	return v_out;
 }
 #endif // UDGCD_REMOVE_NONCHORDLESS
+
 //-------------------------------------------------------------------------------------------
-#if 1
-/// holds two vertices, used in RemoveRedundant()
-/// \deprecated ???
+/// holds two vertices
 template <typename vertex_t>
 struct VertexPair
 {
@@ -686,15 +686,25 @@ struct VertexPair
 		return false;
 	}
 
-#ifdef UDGCD_DEV_MODE
+
+	bool operator == ( const VertexPair& p ) const
+	{
+		if( p.v1 != v1 )
+			return false;
+		if( p.v2 != v2 )
+			return false;
+		return true;
+	}
+
+//#ifdef UDGCD_DEV_MODE
 	friend std::ostream& operator << ( std::ostream& s, const VertexPair& vp )
 	{
 		s << '(' << vp.v1 << '-' << vp.v2 << ')';
 		return s;
 	}
-#endif
+//#endif
 };
-#endif
+
 //-------------------------------------------------------------------------------------------
 #if 0
 template<typename vertex_t>
@@ -863,9 +873,12 @@ checkVertexPairSet( const std::vector<VertexPair<vertex_t>>& vp, bool print=true
 	return correct;
 }
 //-------------------------------------------------------------------------------------------
+/// Convert cycle expressed as a binary vector to a Vector of Pair of Vertices (VPV)
+/// See \ref p_data_representation
 template<typename vertex_t>
 std::vector<VertexPair<vertex_t>>
-buildPairSetFromBinaryVec_v2(
+convertBinVec2VPV_v2
+(
 	const BinaryVec&           v_in,    ///< A binary vector holding 1 at each position where there is an edge
 	const RevBinMap&           rev_map, ///< Reverse map, build with buildReverseBinaryMap()
 	const std::vector<size_t>& nec      ///< non-empty columns of the original matrix
@@ -887,14 +900,17 @@ buildPairSetFromBinaryVec_v2(
 }
 
 //-------------------------------------------------------------------------------------------
-/// Fill map with adjacent nodes
+/// Convert cycle expressed as a binary vector to a Vector of Pair of Vertices (VPV)
+/// See \ref p_data_representation
 /**
+
 The idea here is to avoid doing an extensive search each time to see if node is already present, which
-can be costly for large cycles
+can be costly for large cycles.
 */
 template<typename vertex_t>
 std::vector<VertexPair<vertex_t>>
-buildPairSetFromBinaryVec(
+convertBinVec2VPV
+(
 	const BinaryVec& v_in,          ///< A binary vector holding 1 at each position where there is an edge
 	const RevBinMap& rev_map        ///< Reverse map, see buildReverseBinaryMap()
 )
@@ -917,11 +933,11 @@ buildPairSetFromBinaryVec(
 
 A cycle can be represented in several ways:
 \li as a vector of vertices.
-For example:  <code>(2-6-14-17)</code>
+For example:  <code>(2-6-14-17)</code>.
 Order matters !
 \li as a Vector of Pair of Vertices (VPV).
 With the above example, this would be:
-<code>( {2-6},{6-14},{14-17},{17-2} )</code>
+<code>( {2-6},{6-14},{14-17},{17-2} )</code>.
 Here, the order doesn't matter.
 \li as a binary vector, which is related to a reference index map.<br>
 The function buildBinaryIndexVec() will build this reference map, given the number of vertices.
@@ -930,10 +946,13 @@ In such a vector, we have a 1 at every position where there is an edge.
 To convert a binary vector to a vector of vertices is done with convertBC2VC()
 or convertBC2VC_v2() if matrix reduction is used.
 
+To convert a binary vector to a Vector of Pair of Vertices, see
+convertBinVec2VPV()
+
 */
 
 //-------------------------------------------------------------------------------------------
-/// Convert cycle expressed as a set of pairs (VPV:Vector of Pairs of Vertices) to
+/// Convert a cycle expressed as a set of pairs (VPV:Vector of Pairs of Vertices) to
 /// a vector of vertices. See \ref p_data_representation
 /**
 \sa convertCycle2VPV()
@@ -999,7 +1018,6 @@ convertVPV2Cycle( const std::vector<VertexPair<vertex_t>>& v_pvertex )
 	return v_out;
 }
 
-
 //-------------------------------------------------------------------------------------------
 /// Converts cycle expressed as a vector of vertices to a cycle expressed as a set of pairs.
 /// (VPV:Vector of Pairs of Vertices). See \ref p_data_representation
@@ -1019,10 +1037,28 @@ convertCycle2VPV( const std::vector<vertex_t>& cycle )
 	for( size_t i=0; i<cycle.size(); i++ )
 	{
 		vertex_t v1 = cycle[i];
-		vertex_t v2 = ( i != cycle.size()-2 ? cycle[i+1] : cycle[0] );
+		vertex_t v2 = ( i != cycle.size()-1 ? cycle[i+1] : cycle[0] );
+
+		std::cout << i << " : " << cycle[i] << " : " << v1 << "-" << v2 << "\n";
+
 		VertexPair<vertex_t> pair(v1,v2);
-		out.emplace_back( pair(v1,v2) );
+		out.push_back( pair );
 	}
+	return out;
+}
+
+//-------------------------------------------------------------------------------------------
+template<typename vertex_t>
+std::vector<std::vector<VertexPair<vertex_t>>>
+convertCycles2VVPV( const std::vector<std::vector<vertex_t>>& cycles )
+{
+	PRINT_FUNCTION;
+
+	assert( cycles.size()>0 );
+
+	std::vector<std::vector<VertexPair<vertex_t>>> out;
+	for( const auto& cycle : cycles )
+		out.emplace_back( convertCycle2VPV(cycle) );
 	return out;
 }
 
@@ -1095,7 +1131,7 @@ convertBC2VC_v2(
 	PRINT_FUNCTION;
 
 // step 1: build set of pairs from binary vector
-	auto v_pvertex = buildPairSetFromBinaryVec_v2<vertex_t>( v_in, rev_map, nec );
+	auto v_pvertex = convertBinVec2VPV_v2<vertex_t>( v_in, rev_map, nec );
 	assert( v_pvertex.size()>0 );
 
 #if 1
@@ -1144,7 +1180,7 @@ convertBC2VC(
 //	printBitVector( std::cout, v_in );
 
 // step 1: build set of pairs from binary vector
-	auto v_pvertex = buildPairSetFromBinaryVec<vertex_t>( v_in, rev_map );
+	auto v_pvertex = convertBinVec2VPV<vertex_t>( v_in, rev_map );
 	assert( v_pvertex.size()>0 );
 
 #if 0
@@ -1225,7 +1261,7 @@ gaussianElim( BinaryMatrix& m_in, size_t& nbIter ) // /* TEMP */, size_t nbVerti
 								m_in.line(i) = m_in.line(i) ^ m_in.line(row);
 //								std::cout << "now: "; printBitVector( std::cout, m_in.line(i) );
 #if 0
-								auto v_pvertex = buildPairSetFromBinaryVec_v2<vertex_t>( m_in.line(i), rev_map, nec );
+								auto v_pvertex = convertBinVec2VPV_v2<vertex_t>( m_in.line(i), rev_map, nec );
 								if( false == checkVertexPairSet( v_pvertex, false ) )
 									COUT << "Invalid vector!\n";
 #endif
@@ -1284,7 +1320,7 @@ convertBinary2Vertex_v3
 	for( auto bcycle: binmat )
 	{
 		std::cout << "* converting line " << i++ << "\n";
-		auto pset = buildPairSetFromBinaryVec_v2<vertex_t>( bcycle, rev_map, nec );
+		auto pset = convertBinVec2VPV_v2<vertex_t>( bcycle, rev_map, nec );
 		for( const auto& p: pset )
 			std::cout << p.first << "-" << p.second << "\n";
 		std::cout << "Cycle: ";

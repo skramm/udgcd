@@ -10,7 +10,16 @@ https://github.com/philsquared/Catch/
 #include "catch.hpp"
 
 #include "udgcd.hpp"
+using namespace udgcd;
 
+//-------------------------------------------------------------------------------------------
+TEST_CASE( "Conversions", "[tc]" )
+{
+	std::vector<size_t> v1{ 1,4,9,12 };
+	std::vector<priv::VertexPair<size_t>> v2{ {1,4},{4,9},{9,12},{12,1} };
+	auto res = priv::convertCycle2VPV( v1 );
+	CHECK( res == v2 );
+}
 
 //-------------------------------------------------------------------------------------------
 TEST_CASE( "test buildBinaryIndexVec", "[testbiv]" )

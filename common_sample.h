@@ -109,12 +109,12 @@ void
 RenderGraph2( const graph_t& g, const std::vector<std::vector<vertex_t>>& cycles, const std::string id_str )
 {
 
-	std::cout << "id_str=" << id_str << '\n';
+	std::cout << "id_str2=" << id_str << '\n';
 
-	int nbColors = std::min(20, (int)cycles.size() );
-//	int factor = (nbColors+1)/2;
+	int nbColors = std::min(32, (int)cycles.size() );
 
 	int bi = (int)std::ceil( std::log(nbColors) / std::log(2) );
+	bi = std::max(2,bi);
 
 // build color set
 	std::vector<std::string> color_set( nbColors );
@@ -124,19 +124,17 @@ RenderGraph2( const graph_t& g, const std::vector<std::vector<vertex_t>>& cycles
 		int g = 255 * ((i/bi)%bi) / (bi-1);
 		int b = std::max( 0, std::min(384-r-g,255) );
 		std::ostringstream oss;
-		oss << " [color=\"#" << std::setfill('0');
+		oss << " [penwidth=\"2.0\";color=\"#" << std::setfill('0');
 		oss << std::hex
 			<< std::setw(2) << r
 			<< std::setw(2) << g
 			<< std::setw(2) << b
-			<< "\"];";
+			<< "\"];\n";
 		color_set[i%nbColors] = oss.str();
-		std::cout << "col "  << i << ": " << color_set[i%nbColors] << "\n";
+//		std::cout << "col "  << i << ": " << color_set[i%nbColors] << std::endl;
 	}
 
-	std::exit(1);
-//	std::vector<std::pair<vertex_t,vertex_t>> pair_set;
-//	for()
+	auto v_VPV = udgcd::priv::convertCycles2VVPV<vertex_t>( cycles );
 
 	std::string fname( "out/" + id_str + "_" + std::to_string(g_idx) + ".dot" );
 
@@ -147,19 +145,31 @@ RenderGraph2( const graph_t& g, const std::vector<std::vector<vertex_t>>& cycles
 	for( auto p_it=boost::vertices(g); p_it.first != p_it.second; p_it.first++ )
 		f << *p_it.first << ";\n";
 
+// First, output all the edges part of a cycle, with a given color
+//  and store them in a set, so that we can know they hav been drawned.
+	std::set<udgcd::priv::VertexPair<vertex_t>> pairSet;
+	for( size_t i=0; i<v_VPV.size(); i++ )     // for each cycle
+	{
+		for( const auto& pair: v_VPV[i] )    // for each pair
+		{
+			auto v1 = pair.v1;
+			auto v2 = pair.v2;
+			f << v1 << "--" << v2 << color_set[i%nbColors];
+			pairSet.insert( pair );
+		}
+	}
+
+// Second, add all the edges that were not part of a cycle
+
+	int c=0;
 	for( auto p_it=boost::edges(g); p_it.first != p_it.second; p_it.first++ )
 	{
 		auto idx1 = boost::source( *p_it.first, g );
 		auto idx2 = boost::target( *p_it.first, g );
-		if( idx2>idx1 )
-		{
-			std::swap( idx1, idx2 );
-			f << idx1 << "--" << idx2;
-		}
-		auto p = std::make_pair( idx1, idx2 );
-//		if( std::find( std::begin(pair_set), std::end(pair_set), p ) != std::end(pair_set) )
-//			f << "[color=\"#AA00BB\"]";
-		f << "\n" ;
+		udgcd::priv::VertexPair<vertex_t> p( idx1, idx2 );
+		std::cout << "SEARCH:" << c++ << ":" << idx1 << "-" << idx2 << std::endl;
+		if( pairSet.find(p) == pairSet.end() )
+			f << p.v1 << "--" << p.v2 << ";\n";
 	}
 
 	f << "}\n";
