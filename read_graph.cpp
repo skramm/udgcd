@@ -56,7 +56,10 @@ int main( int argc, const char** argv )
 	}
 	if( noProcess )
 		return 0;
-	return Process( g );
+	auto result = Process<graph_t,vertex_t>( g );
+	RenderGraph2( g, result.second, vs2[0]+"_color" );
+
+	return result.first;
 }
 
 //-------------------------------------------------------------------

@@ -50,6 +50,7 @@ SRC_DIR=.
 APP=udgcd.hpp
 #HEADERS=$(wildcard $(SRC_DIR)/*.h*)
 HEADER=udgcd.hpp
+HEADERS = $(wildcard *.h*)
 BIN_DIR=build/bin
 OBJ_DIR=build/obj
 
@@ -153,7 +154,7 @@ install:
 	-cp $(APP) /usr/local/include/$(APP)
 
 # generic compile rule
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(HEADER) wrapper_m4ri.hpp
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(HEADERS) wrapper_m4ri.hpp
 	@echo $(COLOR_2) " - Compiling app file $<." $(COLOR_OFF)
 	$(CXX) -o $@ -c $< $(CFLAGS)
 
@@ -164,13 +165,13 @@ $(BIN_DIR)/%: $(OBJ_DIR)/%.o
 	$(CXX) -o $@ $<  $(LDFLAGS)
 #	$(L)$(CXX) -o $@ $<  $(LDFLAGS)
 
-$(BIN_DIR)/test_catch: $(OBJ_DIR)/test_catch.o
-	$(CXX) -o bin/test_catch $(OBJ_DIR)/test_catch.o -s
-	@echo "done target $@"
+#$(BIN_DIR)/test_catch: $(OBJ_DIR)/test_catch.o
+#	$(CXX) -o bin/test_catch $(OBJ_DIR)/test_catch.o -s
+#	@echo "done target $@"
 
 # -s option: also shows successful test results
-test: bin/test_catch
-	bin/test_catch -s
+test: $(BIN_DIR)/test_catch
+	$(BIN_DIR)/test_catch -s
 
-bug: bin/read_graph
-	bin/read_graph samples2/graph_1583824532.txt>stdout
+bug: $(BIN_DIR)/read_graph
+	$(BIN_DIR)/read_graph samples2/graph_1583824532.txt>stdout

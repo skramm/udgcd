@@ -102,6 +102,73 @@ RenderGraph( const graph_t& g, const std::string id_str )
 //	CallDot( id_str );
 	g_idx++;
 }
+
+/// Renders graph in a .dot file but with edges part of cycle with some random color
+template<typename graph_t,typename vertex_t>
+void
+RenderGraph2( const graph_t& g, const std::vector<std::vector<vertex_t>>& cycles, const std::string id_str )
+{
+
+	std::cout << "id_str=" << id_str << '\n';
+
+	int nbColors = std::min(20, (int)cycles.size() );
+//	int factor = (nbColors+1)/2;
+
+	int bi = (int)std::ceil( std::log(nbColors) / std::log(2) );
+
+// build color set
+	std::vector<std::string> color_set( nbColors );
+	for( size_t i=0; i<cycles.size(); i++ )
+	{
+		int r = 255 * (i%bi)    / (bi-1);
+		int g = 255 * ((i/bi)%bi) / (bi-1);
+		int b = std::max( 0, std::min(384-r-g,255) );
+		std::ostringstream oss;
+		oss << " [color=\"#" << std::setfill('0');
+		oss << std::hex
+			<< std::setw(2) << r
+			<< std::setw(2) << g
+			<< std::setw(2) << b
+			<< "\"];";
+		color_set[i%nbColors] = oss.str();
+		std::cout << "col "  << i << ": " << color_set[i%nbColors] << "\n";
+	}
+
+	std::exit(1);
+//	std::vector<std::pair<vertex_t,vertex_t>> pair_set;
+//	for()
+
+	std::string fname( "out/" + id_str + "_" + std::to_string(g_idx) + ".dot" );
+
+	std::ofstream f ( fname );
+	if( !f.is_open() )
+		THROW_ERROR( "unable to open file" + fname );
+	f << "graph G {\n";
+	for( auto p_it=boost::vertices(g); p_it.first != p_it.second; p_it.first++ )
+		f << *p_it.first << ";\n";
+
+	for( auto p_it=boost::edges(g); p_it.first != p_it.second; p_it.first++ )
+	{
+		auto idx1 = boost::source( *p_it.first, g );
+		auto idx2 = boost::target( *p_it.first, g );
+		if( idx2>idx1 )
+		{
+			std::swap( idx1, idx2 );
+			f << idx1 << "--" << idx2;
+		}
+		auto p = std::make_pair( idx1, idx2 );
+//		if( std::find( std::begin(pair_set), std::end(pair_set), p ) != std::end(pair_set) )
+//			f << "[color=\"#AA00BB\"]";
+		f << "\n" ;
+	}
+
+	f << "}\n";
+//	CallDot( id_str );
+	g_idx++;
+
+}
+
+
 //-------------------------------------------------------------------
 #if 0
 /// Generates a dot file from graph \c g and calls the renderer (dot/Graphviz) to produce a svg image of the graph,
@@ -241,11 +308,11 @@ and if none, the number of differences between:
 - and the \b expected number of cycles
 
 */
-template<typename graph_t>
-int
+template<typename graph_t,typename vertex_t>
+std::pair<int,std::vector<std::vector<vertex_t>>>
 Process( graph_t& g )
 {
-	typedef typename boost::graph_traits<graph_t>::vertex_descriptor vertex_t;
+//	typedef typename boost::graph_traits<graph_t>::vertex_descriptor vertex_t;
 
 	auto expected = printGraphInfo( g );
 
@@ -261,11 +328,12 @@ Process( graph_t& g )
 	if( nbi != 0 )
 	{
 		std::cout << "ERROR: " << nbi << " incorrect cycles found\n";
-		return -1;
+		return std::make_pair(-1, cycles );
 	}
 	info.print( std::cout );
 	info.printCSV( std::cerr );
 
-	return (int)cycles.size() - (int)expected;
+	auto diff = (int)cycles.size() - (int)expected;
+	return std::make_pair(diff, cycles );
 }
 //-------------------------------------------------------------------

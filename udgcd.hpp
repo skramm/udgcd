@@ -48,6 +48,9 @@ See file README.md
 /// All the provided code is in this namespace
 namespace udgcd {
 
+//template<typename T>
+//using VertexPair = std::pair<T,T>;
+
 //-------------------------------------------------------------------------------------------
 template<typename T>
 void
@@ -660,6 +663,7 @@ removeNonChordless( const std::vector<std::vector<vertex_t>>& v_in, const graph_
 }
 #endif // UDGCD_REMOVE_NONCHORDLESS
 //-------------------------------------------------------------------------------------------
+#if 1
 /// holds two vertices, used in RemoveRedundant()
 /// \deprecated ???
 template <typename vertex_t>
@@ -690,6 +694,7 @@ struct VertexPair
 	}
 #endif
 };
+#endif
 //-------------------------------------------------------------------------------------------
 #if 0
 template<typename vertex_t>
@@ -793,9 +798,8 @@ using RevBinMap = std::vector<std::pair<size_t,size_t>>;
 /// Builds an table giving from an index in the binary vector the indexes of the two vertices
 /// that are connected. See \ref convertBC2VC()
 /**
-Size: \f$ n*(n-1)/2 \f$
-
-Example for n=5 (=> size=10)
+\li Size: \f$ n*(n-1)/2 \f$
+\li Example for n=5 (=> size=10)
 \verbatim
 0 | 0 1
 1 | 0 2
@@ -835,24 +839,24 @@ buildReverseBinaryMap( size_t nb_vertices )
 /// Returns false if a given vertex appears more than once in the vector \c vp
 template<typename vertex_t>
 bool
-checkVertexPairSet( const std::vector<std::pair<vertex_t,vertex_t>>& vp, bool print=true )
+checkVertexPairSet( const std::vector<VertexPair<vertex_t>>& vp, bool print=true )
 {
 	std::map<vertex_t,int> vmap;
 	bool correct = true;
     for( auto p: vp )
     {
-		vmap[p.first]++;
-		vmap[p.second]++;
-		if( vmap[p.first] > 2 )
+		vmap[p.v1]++;
+		vmap[p.v2]++;
+		if( vmap[p.v1] > 2 )
 		{
 			if( print )
-				std::cout << __FUNCTION__ << "(): Error, vertex " << p.first << " appears " << vmap[p.first] << " times in set\n";
+				std::cout << __FUNCTION__ << "(): Error, vertex " << p.v1 << " appears " << vmap[p.v1] << " times in set\n";
 			correct = false;
 		}
-		if( vmap[p.second] > 2 )
+		if( vmap[p.v2] > 2 )
 		{
 			if( print )
-				std::cout << __FUNCTION__ << "(): Error, vertex " << p.second << " appears " << vmap[p.second] << " times in set\n";
+				std::cout << __FUNCTION__ << "(): Error, vertex " << p.v2 << " appears " << vmap[p.v2] << " times in set\n";
 			correct = false;
 		}
 	}
@@ -860,23 +864,23 @@ checkVertexPairSet( const std::vector<std::pair<vertex_t,vertex_t>>& vp, bool pr
 }
 //-------------------------------------------------------------------------------------------
 template<typename vertex_t>
-std::vector<std::pair<vertex_t,vertex_t>>
+std::vector<VertexPair<vertex_t>>
 buildPairSetFromBinaryVec_v2(
-	const BinaryVec& v_in,          ///< A binary vector holding 1 at each position where there is an edge
-	const RevBinMap& rev_map,       ///< Reverse map, see buildReverseBinaryMap()
-	const std::vector<size_t>& nec  ///< non-empty columns of the original matrix
+	const BinaryVec&           v_in,    ///< A binary vector holding 1 at each position where there is an edge
+	const RevBinMap&           rev_map, ///< Reverse map, build with buildReverseBinaryMap()
+	const std::vector<size_t>& nec      ///< non-empty columns of the original matrix
 )
 {
 	PRINT_FUNCTION;
 	std::cout << v_in << "\n";
-	std::vector<std::pair<vertex_t,vertex_t>> v_out;
+	std::vector<VertexPair<vertex_t>> v_out;
 	for( size_t i=0; i<v_in.size(); ++i )
 	{
 		if( v_in[i] == 1 ) // if we find a '1', then we have found a connection
 		{
 			vertex_t v1 = rev_map[nec[i]].first;   // the two nodes
 			vertex_t v2 = rev_map[nec[i]].second;  // that are connected
-			v_out.push_back( std::make_pair(v1,v2) );
+			v_out.push_back( VertexPair<vertex_t>(v1,v2) );
 		}
 	}
 	return v_out;
@@ -889,29 +893,51 @@ The idea here is to avoid doing an extensive search each time to see if node is 
 can be costly for large cycles
 */
 template<typename vertex_t>
-std::vector<std::pair<vertex_t,vertex_t>>
+std::vector<VertexPair<vertex_t>>
 buildPairSetFromBinaryVec(
 	const BinaryVec& v_in,          ///< A binary vector holding 1 at each position where there is an edge
 	const RevBinMap& rev_map        ///< Reverse map, see buildReverseBinaryMap()
 )
 {
-	std::vector<std::pair<vertex_t,vertex_t>> v_out;
+	std::vector<VertexPair<vertex_t>> v_out;
 	for( size_t i=0; i<v_in.size(); ++i )
 	{
 		if( v_in[i] == 1 ) // if we find a '1', then we have found a connection
 		{
 			vertex_t v1 = rev_map[i].first;   // the two nodes
 			vertex_t v2 = rev_map[i].second;  // that are connected
-			v_out.push_back( std::make_pair(v1,v2) );
+			v_out.push_back( VertexPair<vertex_t>(v1,v2) );
 		}
 	}
 	return v_out;
 }
+//-------------------------------------------------------------------------------------------
+/**
+\page p_data_representation Data Representation
 
+A cycle can be represented in several ways:
+\li as a vector of vertices.
+For example:  <code>(2-6-14-17)</code>
+Order matters !
+\li as a Vector of Pair of Vertices (VPV).
+With the above example, this would be:
+<code>( {2-6},{6-14},{14-17},{17-2} )</code>
+Here, the order doesn't matter.
+\li as a binary vector, which is related to a reference index map.<br>
+The function buildBinaryIndexVec() will build this reference map, given the number of vertices.
+In such a vector, we have a 1 at every position where there is an edge.
+
+To convert a binary vector to a vector of vertices is done with convertBC2VC()
+or convertBC2VC_v2() if matrix reduction is used.
+
+*/
 
 //-------------------------------------------------------------------------------------------
-/// Builds the final cycle
+/// Convert cycle expressed as a set of pairs (VPV:Vector of Pairs of Vertices) to
+/// a vector of vertices. See \ref p_data_representation
 /**
+\sa convertCycle2VPV()
+
 Takes as input a set of pairs:
 \verbatim
 12-18
@@ -924,14 +950,14 @@ and will return the cycle: 4-9-18-12-22
 */
 template<typename vertex_t>
 std::vector<vertex_t>
-buildFinalCycle( const std::vector<std::pair<vertex_t,vertex_t>>& v_pvertex )
+convertVPV2Cycle( const std::vector<VertexPair<vertex_t>>& v_pvertex )
 {
 	PRINT_FUNCTION;
 
 	assert( !v_pvertex.empty() );
 	std::vector<vertex_t> v_out(2);
-	v_out[0] = v_pvertex[0].first;
-	v_out[1] = v_pvertex[0].second;
+	v_out[0] = v_pvertex[0].v1;
+	v_out[1] = v_pvertex[0].v2;
 	size_t curr_idx = 0;
 	size_t curr_v   = v_out[1];
 	size_t iter = 0;
@@ -945,19 +971,19 @@ buildFinalCycle( const std::vector<std::pair<vertex_t,vertex_t>>& v_pvertex )
 			if( i != curr_idx )
 			{
 				auto p = v_pvertex[i];
-				if( curr_v == p.first )
+				if( curr_v == p.v1 )
 				{
-					v_out.push_back( p.second );
-					curr_v   = p.second;
+					v_out.push_back( p.v2 );
+					curr_v   = p.v2;
 					curr_idx = i;
 					stop     = true;
 				}
 				else
 				{
-					if( curr_v == p.second )
+					if( curr_v == p.v2 )
 					{
-						v_out.push_back( p.first );
-						curr_v   = p.first;
+						v_out.push_back( p.v1 );
+						curr_v   = p.v1;
 						curr_idx = i;
 						stop     = true;
 					}
@@ -969,18 +995,43 @@ buildFinalCycle( const std::vector<std::pair<vertex_t,vertex_t>>& v_pvertex )
 	}
 	while( curr_v != v_out[0] );      // while we don't cycle
 
-//	PrintVector( std::cout, v_out );
-	v_out.pop_back();
-//	PrintVector( std::cout, v_out );
-
+	v_out.pop_back();              // remove last one, so the first/last does not appear twice
 	return v_out;
+}
+
+
+//-------------------------------------------------------------------------------------------
+/// Converts cycle expressed as a vector of vertices to a cycle expressed as a set of pairs.
+/// (VPV:Vector of Pairs of Vertices). See \ref p_data_representation
+/**
+\sa convertVPV2Cycle()
+
+\todo UNTESTED !!!
+*/
+template<typename vertex_t>
+std::vector<VertexPair<vertex_t>>
+convertCycle2VPV( const std::vector<vertex_t>& cycle )
+{
+	PRINT_FUNCTION;
+
+	assert( cycle.size()>2 );
+	std::vector<VertexPair<vertex_t>> out;
+	for( size_t i=0; i<cycle.size(); i++ )
+	{
+		vertex_t v1 = cycle[i];
+		vertex_t v2 = ( i != cycle.size()-2 ? cycle[i+1] : cycle[0] );
+		VertexPair<vertex_t> pair(v1,v2);
+		out.emplace_back( pair(v1,v2) );
+	}
+	return out;
 }
 
 //-------------------------------------------------------------------------------------------
 /// TEMP !!!
+/// other renamed to convertVPV2Cycle
 template<typename vertex_t>
 std::vector<vertex_t>
-buildFinalCycle_TEMP( const std::vector<std::pair<vertex_t,vertex_t>>& v_pvertex )
+buildFinalCycle_TEMP( const std::vector<VertexPair<vertex_t>>& v_pvertex )
 {
 	assert( !v_pvertex.empty() );
 	std::vector<vertex_t> v_out(2);
@@ -1051,7 +1102,7 @@ convertBC2VC_v2(
 	std::cout << "VERTEX MAP v2: size=" << v_pvertex.size() << "\n";
 	size_t i = 0;
 	for( const auto& vp: v_pvertex )
-		std::cout << i++ << ":" << vp.first << "-" << vp.second << "\n";
+		std::cout << i++ << ":" << vp.v1 << "-" << vp.v2 << "\n";
 #endif
 
 	if( false == checkVertexPairSet( v_pvertex ) )
@@ -1061,7 +1112,7 @@ convertBC2VC_v2(
 	}
 
 // step 2: build cycle from set of pairs
-	return buildFinalCycle( v_pvertex );
+	return convertVPV2Cycle( v_pvertex );
 }
 
 //-------------------------------------------------------------------------------------------
@@ -1110,7 +1161,7 @@ convertBC2VC(
 	}
 
 // step 2: extract vertices from map
-	return buildFinalCycle( v_pvertex );
+	return convertVPV2Cycle( v_pvertex );
 }
 //-------------------------------------------------------------------------------------------
 /// Gaussian binary elimination
@@ -1299,7 +1350,7 @@ convertBinary2Vertex
 	v_out.reserve( binmat.nbCols() ); // to avoid unnecessary memory reallocations and copies
 
 	auto rev_map = buildReverseBinaryMap( nbVertices );
-	COUT << "heckVertexPairSet" << rev_map.size() << '\n';
+//	COUT << "heckVertexPairSet" << rev_map.size() << '\n';
 
 	size_t i=0;
 	for( auto bcycle: binmat )
