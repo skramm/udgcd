@@ -30,7 +30,6 @@ See file README.md
 
 // TEMP
 #include "wrapper_m4ri.hpp"
-//#include "wrapper_m4ri_convert.hpp"
 
 #ifdef UDGCD_DEV_MODE
 	#include <iostream>
@@ -727,7 +726,7 @@ template<typename vertex_t>
 void
 buildBinaryVector(
 	const std::vector<vertex_t>& cycle,    ///< input cycle
-	BinaryVec&                  binvect,  ///< output binary vector (must be allocated)
+	BinaryVec&                   binvect,  ///< output binary vector (must be allocated)
 	const std::vector<size_t>&   idx_vec ) ///< reference index vector, see how it is build in \ref buildBinaryMatrix() and \ref buildBinaryIndexVec(()
 {
 	PRINT_FUNCTION;
@@ -1296,45 +1295,6 @@ gaussianElim( BinaryMatrix& m_in, size_t& nbIter ) // /* TEMP */, size_t nbVerti
 }
 
 //-------------------------------------------------------------------------------------------
-/// Similar tp convertBinary2Vertex_v2() but only returns a set of vertex pairs. ONLY for CHECKING !
-template<typename vertex_t,typename graph_t /* TEMP */>
-std::vector<std::pair<vertex_t,vertex_t>>
-convertBinary2Vertex_v3
-(
-	const BinaryMatrix& binmat,
-	size_t              nbVertices,
-	const std::vector<size_t>& nec,      ///< Non Empty Columns
-	const graph_t& g       ///< TEMP
-)
-{
-	PRINT_FUNCTION;
-	std::vector<std::vector<vertex_t>> v_out;
-
-	v_out.reserve( binmat.nbCols() ); // to avoid unnecessary memory reallocations and copies
-
-	auto rev_map = buildReverseBinaryMap( nbVertices );
-	COUT << "revmap size=" << rev_map.size() << '\n';
-
-	int cnc=0;
-	int i=0;
-	for( auto bcycle: binmat )
-	{
-		std::cout << "* converting line " << i++ << "\n";
-		auto pset = convertBinVec2VPV_v2<vertex_t>( bcycle, rev_map, nec );
-		for( const auto& p: pset )
-			std::cout << p.first << "-" << p.second << "\n";
-		std::cout << "Cycle: ";
-		auto cycle = buildFinalCycle_TEMP( pset );
-		PrintVector( std::cout, cycle );
-//		if( !isChordless(cycle, g) )
-//			std::cout << "is NOT chordless: " << ++cnc << "\n";
-
-	}
-	std::exit(1);
-}
-
-
-//-------------------------------------------------------------------------------------------
 /// Convert vector of cycles expressed as binary vectors to vector of cycles expressed as a vector of vertices.
 /// Similar to convertBinary2Vertex() but to be called when using the "binary matrix reduction" trick
 template<typename vertex_t>
@@ -1416,10 +1376,9 @@ reduceMatrix( const BinaryMatrix& m_in, const std::vector<size_t>& nonEmptyCols 
 /**
 arg is not const, because it gets sorted here.
 */
-template<typename vertex_t,typename graph_t /* TEMP */>
+template<typename vertex_t>
 std::vector<std::vector<vertex_t>>
-removeRedundant( std::vector<std::vector<vertex_t>>& v_in, size_t nbVertices,
-const graph_t& g /* TEMP */ )
+removeRedundant( std::vector<std::vector<vertex_t>>& v_in, size_t nbVertices )
 {
 	PRINT_FUNCTION;
 
@@ -1452,11 +1411,12 @@ convertBinary2Vertex_v2<vertex_t>( bm_in2, nbVertices, nec ); // for checking
 //	COUT << "bm_in2:\n"; bm_in2.print( std::cout );
 //	auto bm_out2 = gaussianElim<vertex_t>( bm_in2, nbIter1, nbVertices, nec );
 
+
 #if 0
 	auto bm_out2 = gaussianElim( bm_in2, nbIter1 );
 #else
 	MatM4ri m4rmi = convertToM4ri( bm_in2 );
-	mzd_echelonize_naive( m4rmi._data, 0 );
+	mzd_echelonize_naive( m4rmi._data, 1 );
 	auto bm_out2 = convertFromM4ri( m4rmi );
 #endif
 
@@ -1464,8 +1424,6 @@ convertBinary2Vertex_v2<vertex_t>( bm_in2, nbVertices, nec ); // for checking
 	COUT << "bm_out2:\n"; bm_out2.print( std::cout );
 #endif
 
-	COUT << "CHECK bm_out2\n";
-//	convertBinary2Vertex_v3<vertex_t>( bm_out2, nbVertices, nec, g ); // for checking
 
 // convert back binary cycles to vertex-based cycles,
 	return convertBinary2Vertex_v2<vertex_t>( bm_out2, nbVertices, nec );
@@ -1800,12 +1758,12 @@ findCycles( graph_t& g, UdgcdInfo& info )
 	}
 	#endif
 
-	auto v_cycles2 = priv::removeRedundant( v_cycles1, boost::num_vertices(g), g );
+	auto v_cycles2 = priv::removeRedundant( v_cycles1, boost::num_vertices(g) );
 
 
 #else // UDGCD_REMOVE_NONCHORDLESS
 
-	auto v_cycles2 = priv::removeRedundant( v_cycles0, boost::num_vertices(g), g);
+	auto v_cycles2 = priv::removeRedundant( v_cycles0, boost::num_vertices(g));
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles2, "After removeRedundant()" );
 #endif
@@ -1837,8 +1795,5 @@ findCycles( graph_t& g )
 //-------------------------------------------------------------------------------------------
 
 } // udgcd namespace end
-
-// TEMP
-//#include "wrapper_m4ri_convert.hpp"
 
 #endif // HG_UDGCD_HPP
