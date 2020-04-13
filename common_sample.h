@@ -14,14 +14,16 @@ Home page: https://github.com/skramm/udgcd
 #include "boost/graph/graphviz.hpp"
 #include <boost/graph/connected_components.hpp>
 
-#define UDGCD_REMOVE_NONCHORDLESS
+//#define UDGCD_REMOVE_NONCHORDLESS
 #define UDGCD_DO_CYCLE_CHECKING
+//#define UDGCD_LOG_FUNC
 //#define UDGCD_PRINT_STEPS
-#define UDGCD_DEV_MODE
+//#define UDGCD_DEV_MODE
 
 #include "udgcd.hpp"
 
 #include <string>
+#include <numeric>
 
 #define SHOW_INFO \
 	std::cout << "-START: " << __FILE__ \
@@ -161,13 +163,12 @@ RenderGraph2( const graph_t& g, const std::vector<std::vector<vertex_t>>& cycles
 
 // Second, add all the edges that were not part of a cycle
 
-	int c=0;
+
 	for( auto p_it=boost::edges(g); p_it.first != p_it.second; p_it.first++ )
 	{
 		auto idx1 = boost::source( *p_it.first, g );
 		auto idx2 = boost::target( *p_it.first, g );
 		udgcd::priv::VertexPair<vertex_t> p( idx1, idx2 );
-//		std::cout << "SEARCH:" << c++ << ":" << idx1 << "-" << idx2 << std::endl;
 		if( pairSet.find(p) == pairSet.end() )
 			f << p.v1 << "--" << p.v2 << ";\n";
 	}
@@ -335,12 +336,15 @@ processGraph( graph_t& g )
 
 //	std::cout << "diff=" << (int)expected - (int)cycles.size() << "\n";
 
+	udgcd::priv::printStatus( std::cout, cycles, __LINE__ );
+
 	auto nbi = udgcd::priv::checkCycles( cycles, g );
 	if( nbi != 0 )
 	{
 		std::cout << "ERROR: " << nbi << " incorrect cycles found\n";
 		return std::make_pair(-1, cycles );
 	}
+
 	info.print( std::cout );
 	info.printCSV( std::cerr );
 

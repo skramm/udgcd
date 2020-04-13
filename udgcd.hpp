@@ -31,16 +31,20 @@ See file README.md
 // TEMP
 #include "wrapper_m4ri.hpp"
 
-#ifdef UDGCD_DEV_MODE
-	#include <iostream>
-	#define COUT if(1) std::cout << std::setw(4) << __LINE__ << ": "
+#ifdef UDGCD_LOG_FUNC
 	#define PRINT_FUNCTION std::cout << "*** start function " <<  __FUNCTION__ << "()\n"
 	#define PRINT_FUNCTION_2 if(1) std::cout << "*** start function " <<  __FUNCTION__ << "()"
-	#define UDGCD_PRINT_STEPS
-	#define PRINT_DIFF( step, v_after, v_before ) std::cout << step << ": REMOVAL OF " << v_before.size() - v_after.size() << " cycles\n"
 #else
 	#define PRINT_FUNCTION
 	#define PRINT_FUNCTION_2 if(0) std::cout
+#endif
+
+#ifdef UDGCD_DEV_MODE
+	#include <iostream>
+	#define COUT if(1) std::cout << std::setw(4) << __LINE__ << ": "
+	#define UDGCD_PRINT_STEPS
+	#define PRINT_DIFF( step, v_after, v_before ) std::cout << step << ": REMOVAL OF " << v_before.size() - v_after.size() << " cycles\n"
+#else
 	#define COUT if(0) std::cout
 	#define PRINT_DIFF(a,b,c) ;
 #endif
@@ -54,7 +58,7 @@ namespace udgcd {
 //-------------------------------------------------------------------------------------------
 template<typename T>
 void
-PrintVector( std::ostream& f, const std::vector<T>& vec )
+printVector( std::ostream& f, const std::vector<T>& vec )
 {
 	for( const auto& elem : vec )
 		f << elem << "-";
@@ -75,7 +79,7 @@ PrintPaths( std::ostream& f, const std::vector<std::vector<T>>& v_paths, const c
 	for( size_t i=0; i<v_paths.size(); i++ )
 	{
 		f << " - " << i << ": ";
-		PrintVector( f, v_paths[i] );
+		printVector( f, v_paths[i] );
 	}
 }
 
@@ -272,7 +276,7 @@ struct BinaryMatrix
 		return out;
 	}
 
-	void print( std::ostream& f, std::string msg=std::string() ) const
+	void printMat( std::ostream& f, std::string msg=std::string() ) const
 	{
 		size_t i=0;
 		f << "BinaryMatrix: " << msg << ", nbLines=" << nbLines() << " nbCols=" << nbCols() << "\n";
@@ -434,7 +438,7 @@ removeOppositePairs( const std::vector<std::vector<T>>& v_cycles )
 			out.push_back( v_cycles[i] );                        //  1 - add current vector into output
 
 #ifdef UDGCD_DEV_MODE
-			COUT << "-Considering path " << i << ":  "; PrintVector( std::cout, v_cycles[i] );
+			COUT << "-Considering path " << i << ":  "; printVector( std::cout, v_cycles[i] );
 #endif
 			std::vector<T> rev = v_cycles[i];                       // step 1: build a reversed copy of the current vector
 			std::reverse( rev.begin(), rev.end() );
@@ -444,7 +448,7 @@ removeOppositePairs( const std::vector<std::vector<T>>& v_cycles )
 //					out.push_back( v_cycles[i] );                        //  1 - add current vector into output
 					flags[j] = false;                                 //  2 -  invalidate the reversed one
 #ifdef UDGCD_DEV_MODE
-					COUT << " -> discarding path " << j << ":  "; PrintVector( std::cout, v_cycles[j] );
+					COUT << " -> discarding path " << j << ":  "; printVector( std::cout, v_cycles[j] );
 #endif
 				}
 		}
@@ -494,11 +498,13 @@ GetSortedTrimmed( const std::vector<T>& v_in )
 }
 #endif
 //-------------------------------------------------------------------------------------------
-/// Removes the parts that are not part of the cycle.
+/// Removes the parts that are not part of the cycle, and normalize the order
 /**
 Example:
 - in: 1-2-3-4-5-3
 - out: 3-4-5
+
+\sa putSmallestElemFirst()
 */
 template<typename T>
 std::vector<T>
@@ -549,6 +555,8 @@ Example:
 \todo We make a preallocation of the output vector, using the size of the input vector.
 However, the output vector has a size usually less than 10 times less the size of the input vector.
 Thus there might be some memory saving to do here.
+
+\sa findTrueCycle()
 */
 template<typename T>
 std::vector<std::vector<T>>
@@ -560,12 +568,16 @@ cleanCycles( const std::vector<std::vector<T>>& v_cycles )
 	std::vector<std::vector<T>> out;
 	out.reserve( v_cycles.size() );
 
+	size_t identical = 0;
 	for( const auto& cycle: v_cycles )
 	{
 		auto newcy = findTrueCycle( cycle );
 		if( std::find( std::begin(out), std::end(out), newcy ) == std::end(out) )     // add to output vector only if not already present
 			out.push_back( newcy );
+		else
+			identical++;
 	}
+	std::cout << __FUNCTION__ << "(): nb of identical cycles removed=" << identical << "\n";
 	return out;
 }
 //-------------------------------------------------------------------------------------------
@@ -664,7 +676,7 @@ removeNonChordless( const std::vector<std::vector<vertex_t>>& v_in, const graph_
 #endif // UDGCD_REMOVE_NONCHORDLESS
 
 //-------------------------------------------------------------------------------------------
-/// holds two vertices
+/// Holds two vertices
 template <typename vertex_t>
 struct VertexPair
 {
@@ -685,7 +697,6 @@ struct VertexPair
 		return false;
 	}
 
-
 	bool operator == ( const VertexPair& p ) const
 	{
 		if( p.v1 != v1 )
@@ -705,22 +716,13 @@ struct VertexPair
 };
 
 //-------------------------------------------------------------------------------------------
-#if 0
-template<typename vertex_t>
-void
-PrintSet( const std::set<VertexPair<vertex_t>>& set_edges, std::string msg )
-{
-	std::cout << "set: " << msg << '\n';
-	for( const auto& e: set_edges )
-		std::cout << e << '-';
-	std::cout << '\n';
-}
-#endif
-//-------------------------------------------------------------------------------------------
 /// Builds the binary vector \c binvect associated to the cycle \c cycle.
 /// The index vector \c idx_vec is used to fetch the index in binary vector from the two vertices indexes
 /**
 - sample input: 1-3-5
+
+\todo 20200413: write down the reason why the function does not return the result, and passes it
+as reference. Must be a reason but can't remenber each time!
 */
 template<typename vertex_t>
 void
@@ -885,7 +887,7 @@ convertBinVec2VPV_v2
 )
 {
 	PRINT_FUNCTION;
-	std::cout << v_in << "\n";
+//	std::cout << v_in << "\n";
 	std::vector<VertexPair<vertex_t>> v_out;
 	for( size_t i=0; i<v_in.size(); ++i )
 	{
@@ -915,6 +917,8 @@ convertBinVec2VPV
 	const RevBinMap& rev_map        ///< Reverse map, see buildReverseBinaryMap()
 )
 {
+	PRINT_FUNCTION;
+
 	std::vector<VertexPair<vertex_t>> v_out;
 	for( size_t i=0; i<v_in.size(); ++i )
 	{
@@ -1060,61 +1064,6 @@ convertCycles2VVPV( const std::vector<std::vector<vertex_t>>& cycles )
 }
 
 //-------------------------------------------------------------------------------------------
-/// TEMP !!!
-/// other renamed to convertVPV2Cycle
-template<typename vertex_t>
-std::vector<vertex_t>
-buildFinalCycle_TEMP( const std::vector<VertexPair<vertex_t>>& v_pvertex )
-{
-	assert( !v_pvertex.empty() );
-	std::vector<vertex_t> v_out(2);
-	v_out[0] = v_pvertex[0].first;
-	v_out[1] = v_pvertex[0].second;
-	size_t curr_idx = 0;
-	size_t curr_v   = v_out[1];
-	size_t iter = 0;
-	do
-	{
-		++iter;
-//		COUT << "\n* iter " << iter << " curr_idx=" << curr_idx << " curr_v=" << curr_v << '\n';
-		bool stop = false;
-		for( size_t i=1; i<v_pvertex.size(); i++ )       // search for next one
-		{
-			if( i != curr_idx )
-			{
-				auto p = v_pvertex[i];
-				if( curr_v == p.first )
-				{
-					v_out.push_back( p.second );
-					curr_v   = p.second;
-					curr_idx = i;
-					stop     = true;
-				}
-				else
-				{
-					if( curr_v == p.second )
-					{
-						v_out.push_back( p.first );
-						curr_v   = p.first;
-						curr_idx = i;
-						stop     = true;
-					}
-				}
-			}
-			if( stop )
-				break;
-		}
-	}
-	while( curr_v != v_out[0] && iter<20 );      // while we don't cycle
-
-//	PrintVector( std::cout, v_out );
-	v_out.pop_back();
-//	PrintVector( std::cout, v_out );
-
-	return v_out;
-}
-
-//-------------------------------------------------------------------------------------------
 /// Similar to convertBC2VC() but to be used in case we do the "matrix reduction" trick
 template<typename vertex_t>
 std::vector<vertex_t>
@@ -1131,7 +1080,7 @@ convertBC2VC_v2(
 	auto v_pvertex = convertBinVec2VPV_v2<vertex_t>( v_in, rev_map, nec );
 	assert( v_pvertex.size()>0 );
 
-#if 1
+#if 0
 	std::cout << "VERTEX MAP v2: size=" << v_pvertex.size() << "\n";
 	size_t i = 0;
 	for( const auto& vp: v_pvertex )
@@ -1171,9 +1120,10 @@ convertBC2VC(
 	size_t&           iter
 )
 {
+	PRINT_FUNCTION;
+
 	assert( v_in.size() == rev_map.size() );
 
-	PRINT_FUNCTION;
 //	printBitVector( std::cout, v_in );
 
 // step 1: build set of pairs from binary vector
@@ -1210,6 +1160,7 @@ BinaryMatrix
 gaussianElim( BinaryMatrix& m_in, size_t& nbIter ) // /* TEMP */, size_t nbVertices, const std::vector<size_t>& nec )
 {
 	PRINT_FUNCTION;
+
 	size_t col = 0;
 	size_t nb_rows = m_in.nbLines();
 	size_t nb_cols = m_in.nbCols();
@@ -1305,6 +1256,7 @@ convertBinary2Vertex_v2
 )
 {
 	PRINT_FUNCTION;
+
 	std::vector<std::vector<vertex_t>> v_out;
 
 	v_out.reserve( binmat.nbCols() ); // to avoid unnecessary memory reallocations and copies
@@ -1319,10 +1271,10 @@ convertBinary2Vertex_v2
 		++i;
 		if( bcycle.count() )
 		{
-			COUT << i << ": **** calling convertBC2VC_v2()\nInput:"; printBitVector( std::cout, bcycle );
+//			COUT << i << ": **** calling convertBC2VC_v2()\nInput:"; printBitVector( std::cout, bcycle );
 			auto cycle = convertBC2VC_v2<vertex_t>( bcycle, rev_map, nec, nbIter2 );
-			COUT << i << ": **** result: nbIter=" << nbIter2 << '\n';
-			PrintVector( std::cout, cycle );
+//			COUT << i << ": **** result: nbIter=" << nbIter2 << '\n';
+//			PrintVector( std::cout, cycle );
 			v_out.push_back( cycle );
 		}
 	}
@@ -1392,7 +1344,7 @@ removeRedundant( std::vector<std::vector<vertex_t>>& v_in, size_t nbVertices )
 
 //	printBitMatrix( std::cout, binMat_in, "removeRedundant(): input binary matrix" );
 
-	size_t nbIter1 = 0;
+//	size_t nbIter1 = 0;
 
 //	binMat_in.print( std::cout, "removeRedundant(): input binary matrix" );
 	binMat_in.getInfo().print( std::cout );//, "removeRedundant(): input binary matrix" );
@@ -1418,8 +1370,8 @@ convertBinary2Vertex_v2<vertex_t>( bm_in2, nbVertices, nec ); // for checking
 	auto bm_out2 = convertFromM4ri( m4rmi );
 #endif
 
-#if 1
-	COUT << "bm_out2:\n"; bm_out2.print( std::cout );
+#if 0
+	COUT << "bm_out2:\n"; bm_out2.printMat( std::cout );
 #endif
 
 
@@ -1500,7 +1452,7 @@ checkNextNode
 }
 
 //-------------------------------------------------------------------------------------------
-/// Returns true if \c cycle is correct
+/// Returns true if \c cycle is correct, entry point to recursive function checkNextNode()
 /**
 This function is only there for checking purposes
 */
@@ -1525,18 +1477,19 @@ size_t
 checkCycles( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 {
 	PRINT_FUNCTION;
+
 	size_t c = 0;
 	for( auto cycle: v_in )
 	{
 		assert( cycle.size() );
 
-		std::cout << "cycle:\n"; PrintVector( std::cout, cycle );
+//		std::cout << "cycle:\n"; PrintVector( std::cout, cycle );
 
 		bool b = isACycle( cycle, g );
 		if( !b )
 		{
 			std::cout << __FUNCTION__ << "(): Error, computed cycle not a cycle:\n";
-			PrintVector( std::cout, cycle );
+			printVector( std::cout, cycle );
 			c++;
 		}
 
@@ -1544,13 +1497,38 @@ checkCycles( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 		if( !b2 )
 		{
 			std::cout << __FUNCTION__ << "(): Error, computed cycle not chordless:\n";
-			PrintVector( std::cout, cycle );
+			printVector( std::cout, cycle );
 			c++;
 		}
 	}
 	return c;
 }
 //-------------------------------------------------------------------------------------------
+/// Returns the mean number of nodes that the set of cycles has.
+template<typename vertex_t>
+double
+getMeanSize( const std::vector<std::vector<vertex_t>>& cycles )
+{
+	size_t sum=0;
+	std::for_each(
+		cycles.begin(),
+		cycles.end(),
+			[ &sum ]
+			(const std::vector<vertex_t>& cycle)
+			{ sum += cycle.size(); }
+		);
+//	std::cout << "CYCLE MEAN SIZE="	<< 1.0 * sum / cycles.size()	<< "\n";
+	return 1.0*sum/cycles.size();
+}
+
+template<typename vertex_t>
+void
+printStatus( std::ostream& f, const std::vector<std::vector<vertex_t>>& cycles, int line )
+{
+	f << "l."<< line<< ": status: #=" << cycles.size()
+		<< ", mean size=" << getMeanSize( cycles ) << "\n";
+}
+
 
 } // namespace priv
 
@@ -1663,6 +1641,8 @@ template<typename graph_t, typename vertex_t>
 std::vector<std::vector<vertex_t>>
 findCycles( graph_t& g, UdgcdInfo& info )
 {
+	PRINT_FUNCTION;
+
 	info.startTiming();
 
 	if( boost::num_vertices(g) < 3 || boost::num_edges(g) < 3 )
@@ -1679,7 +1659,9 @@ findCycles( graph_t& g, UdgcdInfo& info )
 	std::map<typename graph_t::edge_descriptor, boost::default_color_type> edge_color;
 	auto ecmap = boost::make_assoc_property_map( edge_color );
 
+//////////////////////////////////////
 // step 1: do a DFS
+//////////////////////////////////////
 	boost::undirected_dfs( g, cycleDetector, vcmap, ecmap, 0 );
 
 	info.setTimeStamp();
@@ -1690,7 +1672,9 @@ findCycles( graph_t& g, UdgcdInfo& info )
 	std::cout << "-nbSourceVertices=" << cycleDetector.v_source_vertex.size() << '\n';
 	std::vector<std::vector<vertex_t>> v_cycles;     // else, get the cycles.
 
-// search paths only starting from vertices that were registered as source vertex
+//////////////////////////////////////
+// step 2: search paths only starting from vertices that were registered as source vertex
+//////////////////////////////////////
 	for( const auto& vi: cycleDetector.v_source_vertex )
 	{
 		COUT << "\n * Start exploring from source vertex " << vi << "\n";
@@ -1698,21 +1682,15 @@ findCycles( graph_t& g, UdgcdInfo& info )
 		std::vector<vertex_t> newv(1, vi ); // start by one of the filed source vertex
 		v_paths.push_back( newv );
 		priv::explore( vi, g, v_paths, v_cycles );    // call of recursive function
-
-#ifdef UDGCD_PRINT_STEPS
-//	std::cout << "considering vertex " << vi << ": v_cycle size=" << v_cycles.size() << '\n';
-//	PrintPaths( std::cout, v_cycles, "temp" );
-#endif
-
 	}
 
 	info.setTimeStamp();
 	info.nbRawCycles = v_cycles.size();
 	std::cout << "-Nb initial cycles: " << info.nbRawCycles << '\n';
 
-#ifdef UDGCD_PRINT_STEPS
-//	PrintPaths( std::cout, v_cycles, "Raw cycles" );
-#endif
+//////////////////////////////////////
+// step 3 (post process): cleanout the cycles by removing steps that are not part of the cycle
+//////////////////////////////////////
 
 // post process 0: cleanout the cycles by removing steps that are not part of the cycle
 	auto v_cycles0 = priv::cleanCycles( v_cycles );
@@ -1724,14 +1702,7 @@ findCycles( graph_t& g, UdgcdInfo& info )
 	info.nbCleanedCycles = v_cycles0.size();
 	std::cout << "-Nb cleaned cycles: " << info.nbCleanedCycles << '\n';
 
-
-#if 0
-// post process 1: remove the paths that are identical but reversed
-	auto v_cycles2 = priv::removeOppositePairs( v_cycles0 );
-	#ifdef UDGCD_PRINT_STEPS
-		PrintPaths( std::cout, v_cycles2, "After removal of symmetrical cycles" );
-	#endif
-#endif
+	priv::printStatus( std::cout, v_cycles0, __LINE__ );
 
 std::vector<std::vector<vertex_t>>* p_cycles = &v_cycles0;
 
@@ -1741,14 +1712,12 @@ std::vector<std::vector<vertex_t>>* p_cycles = &v_cycles0;
 	std::cout << "-After removal of non-chordless cycles: " << v_cycles1.size() << " cycles\n";
 
 	p_cycles = &v_cycles1;
-#ifdef UDGCD_PRINT_STEPS
-//	PrintPaths( std::cout, v_cycles1, "After removal of non-chordless cycles" );
-#endif
 
 	info.setTimeStamp();
 	info.nbNonChordlessCycles = v_cycles1.size();
 
 	#ifdef UDGCD_DO_CYCLE_CHECKING
+
 	if( 0 != priv::checkCycles( *p_cycles, g ) )
 	{
 		std::cerr << "udgcd: ERROR: INVALID CYCLE DETECTED, line " << __LINE__ << "\n";
@@ -1756,17 +1725,15 @@ std::vector<std::vector<vertex_t>>* p_cycles = &v_cycles0;
 	}
 	#endif
 
-	auto v_cycles2 = priv::removeRedundant( *p_cycles, boost::num_vertices(g) );
-	p_cycles = &v_cycles2;
+	priv::printStatus( std::cout, *p_cycles, __LINE__ );
+#endif
 
-#else // UDGCD_REMOVE_NONCHORDLESS
+
+//////////////////////////////////////
+// step 4 (post process): remove redundant cycles using Gaussian Elimination
+//////////////////////////////////////
 
 	auto v_cycles2 = priv::removeRedundant( *p_cycles, boost::num_vertices(g));
-#ifdef UDGCD_PRINT_STEPS
-	PrintPaths( std::cout, v_cycles2, "After removeRedundant()" );
-#endif
-
-#endif
 
 #ifdef UDGCD_DO_CYCLE_CHECKING
 	if( 0 != priv::checkCycles( v_cycles2, g ) )
@@ -1775,6 +1742,8 @@ std::vector<std::vector<vertex_t>>* p_cycles = &v_cycles0;
 //		exit(1);
 	}
 #endif
+
+	priv::printStatus( std::cout, v_cycles2, __LINE__ );
 
 	info.setTimeStamp();
 	info.nbFinalCycles = v_cycles2.size();
