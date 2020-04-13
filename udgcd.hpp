@@ -1068,10 +1068,9 @@ convertCycles2VVPV( const std::vector<std::vector<vertex_t>>& cycles )
 template<typename vertex_t>
 std::vector<vertex_t>
 convertBC2VC_v2(
-	const BinaryVec&  v_in,         ///< input binary path
-	const RevBinMap&  rev_map,      ///< required map, has to be build before, see buildReverseBinaryMap()
-	const std::vector<size_t>& nec, ///< non-empty columns
-	size_t&           iter
+	const BinaryVec&           v_in,       ///< input binary path
+	const RevBinMap&           rev_map,    ///< required map, has to be build before, see buildReverseBinaryMap()
+	const std::vector<size_t>& nec         ///< non-empty columns
 )
 {
 	PRINT_FUNCTION;
@@ -1115,9 +1114,8 @@ Maybe we can find a better way ?
 template<typename vertex_t>
 std::vector<vertex_t>
 convertBC2VC(
-	const BinaryVec& v_in,         ///< input binary path
-	const RevBinMap&  rev_map,      ///< required map, has to be build before, see buildReverseBinaryMap()
-	size_t&           iter
+	const BinaryVec& v_in,        ///< input binary path
+	const RevBinMap& rev_map      ///< required map, has to be build before, see buildReverseBinaryMap()
 )
 {
 	PRINT_FUNCTION;
@@ -1264,20 +1262,12 @@ convertBinary2Vertex_v2
 	auto rev_map = buildReverseBinaryMap( nbVertices );
 	COUT << "revmap size=" << rev_map.size() << '\n';
 
-	size_t i=0;
 	for( auto bcycle: binmat )
-	{
-		size_t nbIter2 = 0;
-		++i;
 		if( bcycle.count() )
 		{
-//			COUT << i << ": **** calling convertBC2VC_v2()\nInput:"; printBitVector( std::cout, bcycle );
-			auto cycle = convertBC2VC_v2<vertex_t>( bcycle, rev_map, nec, nbIter2 );
-//			COUT << i << ": **** result: nbIter=" << nbIter2 << '\n';
-//			PrintVector( std::cout, cycle );
+			auto cycle = convertBC2VC_v2<vertex_t>( bcycle, rev_map, nec );
 			v_out.push_back( cycle );
 		}
-	}
 	return v_out;
 }
 //-------------------------------------------------------------------------------------------
@@ -1296,18 +1286,14 @@ convertBinary2Vertex
 	v_out.reserve( binmat.nbCols() ); // to avoid unnecessary memory reallocations and copies
 
 	auto rev_map = buildReverseBinaryMap( nbVertices );
-//	COUT << "heckVertexPairSet" << rev_map.size() << '\n';
 
-	size_t i=0;
 	for( auto bcycle: binmat )
-	{
-		size_t nbIter2 = 0;
-		++i;
-//		std::cout << i << ": **** calling convertBC2VC()\nInput:"; printBitVector( std::cout, bcycle );
-		auto cycle = convertBC2VC<vertex_t>( bcycle, rev_map, nbIter2 );
-//		std::cout << i << ": **** result: nbIter=" << nbIter2 << '\n';
-		v_out.push_back( cycle );
-	}
+		if( bcycle.count() )
+		{
+			auto cycle = convertBC2VC<vertex_t>( bcycle, rev_map );
+			v_out.push_back( cycle );
+		}
+
 	return v_out;
 }
 //-------------------------------------------------------------------------------------------
@@ -1364,6 +1350,7 @@ convertBinary2Vertex_v2<vertex_t>( bm_in2, nbVertices, nec ); // for checking
 
 #if 0
 	auto bm_out2 = gaussianElim( bm_in2, nbIter1 );
+	COUT << "gaussianElim: nbIter=" << nbIter1 << '\n';
 #else
 	MatM4ri m4rmi = convertToM4ri( bm_in2 );
 	mzd_echelonize_naive( m4rmi._data, 1 );
@@ -1379,24 +1366,22 @@ convertBinary2Vertex_v2<vertex_t>( bm_in2, nbVertices, nec ); // for checking
 	return convertBinary2Vertex_v2<vertex_t>( bm_out2, nbVertices, nec );
 
 #else // UDGCD_REDUCE_MATRIX
-	auto binMat_out = gaussianElim( binMat_in, nbIter1 );
-
-	COUT << "gaussianElim: nbIter=" << nbIter1 << '\n';
-
-	binMat_out.print( std::cout, "removeRedundant(): output binary matrix" );
-	binMat_out.getInfo().print( std::cout );//, "removeRedundant(): output binary matrix" );
-	auto cc_out = binMat_out.getColumnCount();
 
 #if 0
-	RevBinMap revbinmap = buildReverseBinaryMap( nbVertices );
-
-	std::cout << "col | in | out\n";
-	for( size_t i=0; i<cc_in.size(); i++ )
-	{
-		if( cc_in[i] != 0 || cc_out[i] != 0 )
-			std::cout << i <<  ": " << revbinmap[i].first << "-" << revbinmap[i].second <<  " | " <<  cc_in[i] << " | " <<  cc_out[i] << '\n';
-	}
+	auto binMat_out = gaussianElim( binMat_in, nbIter1 );
+	COUT << "gaussianElim: nbIter=" << nbIter1 << '\n';
+#else
+	MatM4ri m4rmi = convertToM4ri( binMat_in );
+	mzd_echelonize_naive( m4rmi._data, 1 );
+	auto binMat_out = convertFromM4ri( m4rmi );
 #endif
+
+
+//	binMat_out.print( std::cout, "removeRedundant(): output binary matrix" );
+//	binMat_out.getInfo().print( std::cout );//, "removeRedundant(): output binary matrix" );
+//	auto cc_out = binMat_out.getColumnCount();
+
+
 
 //	std::cout << "v_bpaths size=" << v_bpaths.size() << '\n';
 

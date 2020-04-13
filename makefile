@@ -21,7 +21,7 @@ COLOR_OFF="\e[0m"
 CFLAGS = -std=c++11 -Wall -O2 -Iinclude -Wno-unused-result
 
 # TEMP
-CFLAGS += -DUDGCD_REDUCE_MATRIX
+#CFLAGS += -DUDGCD_REDUCE_MATRIX
 CFLAGS += -DUDGCD_REMOVE_NONCHORDLESS
 
 # test_m4ri.cpp: wrapper_m4ri.hpp
@@ -105,7 +105,8 @@ clearlogfile:
 	@echo "Running make target 'runsam', results:" > runsam.log
 
 out/stdout_graph_%.txt: samples/graph_%.txt $(BIN_DIR)/read_graph
-	-$(BIN_DIR)/read_graph $< > $@;\
+	@echo "processing file $<"
+	@-$(BIN_DIR)/read_graph $< > $@;\
 	STATUS=$$?; echo "file $<: exit with $$STATUS" >> runsam.log
 
 out/%.svg : out/%.dot

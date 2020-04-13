@@ -110,9 +110,6 @@ template<typename graph_t,typename vertex_t>
 void
 RenderGraph2( const graph_t& g, const std::vector<std::vector<vertex_t>>& cycles, const std::string id_str )
 {
-
-	std::cout << "id_str2=" << id_str << '\n';
-
 	int nbColors = std::min(32, (int)cycles.size() );
 
 	int bi = (int)std::ceil( std::log(nbColors) / std::log(2) );
