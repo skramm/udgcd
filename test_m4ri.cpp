@@ -5,6 +5,7 @@
 */
 
 #include <iostream>
+#include "udgcd.hpp"
 #include "wrapper_m4ri.hpp"
 
 using namespace udgcd;
@@ -12,8 +13,6 @@ using namespace udgcd;
 //-------------------------------------------------------------------
 int main(int, char*[])
 {
-//	SHOW_INFO;
-
 	MatM4ri m(5,10);
 	m.randomize();
 	MatM4ri m2(m);

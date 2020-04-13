@@ -727,7 +727,8 @@ void
 buildBinaryVector(
 	const std::vector<vertex_t>& cycle,    ///< input cycle
 	BinaryVec&                   binvect,  ///< output binary vector (must be allocated)
-	const std::vector<size_t>&   idx_vec ) ///< reference index vector, see how it is build in \ref buildBinaryMatrix() and \ref buildBinaryIndexVec(()
+	const std::vector<size_t>&   idx_vec   ///< reference index vector, see how it is build in \ref buildBinaryMatrix() and \ref buildBinaryIndexVec(()
+)
 {
 	PRINT_FUNCTION;
 	assert( binvect.size()>0 );
@@ -956,15 +957,8 @@ convertBinVec2VPV()
 /**
 \sa convertCycle2VPV()
 
-Takes as input a set of pairs:
-\verbatim
-12-18
-12-22
-9-18
-9-4
-4-22
-\endverbatim
-and will return the cycle: 4-9-18-12-22
+Takes as input a vector of pairs: <code>{12-18},{12-22},{9-18},{9-4},{4-22}</code><br>
+and will return the cycle: <code>4-9-18-12-22</code>
 */
 template<typename vertex_t>
 std::vector<vertex_t>
@@ -1022,8 +1016,6 @@ convertVPV2Cycle( const std::vector<VertexPair<vertex_t>>& v_pvertex )
 /// (VPV:Vector of Pairs of Vertices). See \ref p_data_representation
 /**
 \sa convertVPV2Cycle()
-
-\todo UNTESTED !!!
 */
 template<typename vertex_t>
 std::vector<VertexPair<vertex_t>>
@@ -1038,7 +1030,7 @@ convertCycle2VPV( const std::vector<vertex_t>& cycle )
 		vertex_t v1 = cycle[i];
 		vertex_t v2 = ( i != cycle.size()-1 ? cycle[i+1] : cycle[0] );
 
-		std::cout << i << " : " << cycle[i] << " : " << v1 << "-" << v2 << "\n";
+//		std::cout << i << " : " << cycle[i] << " : " << v1 << "-" << v2 << "\n";
 
 		VertexPair<vertex_t> pair(v1,v2);
 		out.push_back( pair );
@@ -1047,6 +1039,12 @@ convertCycle2VPV( const std::vector<vertex_t>& cycle )
 }
 
 //-------------------------------------------------------------------------------------------
+/// Converts a set of cycles expressed as a vector of vertices to a set of cycles expressed
+/// as a set of pairs. (VPV:Vector of Pairs of Vertices). See \ref p_data_representation
+/**
+\sa convertVPV2Cycle()
+\sa convertCycle2VPV()
+*/
 template<typename vertex_t>
 std::vector<std::vector<VertexPair<vertex_t>>>
 convertCycles2VVPV( const std::vector<std::vector<vertex_t>>& cycles )
@@ -1534,17 +1532,21 @@ checkCycles( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 
 		std::cout << "cycle:\n"; PrintVector( std::cout, cycle );
 
-#if 0
-		c += (size_t)isACycle( cycle, g );
-#else
 		bool b = isACycle( cycle, g );
 		if( !b )
 		{
-			std::cout << "Error, computed cycle not a cycle:\n";
+			std::cout << __FUNCTION__ << "(): Error, computed cycle not a cycle:\n";
 			PrintVector( std::cout, cycle );
 			c++;
 		}
-#endif
+
+		bool b2 = isChordless( cycle, g );
+		if( !b2 )
+		{
+			std::cout << __FUNCTION__ << "(): Error, computed cycle not chordless:\n";
+			PrintVector( std::cout, cycle );
+			c++;
+		}
 	}
 	return c;
 }
@@ -1722,27 +1724,23 @@ findCycles( graph_t& g, UdgcdInfo& info )
 	info.nbCleanedCycles = v_cycles0.size();
 	std::cout << "-Nb cleaned cycles: " << info.nbCleanedCycles << '\n';
 
-#ifdef UDGCD_DO_CYCLE_CHECKING
-	if( 0 != priv::checkCycles( v_cycles0, g ) )
-	{
-		std::cerr << "udgcd: ERROR: INVALID CYCLE DETECTED, line " << __LINE__ << "\n";
-		exit(1);
-	}
-#endif
 
 #if 0
 // post process 1: remove the paths that are identical but reversed
 	auto v_cycles2 = priv::removeOppositePairs( v_cycles0 );
-#ifdef UDGCD_PRINT_STEPS
-	PrintPaths( std::cout, v_cycles2, "After removal of symmetrical cycles" );
+	#ifdef UDGCD_PRINT_STEPS
+		PrintPaths( std::cout, v_cycles2, "After removal of symmetrical cycles" );
+	#endif
 #endif
-#endif
+
+std::vector<std::vector<vertex_t>>* p_cycles = &v_cycles0;
 
 #ifdef UDGCD_REMOVE_NONCHORDLESS
 // post process 3: remove non-chordless cycles
-	std::vector<std::vector<vertex_t>> v_cycles1 = priv::removeNonChordless( v_cycles0, g );
+	auto v_cycles1 = priv::removeNonChordless( v_cycles0, g );
 	std::cout << "-After removal of non-chordless cycles: " << v_cycles1.size() << " cycles\n";
 
+	p_cycles = &v_cycles1;
 #ifdef UDGCD_PRINT_STEPS
 //	PrintPaths( std::cout, v_cycles1, "After removal of non-chordless cycles" );
 #endif
@@ -1751,19 +1749,19 @@ findCycles( graph_t& g, UdgcdInfo& info )
 	info.nbNonChordlessCycles = v_cycles1.size();
 
 	#ifdef UDGCD_DO_CYCLE_CHECKING
-	if( 0 != priv::checkCycles( v_cycles1, g ) )
+	if( 0 != priv::checkCycles( *p_cycles, g ) )
 	{
 		std::cerr << "udgcd: ERROR: INVALID CYCLE DETECTED, line " << __LINE__ << "\n";
-		exit(1);
+//		exit(1);
 	}
 	#endif
 
-	auto v_cycles2 = priv::removeRedundant( v_cycles1, boost::num_vertices(g) );
-
+	auto v_cycles2 = priv::removeRedundant( *p_cycles, boost::num_vertices(g) );
+	p_cycles = &v_cycles2;
 
 #else // UDGCD_REMOVE_NONCHORDLESS
 
-	auto v_cycles2 = priv::removeRedundant( v_cycles0, boost::num_vertices(g));
+	auto v_cycles2 = priv::removeRedundant( *p_cycles, boost::num_vertices(g));
 #ifdef UDGCD_PRINT_STEPS
 	PrintPaths( std::cout, v_cycles2, "After removeRedundant()" );
 #endif
@@ -1774,7 +1772,7 @@ findCycles( graph_t& g, UdgcdInfo& info )
 	if( 0 != priv::checkCycles( v_cycles2, g ) )
 	{
 		std::cerr << "udgcd: ERROR: INVALID CYCLE DETECTED, line " << __LINE__ << "\n";
-		exit(1);
+//		exit(1);
 	}
 #endif
 

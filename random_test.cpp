@@ -83,7 +83,7 @@ GenerateRandomGraph( size_t nb_vertices, size_t nb_egdes )
 	return g;
 }
 //-------------------------------------------------------------------
-/// see random_test.cpp
+/// See random_test.cpp
 int main( int argc, const char** argv )
 {
 	SHOW_INFO;
@@ -103,7 +103,8 @@ int main( int argc, const char** argv )
 	SaveGraph( g, std::to_string(current_time) );
 	RenderGraph( g, "gen_" + std::to_string(current_time) );
 
-	return Process( g );
+	auto result = processGraph<graph_t,vertex_t>( g );
+	return result.first;
 }
 //-------------------------------------------------------------------
 

@@ -17,9 +17,55 @@ TEST_CASE( "Conversions", "[tc]" )
 {
 	std::vector<size_t> v1{ 1,4,9,12 };
 	std::vector<priv::VertexPair<size_t>> v2{ {1,4},{4,9},{9,12},{12,1} };
-	auto res = priv::convertCycle2VPV( v1 );
-	CHECK( res == v2 );
+	auto res1 = priv::convertCycle2VPV( v1 );
+
+	CHECK( res1 == v2 );
+	auto res2 = priv::convertVPV2Cycle( res1 );
+	CHECK( res2 == v1 );
 }
+
+//-------------------------------------------------------------------------------------------
+TEST_CASE( "connected", "[tconn]" )
+{
+	boost::adjacency_list<
+		boost::vecS,
+		boost::vecS,
+		boost::undirectedS
+	> g;
+
+//	typedef boost::graph_traits<graph_t>::vertex_descriptor vertex_t;
+//	graph_t g;
+
+	boost::add_edge(2, 1, g); // a 3 node cycle
+	boost::add_edge(2, 3, g);
+	boost::add_edge(3, 1, g);
+
+	boost::add_edge(4, 5, g);   // 3 nodes connected but no edge
+	boost::add_edge(5, 6, g);
+	boost::add_edge(6, 7, g);
+
+
+	boost::add_edge( 8,  9, g); // 4 nodes with
+	boost::add_edge( 9, 10, g);
+	boost::add_edge(10, 11, g);
+	boost::add_edge(11,  8, g);
+	boost::add_edge(10,  8, g);
+
+	CHECK( priv::areConnected(  1, 2, g ) );
+	CHECK( priv::areConnected(  2, 1, g ) );
+
+	CHECK( !priv::areConnected( 1, 4, g ) );
+	CHECK( !priv::areConnected( 4, 1, g ) );
+
+	CHECK( !priv::areConnected( 7, 8, g ) );
+
+	CHECK( !priv::areConnected( 9, 11, g ) );
+	CHECK( !priv::areConnected( 11, 9, g ) );
+
+	CHECK( priv::areConnected( 8, 10, g ) );
+	CHECK( priv::areConnected( 10, 8, g ) );
+}
+
 
 //-------------------------------------------------------------------------------------------
 TEST_CASE( "test buildBinaryIndexVec", "[testbiv]" )
@@ -27,13 +73,13 @@ TEST_CASE( "test buildBinaryIndexVec", "[testbiv]" )
 	size_t nbVertices = 6;
 	{
 		std::vector<size_t> expected = {0,4,7,9,10};
-		std::vector<size_t> idx_vec = udgcd::priv::buildBinaryIndexVec( nbVertices );
+		std::vector<size_t> idx_vec = priv::buildBinaryIndexVec( nbVertices );
 		REQUIRE( idx_vec == expected );
 	}
 	{
 		nbVertices = 7;
 		std::vector<size_t> expected = {0,5,9,12,14,15};
-		std::vector<size_t> idx_vec = udgcd::priv::buildBinaryIndexVec( nbVertices );
+		std::vector<size_t> idx_vec = priv::buildBinaryIndexVec( nbVertices );
 		REQUIRE( idx_vec == expected );
 	}
 }

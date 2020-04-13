@@ -167,7 +167,7 @@ RenderGraph2( const graph_t& g, const std::vector<std::vector<vertex_t>>& cycles
 		auto idx1 = boost::source( *p_it.first, g );
 		auto idx2 = boost::target( *p_it.first, g );
 		udgcd::priv::VertexPair<vertex_t> p( idx1, idx2 );
-		std::cout << "SEARCH:" << c++ << ":" << idx1 << "-" << idx2 << std::endl;
+//		std::cout << "SEARCH:" << c++ << ":" << idx1 << "-" << idx2 << std::endl;
 		if( pairSet.find(p) == pairSet.end() )
 			f << p.v1 << "--" << p.v2 << ";\n";
 	}
@@ -312,22 +312,23 @@ This function makes sure :
 - that the correct number of cycles are found
 - that the computed cycles are correct.
 
-It will return 0 in case of success, -1 if incorrect cycles were found,
-and if none, the number of differences between:
+It will return a pair <int,cycles>
+The first value is 0 in case of success, -1 if incorrect cycles were found.
+If other value, it is the absolute number of differences between:
 - the \b computed number of cycles
 - and the \b expected number of cycles
 
 */
 template<typename graph_t,typename vertex_t>
 std::pair<int,std::vector<std::vector<vertex_t>>>
-Process( graph_t& g )
+processGraph( graph_t& g )
 {
-//	typedef typename boost::graph_traits<graph_t>::vertex_descriptor vertex_t;
+//	using vertex_t = boost::graph_traits<graph_t>::vertex_descriptor;
 
 	auto expected = printGraphInfo( g );
 
 	udgcd::UdgcdInfo info;
-	std::vector<std::vector<vertex_t>> cycles = udgcd::findCycles<graph_t,vertex_t>( g, info );
+	auto cycles = udgcd::findCycles<graph_t,vertex_t>( g, info );
 	udgcd::PrintPaths( std::cout, cycles, "final" );
 	if( expected != cycles.size() )
 		std::cout << "ERROR: computed nb of cycles is not what expected (expected=" << expected << ")\n";
