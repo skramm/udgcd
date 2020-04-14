@@ -55,9 +55,9 @@ Got some help from [sehe](http://stackoverflow.com/a/43481372/193789).
  1. Call `udgcd::findCycles()`. It will return a set of paths that are cycles (1):
 
  `auto cycles = udgcd::findCycles<my_graph_type,my_vertex_type>( graph );`
- - Just to check, you may call `udgcd::PrintPaths()` to print out the cycles:
+ - Just to check, you may call `udgcd::printPaths()` to print out the cycles:
 
-   `udgcd::PrintPaths( std::cout, cycles, "cycles" );`
+   `udgcd::printPaths( std::cout, cycles, "cycles" );`
  - Done !
 
 (1) FYI, the type of the returned value is actually

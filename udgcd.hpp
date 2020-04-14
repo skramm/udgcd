@@ -68,7 +68,7 @@ printVector( std::ostream& f, const std::vector<T>& vec )
 /// Additional helper function, can be used to print the cycles found
 template<typename T>
 void
-PrintPaths( std::ostream& f, const std::vector<std::vector<T>>& v_paths, const char* msg=0 )
+printPaths( std::ostream& f, const std::vector<std::vector<T>>& v_paths, const char* msg=0 )
 {
 	static int iter=0;
 	f << "Paths (" << iter++ << "): nb=" << v_paths.size();
@@ -615,7 +615,6 @@ RemoveIdentical( const std::vector<std::vector<T>>& v_cycles )
 #endif
 
 //-------------------------------------------------------------------------------------------
-#ifdef UDGCD_REMOVE_NONCHORDLESS
 /// Returns true if vertices \c v1 and \c v2 are connected by an edge
 /**
 http://www.boost.org/doc/libs/1_59_0/libs/graph/doc/IncidenceGraph.html#sec:out-edges
@@ -626,8 +625,11 @@ areConnected( const vertex_t& v1, const vertex_t& v2, const graph_t& g )
 {
 	auto pair_edge = boost::out_edges( v1, g );                      // get iterator range on edges
 	for( auto it = pair_edge.first; it != pair_edge.second; ++it )
+	{
+		assert( boost::source( *it, g ) == v1 );
 		if( v2 == boost::target( *it, g ) )
 			return true;
+	}
 	return false;
 }
 //-------------------------------------------------------------------------------------------
@@ -635,6 +637,8 @@ areConnected( const vertex_t& v1, const vertex_t& v2, const graph_t& g )
 /**
 See
 - https://en.wikipedia.org/wiki/Cycle_(graph_theory)#Chordless_cycles
+
+\todo add some test code to make sure this is fine
 
 Quote:
 <BLOCKQUOTE>
@@ -648,18 +652,29 @@ isChordless( const std::vector<vertex_t>& path, const graph_t& g )
 {
 	if( path.size() < 4 ) // no need to test if less than 4 vertices
 		return true;
+//	std::cout << "considering cycle: ";	printVector( std::cout, path );
 
 	for( size_t i=0; i<path.size()-3; ++i )
 	{
-		for( size_t j=i+2; j<path.size()-1; ++j )
+//		std::cout << i << ": considering " << path[i] << "\n";
+		for( size_t j=i+2; j<path.size(); ++j )
+		{
+//			std::cout << "  " << j << ": with " << path[j] << "\n";
 
-		if( areConnected( path[i], path[j], g ) )
-			return false;
+			if( areConnected( path[i], path[j], g ) )
+			{
+//				std::cout << path[i] << "-" << path[j] << ": => NOT Chordless!\n";
+				return false;
+			}
+		}
 	}
+//	std::cout << " - Chordless!\n";
 	return true;
 }
+
 //-------------------------------------------------------------------------------------------
-/// Third step, remove non-chordless cycles
+#ifdef UDGCD_REMOVE_NONCHORDLESS
+/// Remove non-chordless cycles
 template<typename vertex_t, typename graph_t>
 std::vector<std::vector<vertex_t>>
 removeNonChordless( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
@@ -668,6 +683,7 @@ removeNonChordless( const std::vector<std::vector<vertex_t>>& v_in, const graph_
 
 	std::vector<std::vector<vertex_t>> v_out;
 	v_out.reserve( v_in.size() ); // to avoid unnecessary memory reallocations and copies
+
     for( const auto& cycle: v_in )
 		if( isChordless( cycle, g ) )
 			v_out.push_back( cycle );
@@ -1317,16 +1333,17 @@ std::vector<std::vector<vertex_t>>
 removeRedundant( std::vector<std::vector<vertex_t>>& v_in, size_t nbVertices )
 {
 	PRINT_FUNCTION;
-
+	std::cout << __FUNCTION__ << "() START : " << v_in.size() << " cycles\n";
 // IMPORTANT: the code below assumes we have at least 3 cycles, so lets exit right away if not !
 	if( v_in.size() < 3 )
 		return v_in;
 
 // build for each cycle its associated binary vector
 	auto binMat_in = buildBinaryMatrix( v_in, nbVertices );
+	std::cout << "binMat_in:\n"; binMat_in.printMat( std::cout );
 
 // just for checking purposes
-	convertBinary2Vertex<vertex_t>( binMat_in, nbVertices );
+//	convertBinary2Vertex<vertex_t>( binMat_in, nbVertices );
 
 //	printBitMatrix( std::cout, binMat_in, "removeRedundant(): input binary matrix" );
 
@@ -1335,18 +1352,19 @@ removeRedundant( std::vector<std::vector<vertex_t>>& v_in, size_t nbVertices )
 //	binMat_in.print( std::cout, "removeRedundant(): input binary matrix" );
 	binMat_in.getInfo().print( std::cout );//, "removeRedundant(): input binary matrix" );
 
-	auto cc_in = binMat_in.getColumnCount();
+//	auto cc_in = binMat_in.getColumnCount();
 
 #ifdef UDGCD_REDUCE_MATRIX
+	std::cout << "use matrix reduction step !\n";
+
 	auto nec = binMat_in.getNonEmptyCols();
 	auto bm_in2 = reduceMatrix( binMat_in, nec );
 
-	COUT << "CHECK bm_in2\n";
-convertBinary2Vertex_v2<vertex_t>( bm_in2, nbVertices, nec ); // for checking
+//	COUT << "CHECK bm_in2\n";
+//	convertBinary2Vertex_v2<vertex_t>( bm_in2, nbVertices, nec ); // for checking
 
 //	COUT << "bm_in2:\n"; bm_in2.print( std::cout );
 //	auto bm_out2 = gaussianElim<vertex_t>( bm_in2, nbIter1, nbVertices, nec );
-
 
 #if 0
 	auto bm_out2 = gaussianElim( bm_in2, nbIter1 );
@@ -1354,25 +1372,21 @@ convertBinary2Vertex_v2<vertex_t>( bm_in2, nbVertices, nec ); // for checking
 #else
 	MatM4ri m4rmi = convertToM4ri( bm_in2 );
 	mzd_echelonize_naive( m4rmi._data, 1 );
-	auto bm_out2 = convertFromM4ri( m4rmi );
+	auto binMat_out = convertFromM4ri( m4rmi );
 #endif
 
-#if 0
-	COUT << "bm_out2:\n"; bm_out2.printMat( std::cout );
-#endif
-
-
-// convert back binary cycles to vertex-based cycles,
-	return convertBinary2Vertex_v2<vertex_t>( bm_out2, nbVertices, nec );
+	std::cout << "binMat_out:\n"; binMat_out.printMat( std::cout );
+	return convertBinary2Vertex_v2<vertex_t>( binMat_out, nbVertices, nec );
 
 #else // UDGCD_REDUCE_MATRIX
-
+	std::cout << "NO matrix reduction step !\n";
 #if 0
 	auto binMat_out = gaussianElim( binMat_in, nbIter1 );
 	COUT << "gaussianElim: nbIter=" << nbIter1 << '\n';
 #else
 	MatM4ri m4rmi = convertToM4ri( binMat_in );
-	mzd_echelonize_naive( m4rmi._data, 1 );
+//	mzd_echelonize_naive( m4rmi._data, 1 );
+	mzd_echelonize_pluq( m4rmi._data, 0 );
 	auto binMat_out = convertFromM4ri( m4rmi );
 #endif
 
@@ -1381,12 +1395,10 @@ convertBinary2Vertex_v2<vertex_t>( bm_in2, nbVertices, nec ); // for checking
 //	binMat_out.getInfo().print( std::cout );//, "removeRedundant(): output binary matrix" );
 //	auto cc_out = binMat_out.getColumnCount();
 
-
-
 //	std::cout << "v_bpaths size=" << v_bpaths.size() << '\n';
-
 // convert back binary cycles to vertex-based cycles,
 
+	std::cout << "binMat_out:\n"; binMat_out.printMat( std::cout );
 	return convertBinary2Vertex<vertex_t>( binMat_out, nbVertices );
 
 #endif
@@ -1462,6 +1474,7 @@ size_t
 checkCycles( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
 {
 	PRINT_FUNCTION;
+	std::cout << __FUNCTION__ << "(): checking " << v_in.size() << " cycles\n";
 
 	size_t c = 0;
 	for( auto cycle: v_in )
@@ -1512,6 +1525,7 @@ printStatus( std::ostream& f, const std::vector<std::vector<vertex_t>>& cycles, 
 {
 	f << "l."<< line<< ": status: #=" << cycles.size()
 		<< ", mean size=" << getMeanSize( cycles ) << "\n";
+	printPaths( f, cycles );
 }
 
 
@@ -1679,24 +1693,19 @@ findCycles( graph_t& g, UdgcdInfo& info )
 
 // post process 0: cleanout the cycles by removing steps that are not part of the cycle
 	auto v_cycles0 = priv::cleanCycles( v_cycles );
-#ifdef UDGCD_PRINT_STEPS
-//	PrintPaths( std::cout, v_cycles0, "After cleanCycles()" );
-#endif
+	priv::printStatus( std::cout, v_cycles0, __LINE__ );
 
 	info.setTimeStamp();
 	info.nbCleanedCycles = v_cycles0.size();
 	std::cout << "-Nb cleaned cycles: " << info.nbCleanedCycles << '\n';
 
-	priv::printStatus( std::cout, v_cycles0, __LINE__ );
-
-std::vector<std::vector<vertex_t>>* p_cycles = &v_cycles0;
+	std::vector<std::vector<vertex_t>>* p_cycles = &v_cycles0;
 
 #ifdef UDGCD_REMOVE_NONCHORDLESS
 // post process 3: remove non-chordless cycles
 	auto v_cycles1 = priv::removeNonChordless( v_cycles0, g );
-	std::cout << "-After removal of non-chordless cycles: " << v_cycles1.size() << " cycles\n";
-
 	p_cycles = &v_cycles1;
+	priv::printStatus( std::cout, *p_cycles, __LINE__ );
 
 	info.setTimeStamp();
 	info.nbNonChordlessCycles = v_cycles1.size();
@@ -1709,16 +1718,13 @@ std::vector<std::vector<vertex_t>>* p_cycles = &v_cycles0;
 //		exit(1);
 	}
 	#endif
-
-	priv::printStatus( std::cout, *p_cycles, __LINE__ );
 #endif
-
 
 //////////////////////////////////////
 // step 4 (post process): remove redundant cycles using Gaussian Elimination
 //////////////////////////////////////
 
-	auto v_cycles2 = priv::removeRedundant( *p_cycles, boost::num_vertices(g));
+	auto v_cycles2 = priv::removeRedundant( *p_cycles, boost::num_vertices(g) );
 
 #ifdef UDGCD_DO_CYCLE_CHECKING
 	if( 0 != priv::checkCycles( v_cycles2, g ) )

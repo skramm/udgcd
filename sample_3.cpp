@@ -59,7 +59,7 @@ void g1()
 	RenderGraph( g, prog_id );
 	{
 		std::vector<std::vector<vertex_t>> cycles = udgcd::findCycles<graph_t,vertex_t>( g );
-		udgcd::PrintPaths( std::cout, cycles );
+		udgcd::printPaths( std::cout, cycles );
 	}
 	add_edge( 2, 4, g);
 	add_edge( 3, 4, g);
@@ -67,7 +67,7 @@ void g1()
 	RenderGraph( g, prog_id );
 	{
 		std::vector<std::vector<vertex_t>> cycles = udgcd::findCycles<graph_t,vertex_t>( g );
-		udgcd::PrintPaths( std::cout, cycles );
+		udgcd::printPaths( std::cout, cycles );
 	}
 }
 
@@ -104,7 +104,7 @@ void g2()
         RenderGraph( g, "s3g2" );
 //        RenderGraph2( g, v_nodeName );
         std::vector<std::vector<vertex_t>> cycles = udgcd::findCycles<graph_t,vertex_t>( g );
-        udgcd::PrintPaths( std::cout, cycles );
+        udgcd::printPaths( std::cout, cycles );
 	}
 
 /*	clear_vertex( 3, g );
@@ -112,7 +112,7 @@ void g2()
 	{
     	RenderGraph( g );
         std::vector<std::vector<vertex_t>> cycles = udgcd::findCycles<graph_t,vertex_t>( g );
-        udgcd::PrintPaths( std::cout, cycles );
+        udgcd::printPaths( std::cout, cycles );
 	}
 
 	clear_vertex( 2, g );
@@ -120,7 +120,7 @@ void g2()
 	{
     	RenderGraph( g );
         std::vector<std::vector<vertex_t>> cycles = udgcd::findCycles<graph_t,vertex_t>( g );
-        udgcd::PrintPaths( std::cout, cycles );
+        udgcd::printPaths( std::cout, cycles );
 	}
 */
 

@@ -56,7 +56,7 @@ int main(int, char*[])
 	RenderGraph( g, prog_id );
 
 	auto cycles = udgcd::findCycles<graph_t,vertex_t>( g );
-	udgcd::PrintPaths( std::cout, cycles );
+	udgcd::printPaths( std::cout, cycles );
 
 	return 0;
 }
