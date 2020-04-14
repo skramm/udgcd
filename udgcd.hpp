@@ -163,6 +163,46 @@ struct BinaryMatInfo
 };
 
 //-------------------------------------------------------------------------------------------
+/// Holds two vertices
+template <typename vertex_t>
+struct VertexPair
+{
+	vertex_t v1,v2;
+	VertexPair() {}
+	VertexPair( vertex_t va, vertex_t vb ): v1(va), v2(vb)
+	{
+		if( v2<v1 )
+			std::swap( v1, v2 );
+	}
+	// 2-3 is smaller than 2-4
+	friend bool operator < ( const VertexPair& vp_a, const VertexPair& vp_b )
+	{
+		if( vp_a.v1 < vp_b.v1 )
+			return true;
+		if( vp_a.v1 == vp_b.v1 )
+			return ( vp_a.v2 < vp_b.v2 );
+		return false;
+	}
+
+	bool operator == ( const VertexPair& p ) const
+	{
+		if( p.v1 != v1 )
+			return false;
+		if( p.v2 != v2 )
+			return false;
+		return true;
+	}
+
+//#ifdef UDGCD_DEV_MODE
+	friend std::ostream& operator << ( std::ostream& s, const VertexPair& vp )
+	{
+		s << '(' << vp.v1 << '-' << vp.v2 << ')';
+		return s;
+	}
+//#endif
+};
+
+//-------------------------------------------------------------------------------------------
 /// A binary matrix, implemented as a vector of BinaryVec
 /**
 This type will allow to fetch some relevant information on what the matrix holds
@@ -309,6 +349,45 @@ struct BinaryMatrix
 			out[col] = n;
 		}
 		return out;
+	}
+};
+
+//-------------------------------------------------------------------------------------------
+/// A binary matrix with an added data member so we know to which
+/// edge a given column is about
+/**
+See https://en.wikipedia.org/wiki/Incidence_matrix#Undirected_and_directed_graphs
+*/
+template<typename vertex_t>
+struct IncidenceMatrix : public BinaryMatrix
+{
+	std::vector<VertexPair<vertex_t>> _columnEdge;
+
+	IncidenceMatrix( size_t nbLines, size_t nbCols )
+		: BinaryMatrix( nbLines, nbCols )
+		, _columnEdge( nbCols )
+	{}
+
+	/// Set (=1) at lines v1 and v2, column \c col, and assigns comun edge
+	void setPair( vertex_t v1, vertex_t v2, size_t col )
+	{
+		assert( v1  < nbLines() );
+		assert( v2  < nbLines() );
+		assert( col < nbCols() );
+
+		_columnEdge[col] = VertexPair<vertex_t>( v1, v2 );
+
+		auto& row1 = _data[v1];
+		auto& row2 = _data[v2];
+		row1[col] = row2[col] = 1;
+	}
+
+	void printMat( std::ostream& f, std::string msg=std::string() ) const
+	{
+		f << "IncidenceMatrix:" << msg << "\n -columns:\n";
+		for( size_t i=0; i<nbCols(); i++ )
+			f << i << ": " << _columnEdge[i] << "\n";
+		BinaryMatrix::printMat( f, "IncidenceMatrix" );
 	}
 };
 
@@ -692,46 +771,6 @@ removeNonChordless( const std::vector<std::vector<vertex_t>>& v_in, const graph_
 #endif // UDGCD_REMOVE_NONCHORDLESS
 
 //-------------------------------------------------------------------------------------------
-/// Holds two vertices
-template <typename vertex_t>
-struct VertexPair
-{
-	vertex_t v1,v2;
-	VertexPair() {}
-	VertexPair( vertex_t va, vertex_t vb ): v1(va), v2(vb)
-	{
-		if( v2<v1 )
-			std::swap( v1, v2 );
-	}
-	// 2-3 is smaller than 2-4
-	friend bool operator < ( const VertexPair& vp_a, const VertexPair& vp_b )
-	{
-		if( vp_a.v1 < vp_b.v1 )
-			return true;
-		if( vp_a.v1 == vp_b.v1 )
-			return ( vp_a.v2 < vp_b.v2 );
-		return false;
-	}
-
-	bool operator == ( const VertexPair& p ) const
-	{
-		if( p.v1 != v1 )
-			return false;
-		if( p.v2 != v2 )
-			return false;
-		return true;
-	}
-
-//#ifdef UDGCD_DEV_MODE
-	friend std::ostream& operator << ( std::ostream& s, const VertexPair& vp )
-	{
-		s << '(' << vp.v1 << '-' << vp.v2 << ')';
-		return s;
-	}
-//#endif
-};
-
-//-------------------------------------------------------------------------------------------
 /// Builds the binary vector \c binvect associated to the cycle \c cycle.
 /// The index vector \c idx_vec is used to fetch the index in binary vector from the two vertices indexes
 /**
@@ -1110,6 +1149,32 @@ convertBC2VC_v2(
 
 // step 2: build cycle from set of pairs
 	return convertVPV2Cycle( v_pvertex );
+}
+
+/// Builds and returns the incidence matrix for graph \c gr
+template<typename graph_t,typename vertex_t>
+IncidenceMatrix<vertex_t>
+buildIncidenceMat( const graph_t& gr )
+{
+	assert( boost::num_vertices( gr ) > 2 );
+	assert( boost::num_edges(    gr ) > 2 );
+
+	IncidenceMatrix<vertex_t> out( boost::num_vertices( gr ) /* lines*/, boost::num_edges( gr ) /* cols */ );
+
+	size_t i=0;
+	for(
+		auto p_it=boost::edges(gr);
+		p_it.first != p_it.second;
+		p_it.first++, i++
+	)
+	{
+		auto v1 = boost::source( *p_it.first, gr );
+		auto v2 = boost::target( *p_it.first, gr );
+//		std::cout << "p_it.first=" << *p_it.first << " v1=" << v1 << " v2=" << v2 << "\n";
+		out.setPair( v1, v2, i );
+	}
+	return out;
+
 }
 
 //-------------------------------------------------------------------------------------------
@@ -1658,6 +1723,9 @@ findCycles( graph_t& g, UdgcdInfo& info )
 	std::map<typename graph_t::edge_descriptor, boost::default_color_type> edge_color;
 	auto ecmap = boost::make_assoc_property_map( edge_color );
 
+	auto imat = priv::buildIncidenceMat<graph_t,vertex_t>( g );
+	imat.printMat( std::cout );
+
 //////////////////////////////////////
 // step 1: do a DFS
 //////////////////////////////////////
@@ -1668,7 +1736,7 @@ findCycles( graph_t& g, UdgcdInfo& info )
 	if( !cycleDetector.cycleDetected() )             // if no detection,
 		return std::vector<std::vector<vertex_t>>(); //  return empty vector, no cycles found
 
-	std::cout << "-nbSourceVertices=" << cycleDetector.v_source_vertex.size() << '\n';
+	std::cout << "cycleDetector: nbSourceVertices=" << cycleDetector.v_source_vertex.size() << '\n';
 	std::vector<std::vector<vertex_t>> v_cycles;     // else, get the cycles.
 
 //////////////////////////////////////
