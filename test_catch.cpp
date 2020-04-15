@@ -29,62 +29,112 @@ TEST_CASE( "Conversions", "[tc]" )
 	CHECK( res2 == v1 );
 }
 
+
 //-------------------------------------------------------------------------------------------
 TEST_CASE( "Chordless", "[t-chordless]" )
 {
-	graph_t g0;
-	int i=0;
-	boost::add_edge( 0, 1, g0);
-	boost::add_edge( 1, 2, g0) ;
-	{
-		graph_t g = g0;                       //   0---1
-		boost::add_edge( 2, 0, g);            //    \  |
-		std::vector<size_t> v1{ 0,1,2 };      //     \ |
-		CHECK( priv::isChordless( v1,g ) );   //       2
+	std::array<graph_t,10> gg;
+	graph_t g;
+	boost::add_edge( 0, 1, g );
+	boost::add_edge( 1, 2, g ) ;
 
-		boost::add_edge( 2, 3, g);            //   0---1
-		boost::add_edge( 0, 3, g);            //   |\  |
-		std::vector<size_t> v2{ 0,1,2,3 };    //   | \ |
-		CHECK( !priv::isChordless( v2,g ) );  //   3---2
+	{
+		gg[0] = g;                            //   0---1
+		boost::add_edge( 2, 0, gg[0] );       //    \  |
+		;                                     //     \ |
+		;                                     //       2
+
+		gg[1] = gg[0];                         //   0---1
+		boost::add_edge( 0, 3, gg[1] );        //   |\  |
+		boost::add_edge( 2, 3, gg[1] );        //   | \ |
+		;                                      //   3---2
 	}
 	{
-		graph_t g = g0;
-		boost::add_edge( 2, 3, g);             //   0---1
-		boost::add_edge( 0, 3, g);             //   |   |
-		std::vector<size_t> v1{ 0,1,2,3 };     //   |   |
-		CHECK( priv::isChordless( v1,g ) );    //   3---2
+		gg[2] = g;                             //   0---1
+		boost::add_edge( 2, 3, gg[2] );        //   |   |
+		boost::add_edge( 0, 3, gg[2] );        //   |   |
+		;                                      //   3---2
 	}
 	{
-		graph_t g = g0;
-		boost::add_edge( 1, 3, g);
-		boost::add_edge( 2, 3, g);            //   0---1
-		boost::add_edge( 0, 3, g);            //   | / |
-		std::vector<size_t> v1{ 0,1,2,3 };    //   |/  |
-		CHECK( !priv::isChordless( v1,g ) );  //   3---2
+		gg[3] = g;                             //   0---1
+		boost::add_edge( 1, 3, gg[3] );        //   | / |
+		boost::add_edge( 2, 3, gg[3] );        //   |/  |
+		boost::add_edge( 0, 3, gg[3] );        //   3---2
 	}
 	{
-		graph_t g = g0;
-		boost::add_edge( 2, 3, g);
-		boost::add_edge( 2, 4, g);            //   0--1--2---3
-		boost::add_edge( 4, 5, g);            //   |    /|
-		boost::add_edge( 0, 5, g);            //   |   / |
-		std::vector<size_t> v1{ 0,1,2,4,5 };  //   |  /  |
-		CHECK( priv::isChordless( v1,g ) );   //   | /   |
-		boost::add_edge( 5, 2, g);            //   5-----4
-		CHECK( !priv::isChordless( v1,g ) );
+		gg[4] = g;                             //   0--1--2---3
+		boost::add_edge( 2, 3, gg[4] );        //   |    /|
+		boost::add_edge( 2, 4, gg[4] );        //   |   / |
+		boost::add_edge( 4, 5, gg[4] );        //   |  /  |
+		boost::add_edge( 0, 5, gg[4] );        //   | /   |
+		gg[5] = gg[4];                         //   5-----4
+		boost::add_edge( 5, 2, gg[5] );
 	}
 	{
-		graph_t g = g0;
-		boost::add_edge( 2, 3, g);
-		boost::add_edge( 3, 4, g);             //   0--1--2
-		boost::add_edge( 4, 5, g);             //   |    /|
-		boost::add_edge( 0, 5, g);             //   |   / |
-		std::vector<size_t> v1{ 0,1,2,3,4,5 }; //   |  /  3
-		CHECK( priv::isChordless( v1,g ) );    //   | /   |
-		boost::add_edge( 5, 2, g);             //   5-----4
-		CHECK( !priv::isChordless( v1,g ) );
+		gg[6] = g;                             //   0--1--2
+		boost::add_edge( 2, 3, gg[6] );        //   |    /|
+		boost::add_edge( 3, 4, gg[6] );        //   |   / |
+		boost::add_edge( 4, 5, gg[6] );        //   |  /  3
+		boost::add_edge( 0, 5, gg[6] );        //   | /   |
+		gg[7] = gg[6];                         //   5-----4
+		boost::add_edge( 5, 2, gg[7] );
+
+	}
+	{
+		gg[8] = g;                                 //   0--1--2
+		boost::add_edge( 2, 3, gg[8] );            //   |    /|
+		boost::add_edge( 3, 4, gg[8] );            //   |   / |
+		boost::add_edge( 4, 5, gg[8] );            //   6  /  3
+		boost::add_edge( 5, 6, gg[8] );            //   | /   |
+		boost::add_edge( 6, 0, gg[8] );            //   5-----4
+		gg[9] = gg[8];
+		boost::add_edge( 5, 2, gg[9] );
 	}
 
+	{
+		std::vector<size_t> v1{ 0,1,2 };
+		CHECK( priv::isChordless( v1, gg[0] ) );
+	}
+	{
+		std::vector<size_t> v1{ 0,1,2,3 };
+		CHECK( !priv::isChordless( v1, gg[1] ) );
+		std::vector<size_t> v2{ 0,2,3 };
+		CHECK( v2 == priv::removeChords( v1, gg[1] ) );
+	}
+	{
+		std::vector<size_t> v1{ 0,1,2,3 };
+		CHECK( priv::isChordless( v1, gg[2] ) );
+	}
+	{
+		std::vector<size_t> v1{ 0,1,2,3 };
+		CHECK( !priv::isChordless( v1,gg[3] ) );
+		std::vector<size_t> v2{ 0,1,3 };
+		CHECK( v2 == priv::removeChords( v1, gg[3] ) );
+	}
+	{
+		std::vector<size_t> v1{ 0,1,2,4,5 };
+		CHECK(  priv::isChordless( v1, gg[4] ) );
+		CHECK( !priv::isChordless( v1, gg[5] ) );
+
+		std::vector<size_t> v2{ 0,1,2,5 };
+		CHECK( v2 == priv::removeChords( v1, gg[5] ) );
+	}
+	{
+		std::vector<size_t> v1{ 0,1,2,3,4,5 };
+		CHECK(  priv::isChordless( v1, gg[6] ) );
+		CHECK( !priv::isChordless( v1, gg[7] ) );
+
+		std::vector<size_t> v2{ 0,1,2,5 };
+		CHECK( v2 == priv::removeChords( v1, gg[7] ) );
+	}
+	{
+		std::vector<size_t> v1{ 0,1,2,3,4,5,6 };
+		CHECK(  priv::isChordless( v1, gg[8] ) );
+		CHECK( !priv::isChordless( v1, gg[9] ) );
+
+		std::vector<size_t> v2{ 0,1,2,5,6 };
+		CHECK( v2 == priv::removeChords( v1, gg[9] ) );
+	}
 
 }
 

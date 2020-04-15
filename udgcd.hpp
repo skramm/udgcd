@@ -745,7 +745,7 @@ isChordless( const std::vector<vertex_t>& path, const graph_t& g )
 	return true;
 }
 //-------------------------------------------------------------------------------------------
-/// WIP: retunrs input cycle but with (potential) chord removed
+/// WIP: Retunrs input cycle but with (potential) chord(s) removed
 /// \todo NEEDS EXTENSIVE TESTING !!!
 template<typename vertex_t, typename graph_t>
 std::vector<vertex_t>
@@ -754,6 +754,8 @@ removeChords( const std::vector<vertex_t>& cycle, const graph_t& gr )
 	if( cycle.size() < 4 ) // no need to test if less than 4 vertices
 		return cycle;
 
+std::cout << __FUNCTION__ << "(): cycle size=" << cycle.size() << ": "; printVector( std::cout, cycle );
+
 	std::vector<vertex_t> out;
 	out.push_back( cycle[0] );
 	size_t idx_connected = 0;
@@ -761,24 +763,35 @@ removeChords( const std::vector<vertex_t>& cycle, const graph_t& gr )
 	for( size_t i=0; i<cycle.size()-2; ++i )
 	{
 		connected = false;
+		std::cout << "i=" << i << "\n";
 		for( size_t j=i+2; j<cycle.size(); ++j )
 		{
+			std::cout << "  j=" << j << "\n";
 			if( i != 0 || j != cycle.size()-1 )
 				if( areConnected( cycle[i], cycle[j], gr ) )
 				{
 					connected = true;
 					idx_connected = j;
 					break;
+					std::cout << "  -connected\n";
 				}
 		}
 		if( !connected )
+		{
+			std::cout << "  NC: adding " << i+1 << " node=" << cycle[i+1] << "\n";
 			out.push_back( cycle[i+1] );
+			std::cout << "  NC: adding " << i+1 << " node=" << cycle[i+1] << "\n";
+		}
 		else
 		{
+			std::cout << "  C: adding " << idx_connected << " node=" << cycle[idx_connected] << "\n";
 			out.push_back( cycle[idx_connected] );
+			std::cout << "  C: adding " << idx_connected << " node=" << cycle[idx_connected] << "\n";
 			i = idx_connected;
 		}
 	}
+
+	return out;
 }
 
 //-------------------------------------------------------------------------------------------
@@ -1423,14 +1436,14 @@ reduceMatrix( const BinaryMatrix& m_in, const std::vector<size_t>& nonEmptyCols 
 
 
 //-------------------------------------------------------------------------------------------
-template<typename vertex_t>
+template<typename vertex_t, typename graph_t>
 std::vector<std::vector<vertex_t>>
-removeChords( std::vector<std::vector<vertex_t>>& cycles, size_t nbVertices )
+removeChords( std::vector<std::vector<vertex_t>>& cycles, const graph_t& gr )
 {
 	std::vector<std::vector<vertex_t>> out;
 	out.reserve( cycles.size() );
 	for( const auto& cycle : cycles )
-		out.push_back( removeChords(cycle) );
+		out.push_back( removeChords( cycle, gr ) );
 	return out;
 }
 
@@ -1881,7 +1894,7 @@ findCycles( graph_t& g, UdgcdInfo& info )
 
 
 	info.setTimeStamp();
-	auto v_cycles3 = priv::removeChords( *p_cycles );
+	auto v_cycles3 = priv::removeChords( *p_cycles, g );
 	*p_cycles = &v_cycles3;
 
 #ifdef UDGCD_DO_CYCLE_CHECKING
