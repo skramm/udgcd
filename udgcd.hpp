@@ -717,8 +717,6 @@ areConnected( const vertex_t& v1, const vertex_t& v2, const graph_t& g )
 See
 - https://en.wikipedia.org/wiki/Cycle_(graph_theory)#Chordless_cycles
 
-\todo add some test code to make sure this is fine
-
 Quote:
 <BLOCKQUOTE>
 "A chordless cycle in a graph, also called a hole or an induced cycle, is a cycle such that
@@ -733,13 +731,13 @@ isChordless( const std::vector<vertex_t>& path, const graph_t& g )
 		return true;
 //	std::cout << "considering cycle: ";	printVector( std::cout, path );
 
-	for( size_t i=0; i<path.size()-3; ++i )
+	for( size_t i=0; i<path.size()-2; ++i )
 	{
 //		std::cout << i << ": considering " << path[i] << "\n";
 		for( size_t j=i+2; j<path.size(); ++j )
 		{
 //			std::cout << "  " << j << ": with " << path[j] << "\n";
-
+			if( i != 0 || j != path.size()-1 )
 			if( areConnected( path[i], path[j], g ) )
 			{
 //				std::cout << path[i] << "-" << path[j] << ": => NOT Chordless!\n";
@@ -1151,6 +1149,7 @@ convertBC2VC_v2(
 	return convertVPV2Cycle( v_pvertex );
 }
 
+//-------------------------------------------------------------------------------------------
 /// Builds and returns the incidence matrix for graph \c gr
 template<typename graph_t,typename vertex_t>
 IncidenceMatrix<vertex_t>
@@ -1159,7 +1158,10 @@ buildIncidenceMat( const graph_t& gr )
 	assert( boost::num_vertices( gr ) > 2 );
 	assert( boost::num_edges(    gr ) > 2 );
 
-	IncidenceMatrix<vertex_t> out( boost::num_vertices( gr ) /* lines*/, boost::num_edges( gr ) /* cols */ );
+	IncidenceMatrix<vertex_t> out(
+		boost::num_vertices( gr ),   // rows
+		boost::num_edges(    gr )    // cols
+	);
 
 	size_t i=0;
 	for(
@@ -1170,7 +1172,6 @@ buildIncidenceMat( const graph_t& gr )
 	{
 		auto v1 = boost::source( *p_it.first, gr );
 		auto v2 = boost::target( *p_it.first, gr );
-//		std::cout << "p_it.first=" << *p_it.first << " v1=" << v1 << " v2=" << v2 << "\n";
 		out.setPair( v1, v2, i );
 	}
 	return out;
@@ -1725,6 +1726,11 @@ findCycles( graph_t& g, UdgcdInfo& info )
 
 	auto imat = priv::buildIncidenceMat<graph_t,vertex_t>( g );
 	imat.printMat( std::cout );
+	MatM4ri m4rmi = convertToM4ri( imat );
+//	mzd_echelonize_naive( m4rmi._data, 1 );
+	mzd_echelonize_pluq( m4rmi._data, 1 );
+	auto imat2 = convertFromM4ri( m4rmi );
+	imat2.printMat( std::cout );
 
 //////////////////////////////////////
 // step 1: do a DFS
@@ -1768,6 +1774,19 @@ findCycles( graph_t& g, UdgcdInfo& info )
 	std::cout << "-Nb cleaned cycles: " << info.nbCleanedCycles << '\n';
 
 	std::vector<std::vector<vertex_t>>* p_cycles = &v_cycles0;
+
+// SORTING
+	std::sort(
+		std::begin(*p_cycles),
+		std::end(*p_cycles),
+		[]
+		( const std::vector<vertex_t> &a, const std::vector<vertex_t> &b )
+		{
+			return a.size()<b.size();
+		}
+	);
+	priv::printStatus( std::cout, *p_cycles, __LINE__ );
+
 
 #ifdef UDGCD_REMOVE_NONCHORDLESS
 // post process 3: remove non-chordless cycles

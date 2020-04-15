@@ -5,12 +5,17 @@
 https://github.com/philsquared/Catch/
 */
 
-
 #define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
 #include "catch.hpp"
 
 #include "udgcd.hpp"
 using namespace udgcd;
+
+using  graph_t = boost::adjacency_list<
+		boost::vecS,
+		boost::vecS,
+		boost::undirectedS
+	>;
 
 //-------------------------------------------------------------------------------------------
 TEST_CASE( "Conversions", "[tc]" )
@@ -25,16 +30,54 @@ TEST_CASE( "Conversions", "[tc]" )
 }
 
 //-------------------------------------------------------------------------------------------
-TEST_CASE( "connected", "[tconn]" )
+TEST_CASE( "Chordless", "[t-chordless]" )
 {
-	boost::adjacency_list<
-		boost::vecS,
-		boost::vecS,
-		boost::undirectedS
-	> g;
+	graph_t g0;
+	int i=0;
+	boost::add_edge( 0, 1, g0);
+	boost::add_edge( 1, 2, g0) ;
+	{
+		graph_t g = g0;                       //   0---1
+		boost::add_edge( 2, 0, g);            //    \  |
+		std::vector<size_t> v1{ 0,1,2 };      //     \ |
+		CHECK( priv::isChordless( v1,g ) );   //       2
 
-//	typedef boost::graph_traits<graph_t>::vertex_descriptor vertex_t;
-//	graph_t g;
+		boost::add_edge( 2, 3, g);            //   0---1
+		boost::add_edge( 0, 3, g);            //   |\  |
+		std::vector<size_t> v2{ 0,1,2,3 };    //   | \ |
+		CHECK( !priv::isChordless( v2,g ) );  //   3---2
+	}
+	{
+		graph_t g = g0;
+		boost::add_edge( 2, 3, g);             //   0---1
+		boost::add_edge( 0, 3, g);             //   |   |
+		std::vector<size_t> v1{ 0,1,2,3 };     //   |   |
+		CHECK( priv::isChordless( v1,g ) );    //   3---2
+	}
+	{
+		graph_t g = g0;
+		boost::add_edge( 1, 3, g);
+		boost::add_edge( 2, 3, g);            //   0---1
+		boost::add_edge( 0, 3, g);            //   | / |
+		std::vector<size_t> v1{ 0,1,2,3 };    //   |/  |
+		CHECK( !priv::isChordless( v1,g ) );  //   3---2
+	}
+	{
+		graph_t g = g0;
+		boost::add_edge( 2, 3, g);
+		boost::add_edge( 4, 3, g);
+		boost::add_edge( 0, 4, g);
+		std::vector<size_t> v1{ 0,1,2,3,4 };
+		CHECK( priv::isChordless( v1,g ) );
+		boost::add_edge( 4, 2, g);
+		CHECK( !priv::isChordless( v1,g ) );
+	}
+}
+
+//-------------------------------------------------------------------------------------------
+TEST_CASE( "connected", "[t-conn]" )
+{
+	graph_t g;
 
 	boost::add_edge(2, 1, g); // a 3 node cycle
 	boost::add_edge(2, 3, g);
@@ -103,21 +146,13 @@ ProcessTest( std::vector<size_t>& cycle, size_t nbVertices )
 	auto rev_map = udgcd::priv::buildReverseBinaryMap( nbVertices );
 	REQUIRE( rev_map.size() == nbCombinations );
 
-	size_t iter;
-	auto cycle2 = udgcd::priv::convertBC2VC<size_t>( bpa, rev_map, iter );
+	auto cycle2 = udgcd::priv::convertBC2VC<size_t>( bpa, rev_map );
 	REQUIRE( cycle == cycle2 );
-
 }
 
 //-------------------------------------------------------------------------------------------
 TEST_CASE( "test isACycle", "[test4]" )
 {
-	typedef boost::adjacency_list<
-		boost::vecS,
-		boost::vecS,
-		boost::undirectedS
-	> graph_t;
-
 	{
 		graph_t g( 5 );
 
@@ -230,7 +265,7 @@ TEST_CASE( "test 1", "[test1]" )
 	{
 		std::vector<size_t> cycle{1,2,3,4};
 
-		udgcd::PrintVector( std::cout, cycle ); //, "1: cycle" );
+		udgcd::printVector( std::cout, cycle ); //, "1: cycle" );
 
 		ProcessTest( cycle, 5 );
 		ProcessTest( cycle, 6 );
