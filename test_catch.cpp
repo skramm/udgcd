@@ -65,13 +65,27 @@ TEST_CASE( "Chordless", "[t-chordless]" )
 	{
 		graph_t g = g0;
 		boost::add_edge( 2, 3, g);
-		boost::add_edge( 4, 3, g);
-		boost::add_edge( 0, 4, g);
-		std::vector<size_t> v1{ 0,1,2,3,4 };
-		CHECK( priv::isChordless( v1,g ) );
-		boost::add_edge( 4, 2, g);
+		boost::add_edge( 2, 4, g);            //   0--1--2---3
+		boost::add_edge( 4, 5, g);            //   |    /|
+		boost::add_edge( 0, 5, g);            //   |   / |
+		std::vector<size_t> v1{ 0,1,2,4,5 };  //   |  /  |
+		CHECK( priv::isChordless( v1,g ) );   //   | /   |
+		boost::add_edge( 5, 2, g);            //   5-----4
 		CHECK( !priv::isChordless( v1,g ) );
 	}
+	{
+		graph_t g = g0;
+		boost::add_edge( 2, 3, g);
+		boost::add_edge( 3, 4, g);             //   0--1--2
+		boost::add_edge( 4, 5, g);             //   |    /|
+		boost::add_edge( 0, 5, g);             //   |   / |
+		std::vector<size_t> v1{ 0,1,2,3,4,5 }; //   |  /  3
+		CHECK( priv::isChordless( v1,g ) );    //   | /   |
+		boost::add_edge( 5, 2, g);             //   5-----4
+		CHECK( !priv::isChordless( v1,g ) );
+	}
+
+
 }
 
 //-------------------------------------------------------------------------------------------

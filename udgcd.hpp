@@ -697,6 +697,9 @@ RemoveIdentical( const std::vector<std::vector<T>>& v_cycles )
 /// Returns true if vertices \c v1 and \c v2 are connected by an edge
 /**
 http://www.boost.org/doc/libs/1_59_0/libs/graph/doc/IncidenceGraph.html#sec:out-edges
+
+\todo Replace the calling to this function (that needs to iterate at every call)
+by a static binary vector, givening the result instantly from an index value.
 */
 template<typename vertex_t, typename graph_t>
 bool
@@ -729,24 +732,53 @@ isChordless( const std::vector<vertex_t>& path, const graph_t& g )
 {
 	if( path.size() < 4 ) // no need to test if less than 4 vertices
 		return true;
-//	std::cout << "considering cycle: ";	printVector( std::cout, path );
 
 	for( size_t i=0; i<path.size()-2; ++i )
 	{
-//		std::cout << i << ": considering " << path[i] << "\n";
 		for( size_t j=i+2; j<path.size(); ++j )
 		{
-//			std::cout << "  " << j << ": with " << path[j] << "\n";
 			if( i != 0 || j != path.size()-1 )
-			if( areConnected( path[i], path[j], g ) )
-			{
-//				std::cout << path[i] << "-" << path[j] << ": => NOT Chordless!\n";
-				return false;
-			}
+				if( areConnected( path[i], path[j], g ) )
+					return false;
 		}
 	}
-//	std::cout << " - Chordless!\n";
 	return true;
+}
+//-------------------------------------------------------------------------------------------
+/// WIP: retunrs input cycle but with (potential) chord removed
+/// \todo NEEDS EXTENSIVE TESTING !!!
+template<typename vertex_t, typename graph_t>
+std::vector<vertex_t>
+removeChords( const std::vector<vertex_t>& cycle, const graph_t& gr )
+{
+	if( cycle.size() < 4 ) // no need to test if less than 4 vertices
+		return cycle;
+
+	std::vector<vertex_t> out;
+	out.push_back( cycle[0] );
+	size_t idx_connected = 0;
+	bool connected = false;
+	for( size_t i=0; i<cycle.size()-2; ++i )
+	{
+		connected = false;
+		for( size_t j=i+2; j<cycle.size(); ++j )
+		{
+			if( i != 0 || j != cycle.size()-1 )
+				if( areConnected( cycle[i], cycle[j], gr ) )
+				{
+					connected = true;
+					idx_connected = j;
+					break;
+				}
+		}
+		if( !connected )
+			out.push_back( cycle[i+1] );
+		else
+		{
+			out.push_back( cycle[idx_connected] );
+			i = idx_connected;
+		}
+	}
 }
 
 //-------------------------------------------------------------------------------------------
@@ -754,7 +786,7 @@ isChordless( const std::vector<vertex_t>& path, const graph_t& g )
 /// Remove non-chordless cycles
 template<typename vertex_t, typename graph_t>
 std::vector<std::vector<vertex_t>>
-removeNonChordless( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& g )
+removeNonChordless( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& gr )
 {
 	PRINT_FUNCTION;
 
@@ -762,7 +794,7 @@ removeNonChordless( const std::vector<std::vector<vertex_t>>& v_in, const graph_
 	v_out.reserve( v_in.size() ); // to avoid unnecessary memory reallocations and copies
 
     for( const auto& cycle: v_in )
-		if( isChordless( cycle, g ) )
+		if( isChordless( cycle, gr ) )
 			v_out.push_back( cycle );
 	return v_out;
 }
@@ -1389,6 +1421,19 @@ reduceMatrix( const BinaryMatrix& m_in, const std::vector<size_t>& nonEmptyCols 
 	return out;
 }
 
+
+//-------------------------------------------------------------------------------------------
+template<typename vertex_t>
+std::vector<std::vector<vertex_t>>
+removeChords( std::vector<std::vector<vertex_t>>& cycles, size_t nbVertices )
+{
+	std::vector<std::vector<vertex_t>> out;
+	out.reserve( cycles.size() );
+	for( const auto& cycle : cycles )
+		out.push_back( removeChords(cycle) );
+	return out;
+}
+
 //-------------------------------------------------------------------------------------------
 /// Post-process step: removes cycles based on Gaussian Elimination
 /**
@@ -1437,8 +1482,13 @@ removeRedundant( std::vector<std::vector<vertex_t>>& v_in, size_t nbVertices )
 	COUT << "gaussianElim: nbIter=" << nbIter1 << '\n';
 #else
 	MatM4ri m4rmi = convertToM4ri( bm_in2 );
-	mzd_echelonize_naive( m4rmi._data, 1 );
+	MatM4ri m4rmi2 = m4rmi;
+	mzd_echelonize_naive( m4rmi._data, 0 );
+	mzd_echelonize_naive( m4rmi2._data, 1 );
+
 	auto binMat_out = convertFromM4ri( m4rmi );
+	auto binMat_out2 = convertFromM4ri( m4rmi2 );
+	std::cout << "binMat_out2:\n"; binMat_out2.printMat( std::cout );
 #endif
 
 	std::cout << "binMat_out:\n"; binMat_out.printMat( std::cout );
@@ -1451,9 +1501,15 @@ removeRedundant( std::vector<std::vector<vertex_t>>& v_in, size_t nbVertices )
 	COUT << "gaussianElim: nbIter=" << nbIter1 << '\n';
 #else
 	MatM4ri m4rmi = convertToM4ri( binMat_in );
-//	mzd_echelonize_naive( m4rmi._data, 1 );
-	mzd_echelonize_pluq( m4rmi._data, 0 );
+	MatM4ri m4rmi2 = m4rmi;
+
+	mzd_echelonize_naive( m4rmi._data, 1 );
+//	mzd_echelonize_naive( m4rmi2._data, 0 );
+//	mzd_echelonize_pluq( m4rmi._data, 0 );
+
 	auto binMat_out = convertFromM4ri( m4rmi );
+//	auto binMat_out2 = convertFromM4ri( m4rmi2 );
+//	std::cout << "binMat_out2:\n"; binMat_out2.printMat( std::cout );
 #endif
 
 
@@ -1812,20 +1868,35 @@ findCycles( graph_t& g, UdgcdInfo& info )
 //////////////////////////////////////
 
 	auto v_cycles2 = priv::removeRedundant( *p_cycles, boost::num_vertices(g) );
+	*p_cycles = &v_cycles2;
 
 #ifdef UDGCD_DO_CYCLE_CHECKING
-	if( 0 != priv::checkCycles( v_cycles2, g ) )
+	if( 0 != priv::checkCycles( *p_cycles, g ) )
 	{
 		std::cerr << "udgcd: ERROR: INVALID CYCLE DETECTED, line " << __LINE__ << "\n";
 //		exit(1);
 	}
 #endif
+	priv::printStatus( std::cout, *p_cycles, __LINE__ );
 
-	priv::printStatus( std::cout, v_cycles2, __LINE__ );
 
 	info.setTimeStamp();
-	info.nbFinalCycles = v_cycles2.size();
-	return v_cycles2;
+	auto v_cycles3 = priv::removeChords( *p_cycles );
+	*p_cycles = &v_cycles3;
+
+#ifdef UDGCD_DO_CYCLE_CHECKING
+	if( 0 != priv::checkCycles( *p_cycles, g ) )
+	{
+		std::cerr << "udgcd: ERROR: INVALID CYCLE DETECTED, line " << __LINE__ << "\n";
+//		exit(1);
+	}
+#endif
+	priv::printStatus( std::cout, *p_cycles, __LINE__ );
+
+
+	info.setTimeStamp();
+	info.nbFinalCycles = *p_cycles.size();
+	return *p_cycles;
 }
 //-------------------------------------------------------------------------------------------
 /// Version without second argument (default version)
