@@ -52,9 +52,6 @@ See file README.md
 /// All the provided code is in this namespace
 namespace udgcd {
 
-//template<typename T>
-//using VertexPair = std::pair<T,T>;
-
 //-------------------------------------------------------------------------------------------
 template<typename T>
 void
@@ -725,6 +722,8 @@ Quote:
 "A chordless cycle in a graph, also called a hole or an induced cycle, is a cycle such that
 no two vertices of the cycle are connected by an edge that does not itself belong to the cycle."
 </BLOCKQUOTE>
+
+\warning Does not check that the path \b is a cycle !
 */
 template<typename vertex_t, typename graph_t>
 bool
@@ -745,8 +744,7 @@ isChordless( const std::vector<vertex_t>& path, const graph_t& g )
 	return true;
 }
 //-------------------------------------------------------------------------------------------
-/// WIP: Retunrs input cycle but with (potential) chord(s) removed
-/// \todo NEEDS EXTENSIVE TESTING !!!
+/// Returns input cycle but with (potential) chord(s) removed
 template<typename vertex_t, typename graph_t>
 std::vector<vertex_t>
 removeChords( const std::vector<vertex_t>& cycle, const graph_t& gr )
@@ -754,42 +752,44 @@ removeChords( const std::vector<vertex_t>& cycle, const graph_t& gr )
 	if( cycle.size() < 4 ) // no need to test if less than 4 vertices
 		return cycle;
 
-std::cout << __FUNCTION__ << "(): cycle size=" << cycle.size() << ": "; printVector( std::cout, cycle );
+//	std::cout << __FUNCTION__ << "(): cycle size=" << cycle.size() << ": "; printVector( std::cout, cycle );
 
 	std::vector<vertex_t> out;
 	out.push_back( cycle[0] );
 	size_t idx_connected = 0;
 	bool connected = false;
-	for( size_t i=0; i<cycle.size()-2; ++i )
+	size_t i=0;
+	for( i=0; i<cycle.size()-1; ++i )
 	{
 		connected = false;
-		std::cout << "i=" << i << "\n";
+//		std::cout << "i=" << i << "\n";
 		for( size_t j=i+2; j<cycle.size(); ++j )
 		{
-			std::cout << "  j=" << j << "\n";
+//			std::cout << "  j=" << j << "\n";
 			if( i != 0 || j != cycle.size()-1 )
 				if( areConnected( cycle[i], cycle[j], gr ) )
 				{
 					connected = true;
 					idx_connected = j;
 					break;
-					std::cout << "  -connected\n";
+//					std::cout << "  -connected\n";
 				}
 		}
 		if( !connected )
 		{
-			std::cout << "  NC: adding " << i+1 << " node=" << cycle[i+1] << "\n";
+//			std::cout << "  NC: adding " << i+1 << " node=" << cycle[i+1] << "\n";
 			out.push_back( cycle[i+1] );
-			std::cout << "  NC: adding " << i+1 << " node=" << cycle[i+1] << "\n";
 		}
 		else
 		{
-			std::cout << "  C: adding " << idx_connected << " node=" << cycle[idx_connected] << "\n";
+//			std::cout << "  C: adding " << idx_connected << " node=" << cycle[idx_connected] << "\n";
 			out.push_back( cycle[idx_connected] );
-			std::cout << "  C: adding " << idx_connected << " node=" << cycle[idx_connected] << "\n";
 			i = idx_connected;
 		}
 	}
+
+	if( i == cycle.size()-1 )
+		out.push_back( cycle.back() );
 
 	return out;
 }

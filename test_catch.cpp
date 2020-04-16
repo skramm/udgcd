@@ -33,7 +33,7 @@ TEST_CASE( "Conversions", "[tc]" )
 //-------------------------------------------------------------------------------------------
 TEST_CASE( "Chordless", "[t-chordless]" )
 {
-	std::array<graph_t,10> gg;
+	std::array<graph_t,12> gg;
 	graph_t g;
 	boost::add_edge( 0, 1, g );
 	boost::add_edge( 1, 2, g ) ;
@@ -81,14 +81,33 @@ TEST_CASE( "Chordless", "[t-chordless]" )
 
 	}
 	{
-		gg[8] = g;                                 //   0--1--2
-		boost::add_edge( 2, 3, gg[8] );            //   |    /|
-		boost::add_edge( 3, 4, gg[8] );            //   |   / |
-		boost::add_edge( 4, 5, gg[8] );            //   6  /  3
-		boost::add_edge( 5, 6, gg[8] );            //   | /   |
-		boost::add_edge( 6, 0, gg[8] );            //   5-----4
+		gg[8] = g;                               //   0--1--2
+		boost::add_edge( 2, 3, gg[8] );          //   |    /|
+		boost::add_edge( 3, 4, gg[8] );          //   |   / |
+		boost::add_edge( 4, 5, gg[8] );          //   6  /  3
+		boost::add_edge( 5, 6, gg[8] );          //   | /   |
+		boost::add_edge( 6, 0, gg[8] );          //   5-----4
 		gg[9] = gg[8];
 		boost::add_edge( 5, 2, gg[9] );
+	}
+
+	{                  // two chords
+		gg[10] = g;                            /*     0--1--2      */
+		boost::add_edge( 2, 3, gg[10] );       /*    /|     |\     */
+		boost::add_edge( 3, 4, gg[10] );       /*   / |     | \    */
+		boost::add_edge( 2, 4, gg[10] );       /*  6  |     |  3   */
+		boost::add_edge( 4, 5, gg[10] );       /*   \ |     | /    */
+		boost::add_edge( 6, 0, gg[10] );       /*    \|     |/     */
+		boost::add_edge( 6, 5, gg[10] );       /*     5-----4      */
+		boost::add_edge( 5, 0, gg[10] );
+
+		gg[11] = gg[10];                       /*     0--1--2      */
+		boost::remove_edge( 5, 0, gg[11] );    /*    /|     |\     */
+		boost::add_edge( 7, 5, gg[11] );       /*   / |     | \    */
+		boost::add_edge( 7, 5, gg[11] );       /*  6  7     |  3   */
+		;                                      /*   \ |     | /    */
+		;                                      /*    \|     |/     */
+		;                                      /*     5-----4      */
 	}
 
 	{
@@ -136,9 +155,37 @@ TEST_CASE( "Chordless", "[t-chordless]" )
 		CHECK( v2 == priv::removeChords( v1, gg[9] ) );
 	}
 
+	{
+		std::vector<size_t> v1{ 0,1,2,3,4,5,6 };
+		CHECK( !priv::isChordless( v1, gg[10] ) );
+
+		std::vector<size_t> v2a{ 0,1,2,4,5 };
+		CHECK( priv::isChordless( v2a, gg[10] ) );
+		std::vector<size_t> v2b{ 2,3,4 };
+		CHECK( priv::isChordless( v2b, gg[10] ) );
+		std::vector<size_t> v2c{ 0,5,6 };
+		CHECK( priv::isChordless( v2c, gg[10] ) );
+
+		std::vector<size_t> v2{ 0,1,2,5,6 };
+		CHECK( v2c == priv::removeChords( v1, gg[10] ) );
+	}
+	{
+		std::vector<size_t> v1{ 0,1,2,4,5,6 };
+		CHECK( priv::isChordless( v1, gg[11] ) );
+		std::vector<size_t> v2{ 0,1,2,4,5,7 };
+		CHECK( priv::isChordless( v2, gg[11] ) );
+
+		std::vector<size_t> v3a{ 0,1,2,3,4,5,7 };
+		std::vector<size_t> v3b{ 0,1,2,3,4,5,6 };
+		CHECK( !priv::isChordless( v3a, gg[11] ) );
+		CHECK( !priv::isChordless( v3b, gg[11] ) );
+	}
 }
 
 //-------------------------------------------------------------------------------------------
+#define ARE_CONNECTED( a, b, gr ) priv::areConnected( (size_t)a, (size_t)b, gr )
+
+
 TEST_CASE( "connected", "[t-conn]" )
 {
 	graph_t g;
@@ -158,19 +205,19 @@ TEST_CASE( "connected", "[t-conn]" )
 	boost::add_edge(11,  8, g);
 	boost::add_edge(10,  8, g);
 
-	CHECK( priv::areConnected(  1, 2, g ) );
-	CHECK( priv::areConnected(  2, 1, g ) );
+	CHECK( ARE_CONNECTED(  1, 2, g ) );
+	CHECK( ARE_CONNECTED(  2, 1, g ) );
 
-	CHECK( !priv::areConnected( 1, 4, g ) );
-	CHECK( !priv::areConnected( 4, 1, g ) );
+	CHECK( !ARE_CONNECTED( 1, 4, g ) );
+	CHECK( !ARE_CONNECTED( 4, 1, g ) );
 
-	CHECK( !priv::areConnected( 7, 8, g ) );
+	CHECK( !ARE_CONNECTED( 7, 8, g ) );
 
-	CHECK( !priv::areConnected( 9, 11, g ) );
-	CHECK( !priv::areConnected( 11, 9, g ) );
+	CHECK( !ARE_CONNECTED( 9, 11, g ) );
+	CHECK( !ARE_CONNECTED( 11, 9, g ) );
 
-	CHECK( priv::areConnected( 8, 10, g ) );
-	CHECK( priv::areConnected( 10, 8, g ) );
+	CHECK( ARE_CONNECTED( 8, 10, g ) );
+	CHECK( ARE_CONNECTED( 10, 8, g ) );
 }
 
 
