@@ -179,6 +179,14 @@ TEST_CASE( "Chordless", "[t-chordless]" )
 		std::vector<size_t> v3b{ 0,1,2,3,4,5,6 };
 		CHECK( !priv::isChordless( v3a, gg[11] ) );
 		CHECK( !priv::isChordless( v3b, gg[11] ) );
+
+		auto vec = priv::extractChordlessCycles( v3a, gg[11] );
+		CHECK( priv::vectorHolds( vec, std::vector<size_t>{2,3,4} ) );
+		CHECK( priv::vectorHolds( vec, std::vector<size_t>{0,1,2,4,5,7} ) );
+
+		auto vec2 = priv::extractChordlessCycles( v3b, gg[11] );
+		CHECK( priv::vectorHolds( vec2, std::vector<size_t>{2,3,4} ) );
+		CHECK( priv::vectorHolds( vec2, std::vector<size_t>{0,1,2,4,6,7} ) );
 	}
 }
 

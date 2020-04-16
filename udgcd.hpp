@@ -793,7 +793,48 @@ removeChords( const std::vector<vertex_t>& cycle, const graph_t& gr )
 
 	return out;
 }
+//-------------------------------------------------------------------------------------------
+/// Extract form a given input cycle all the potential chordless cycles
+/**
+Example: for this graph
 
+\verbatim
+       0--1--2
+      /|     |\
+     / |     | \
+    6  |     |  3
+     \ |     | /
+      \|     |/
+       5-----4
+\endverbatim
+And the input cycle <code>0-1-2-3-4-5-6</code>,
+this function should return the three vectors:
+\verbatim
+0-5-6
+2-3-4
+0-1-2-4-5
+\endverbatim
+
+\todo Write this !
+*/
+template<typename vertex_t, typename graph_t>
+std::vector<std::vector<vertex_t>>
+extractChordlessCycles( const std::vector<vertex_t>& cycle, const graph_t& gr )
+{
+	std::vector<std::vector<vertex_t>> out;
+
+	return out;
+}
+//-------------------------------------------------------------------------------------------
+/// Generic search function: returns true if vector \c vec holds \c data
+template<typename T>
+bool
+vectorHolds( const std::vector<T>& vec, const T& data )
+{
+	if( std::find( std::begin(vec), std::end(vec), data ) == std::end(vec) )
+		return false;
+	return true;
+}
 //-------------------------------------------------------------------------------------------
 #ifdef UDGCD_REMOVE_NONCHORDLESS
 /// Remove non-chordless cycles
@@ -820,7 +861,7 @@ removeNonChordless( const std::vector<std::vector<vertex_t>>& v_in, const graph_
 - sample input: 1-3-5
 
 \todo 20200413: write down the reason why the function does not return the result, and passes it
-as reference. Must be a reason but can't remenber each time!
+as reference. Must be a reason but can't remember each time!
 */
 template<typename vertex_t>
 void
@@ -857,8 +898,17 @@ This function builds a vector of 6-1=5 elements:
 0-4-7-9-10
 \endverbatim
 With those values, we get the index of a given edge in the binary vector with the formulae:
-\f$ idx = idx_vec[v1] + v2 - 1 \f$
-with \f$ v1 \f$ being the smallest vertex and \f$ v2 \f$ the other one.
+<code> idx = idx_vec[v1] + v2 - 1 </code>
+with \c v1 being the smallest vertex and \c v2 the other one.
+
+For example, for a graph having 6 vertices, and we want to know the index in the binary vector
+for the edge between vertices 2 and 4, then the above formula gives:<br>
+<code> idx = idx_vec[2] + 4 - 1 </code><br>
+We have <code> idx[2] = 7 </code>, so the index of that edge will be
+<code> 7 + 4 -1 = 10 </code><br>
+This can be checked above.
+
+\sa p_data_representation
 
 \todo Maybe we can remove the first value, as it is always 0.
 */
