@@ -10,26 +10,29 @@ Attempt using a tree and a DFS
 #include <set>
 
 #include <boost/graph/adjacency_list.hpp>
-//#include <boost/graph/undirected_dfs.hpp>
+#include <boost/graph/undirected_dfs.hpp>
 #include <boost/graph/depth_first_search.hpp>
 
 /// Type of vertices in the tree. Hold an index on the source vertex in undirected graph
-template<typename vertex_t>
-struct tree_vertex_t
+template<typename T>
+struct TreeNode
 {
-	vertex_t src_vertex;
-	tree_vertex_t( vertex_t v ): src_vertex(v)
-	{}
+	T src_vertex;
 };
 
 /// The tree definition
+
+
 template<typename vertex_t>
 using tree_t = boost::adjacency_list<
 		boost::vecS,
 		boost::vecS,
-		boost::directedS,
-		tree_vertex_t<vertex_t>
+		boost::undirectedS,
+		TreeNode<vertex_t>
 	>;
+
+template<typename vertex_t>
+using tree_vertex_t = typename boost::graph_traits<tree_t<vertex_t>>::vertex_descriptor;
 
 //--------------------------------------------------------
 template<typename T>
@@ -51,16 +54,17 @@ fill_tree(
 	tree_t<vertex_t>&             tree,       ///< output tree
 	const std::vector<vertex_t>&  cycle,      ///< the cycle we are investigating
 	tree_vertex_t<vertex_t>       t_current,  ///< current vertex
-	const graph_t&                gr,
-	std::vector<vertex_t>         cvec
+	const graph_t&                gr,         ///< input graph (undirected)
+	std::vector<vertex_t>         cvec,       ///< current cycle we are exploring
+	std::vector<std::vector<vertex_t>>& out   ///< output set of cycles
 )
 {
 	static int depth;
 	depth++;
-	auto current = t_current.src_vertex;
+	auto current = tree[t_current].src_vertex;
 	COUT << __FUNCTION__ << "(): current=" << current << "\n";
 
-	if( depth == 10 )		std::exit(1);
+	if( depth == 15 )		std::exit(1);
 
 	cvec.push_back( current );
 
@@ -70,31 +74,39 @@ fill_tree(
 		p_it.first++
 	)
 	{
-		COUT << "L1: depth=" << depth << " current=" << current << ": edge " << *p_it.first << "\n";
-		vertex_t vs = boost::source( *p_it.first, gr );
-		vertex_t next = boost::target( *p_it.first, gr );
-		assert( vs == current );
+		vertex_t source = boost::source( *p_it.first, gr );
+		vertex_t next   = boost::target( *p_it.first, gr );
+		COUT << "L1: depth=" << depth << " current=" << current << ": edge " << *p_it.first << " target=" << next << "\n";
 
 		auto it = std::find( cvec.begin(), cvec.end(), next );
 		if( it != cvec.end() )     // found in the current path
 		{
-			std::cout << "FOUND in PATH, stop\n";
+			COUT << "next=" << next << " found, *it=" << *it << "\n";
+			if( cvec.size() > 1 )
+			{
+				auto it_previous = std::end(cvec) - 2;
+				if( *it != *it_previous )
+				{
+					COUT << "-FOUND in PATH, stop: vec:"; printVector( std::cout, cvec );
+					out.push_back( cvec );
+					return;
+				}
+			}
 		}
 		else                       // NOT found in the current path
 		{
 			if( next == cycle.back() )   // if last element of cycle
 			{
-				COUT << "Found last: " << next << ", return\n";
+				COUT << "-Found last: " << next << ", return, vec: "; printVector( std::cout, cvec );
 				return;
 			}
 			else
 			{
-				COUT << "create edge " << current << "-" << next << "\n";
-				tree_vertex_t<vertex_t> t_next(next);
-
-				auto v = boost::add_vertex( t_next, tree );   // add edge in tree
-				boost::add_edge( t_current, v, tree );   // add edge in tree
-				fill_tree( tree, cycle, t_next, gr, cvec );
+				COUT << "-create edge " << current << "-" << next << "\n";
+				auto t_next = boost::add_vertex( tree );
+				tree[t_next].src_vertex = next;
+				boost::add_edge( t_current, t_next, tree );   // add edge in tree
+				fill_tree( tree, cycle, t_next, gr, cvec, out );
 			}
 		}
 	}
@@ -103,6 +115,7 @@ fill_tree(
 }
 
 //--------------------------------------------------------
+#if 0
 class myDFSVisitor : public boost::default_dfs_visitor
 {
 	public:
@@ -118,22 +131,29 @@ class myDFSVisitor : public boost::default_dfs_visitor
 			 std::cout << "Examining edges " << e << std::endl;
 		}
 };
-
+#endif
 //--------------------------------------------------------
 template<typename vertex_t, typename graph_t>
 std::vector<std::vector<vertex_t>>
 extractChordlessCycles( const std::vector<vertex_t>& cycle, const graph_t& gr )
 {
 	std::vector<std::vector<vertex_t>> out;
-
+	std::cout << __FUNCTION__ << "()\n";
 // build tree (call to recursive function)
 	tree_t<vertex_t> tree;
 	std::vector<vertex_t> empty;
-	tree_vertex_t<vertex_t> tfirst( cycle[0] );
-	fill_tree( tree, cycle, tfirst, gr, empty );
+	auto tfirst = boost::add_vertex( tree );
+	tree[tfirst].src_vertex = cycle[0];
+
+	fill_tree( tree, cycle, tfirst, gr, empty, out );
 //                            ^
 //                         current
 
+	std::cout << "\nOUTPUT SET:\n";
+	for( const auto& cycle: out)
+	{
+		printVector( std::cout, cycle );
+	}
 // DFS
 /*	myDFSVisitor vis;
 	auto indexmap = boost::get( boost::vertex_index, tree );
