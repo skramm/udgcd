@@ -10,7 +10,26 @@ Attempt using a tree and a DFS
 #include <set>
 
 #include <boost/graph/adjacency_list.hpp>
-#include <boost/graph/undirected_dfs.hpp>
+//#include <boost/graph/undirected_dfs.hpp>
+#include <boost/graph/depth_first_search.hpp>
+
+/// Type of vertices in the tree. Hold an index on the source vertex in undirected graph
+template<typename vertex_t>
+struct tree_vertex_t
+{
+	vertex_t src_vertex;
+	tree_vertex_t( vertex_t v ): src_vertex(v)
+	{}
+};
+
+/// The tree definition
+template<typename vertex_t>
+using tree_t = boost::adjacency_list<
+		boost::vecS,
+		boost::vecS,
+		boost::directedS,
+		tree_vertex_t<vertex_t>
+	>;
 
 //--------------------------------------------------------
 template<typename T>
@@ -25,29 +44,26 @@ printVector( std::ostream& f, const std::vector<T>& vec )
 
 #define COUT for(int i=0; i<depth; i++ ) std::cout << "  "; std::cout
 //--------------------------------------------------------
+/// Convert undirected graph to tree
 template<typename vertex_t, typename graph_t>
 void
-rec_explore_cycle(
-	const std::vector<vertex_t>&        cycle,   ///< the cycle we are investigating
-	std::vector<std::vector<vertex_t>>& out,     ///< the set of output chordless cycles
-	vertex_t                            current, ///< current vertex
-	vertex_t                            previous, ///< current vertex
-	const graph_t&                      gr,
-	std::vector<vertex_t>&              temp_cycle
+fill_tree(
+	tree_t<vertex_t>&             tree,       ///< output tree
+	const std::vector<vertex_t>&  cycle,      ///< the cycle we are investigating
+	tree_vertex_t<vertex_t>       t_current,  ///< current vertex
+	const graph_t&                gr,
+	std::vector<vertex_t>         cvec
 )
 {
 	static int depth;
-//	static std::set<vertex_t> vset;
 	depth++;
-	COUT << __FUNCTION__ << "(): current=" << current << " previous=" << previous << "\n";
+	auto current = t_current.src_vertex;
+	COUT << __FUNCTION__ << "(): current=" << current << "\n";
 
 	if( depth == 10 )		std::exit(1);
 
+	cvec.push_back( current );
 
-
-	temp_cycle.push_back( current );
-// step 1 : building a list of connected nodes
-//	std::vector<vertex_t> candidates;
 	for(
 		auto p_it = boost::out_edges( current, gr );
 		p_it.first != p_it.second;
@@ -56,70 +72,87 @@ rec_explore_cycle(
 	{
 		COUT << "L1: depth=" << depth << " current=" << current << ": edge " << *p_it.first << "\n";
 		vertex_t vs = boost::source( *p_it.first, gr );
-		vertex_t vt = boost::target( *p_it.first, gr );
+		vertex_t next = boost::target( *p_it.first, gr );
 		assert( vs == current );
 
-		if( vt != previous )
+		auto it = std::find( cvec.begin(), cvec.end(), next );
+		if( it != cvec.end() )     // found in the current path
 		{
-			// for each node, see if it is in the cycle
-			// and if so, add it to the list of candidates to consider
-			auto it = std::find( cycle.begin(), cycle.end(), vt );
-			if( it != cycle.end() )         // if it is in the list
-//			if( vset.find(vt) == vset.end() )  // and NOT already in the set
+			std::cout << "FOUND in PATH, stop\n";
+		}
+		else                       // NOT found in the current path
+		{
+			if( next == cycle.back() )   // if last element of cycle
 			{
-				if( std::find(temp_cycle.begin(), temp_cycle.end(), vt ) != temp_cycle.end() ) // FOUND!: we have a chordless cycle
-				{
-					COUT << "Found " << vt << ", adding cycle to output "; printVector( std::cout, temp_cycle );
-					out.push_back( temp_cycle );
-					temp_cycle.clear();
-					return;
-				}
-//				else
-//					temp_cycle.push_back( vt );
-			}
-			COUT << "temp_cycle: "; printVector( std::cout, temp_cycle );
-
-//		COUT << "candidates: "; printVector( std::cout, candidates );
-
-	// step 2 : iterating on list of connected nodes and exploring them 1 by 1
-//		for( const auto& cand: candidates )
-
-//			vset.insert( cand );
-			COUT << "L2: cand: " << vt << "\n";
-			if( vt == cycle.back() )
-			{
-				COUT << "Found last!\n";
-				depth--;
+				COUT << "Found last: " << next << ", return\n";
 				return;
 			}
 			else
-				rec_explore_cycle( cycle, out, vt, current, gr, temp_cycle );
+			{
+				COUT << "create edge " << current << "-" << next << "\n";
+				tree_vertex_t<vertex_t> t_next(next);
+
+				auto v = boost::add_vertex( t_next, tree );   // add edge in tree
+				boost::add_edge( t_current, v, tree );   // add edge in tree
+				fill_tree( tree, cycle, t_next, gr, cvec );
+			}
 		}
 	}
-
-//	COUT << "END: candidates: "; printVector( std::cout, candidates );
 	COUT << "END\n";
 	depth--;
 }
 
+//--------------------------------------------------------
+class myDFSVisitor : public boost::default_dfs_visitor
+{
+	public:
+		template < typename Vertex, typename Graph >
+  		void discover_vertex(Vertex u, const Graph & g) const
+		{
+			std::cout << "At " << u << std::endl;
+		}
 
+		template < typename Edge, typename Graph >
+  		void examine_edge(Edge e, const Graph& g) const
+ 		{
+			 std::cout << "Examining edges " << e << std::endl;
+		}
+};
+
+//--------------------------------------------------------
 template<typename vertex_t, typename graph_t>
 std::vector<std::vector<vertex_t>>
 extractChordlessCycles( const std::vector<vertex_t>& cycle, const graph_t& gr )
 {
 	std::vector<std::vector<vertex_t>> out;
+
+// build tree (call to recursive function)
+	tree_t<vertex_t> tree;
 	std::vector<vertex_t> empty;
-	rec_explore_cycle( cycle, out, cycle[0], cycle[0], gr, empty );
+	tree_vertex_t<vertex_t> tfirst( cycle[0] );
+	fill_tree( tree, cycle, tfirst, gr, empty );
+//                            ^
+//                         current
+
+// DFS
+/*	myDFSVisitor vis;
+	auto indexmap = boost::get( boost::vertex_index, tree );
+	auto colormap = boost::make_vector_property_map<boost::default_color_type>(indexmap);
+
+	boost::depth_first_search( gr, vis, colormap, cycle[0] );
+*/
+
 	return out;
 }
 
+//--------------------------------------------------------
 using  graph_t = boost::adjacency_list<
 		boost::vecS,
 		boost::vecS,
 		boost::undirectedS
 	>;
 
-
+//--------------------------------------------------------
 int main()
 {
 	graph_t g;
