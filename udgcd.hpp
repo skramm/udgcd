@@ -1931,7 +1931,7 @@ findCycles( graph_t& g, UdgcdInfo& info )
 //////////////////////////////////////
 
 	auto v_cycles2 = priv::removeRedundant( *p_cycles, boost::num_vertices(g) );
-	*p_cycles = &v_cycles2;
+	p_cycles = &v_cycles2;
 
 #ifdef UDGCD_DO_CYCLE_CHECKING
 	if( 0 != priv::checkCycles( *p_cycles, g ) )
@@ -1945,7 +1945,7 @@ findCycles( graph_t& g, UdgcdInfo& info )
 
 	info.setTimeStamp();
 	auto v_cycles3 = priv::removeChords( *p_cycles, g );
-	*p_cycles = &v_cycles3;
+	p_cycles = &v_cycles3;
 
 #ifdef UDGCD_DO_CYCLE_CHECKING
 	if( 0 != priv::checkCycles( *p_cycles, g ) )
@@ -1958,7 +1958,7 @@ findCycles( graph_t& g, UdgcdInfo& info )
 
 
 	info.setTimeStamp();
-	info.nbFinalCycles = *p_cycles.size();
+	info.nbFinalCycles = p_cycles->size();
 	return *p_cycles;
 }
 //-------------------------------------------------------------------------------------------

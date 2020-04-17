@@ -29,9 +29,9 @@ int main(int, char*[])
 
 	priv::BinaryMatrix bmat1 = convertFromM4ri( m2 );
 	size_t iter=0;
-	bmat1.print( std::cout, "bmat1" );
+	bmat1.printMat( std::cout, "bmat1" );
 	auto bmat2 = priv::gaussianElim( bmat1, iter );
-	bmat2.print( std::cout, "bmat2" );
+	bmat2.printMat( std::cout, "bmat2" );
 
 	MatM4ri m3 = convertToM4ri( bmat2 );
 	std::cout << "m3:\n" << m3;

@@ -29,7 +29,7 @@ int main( int argc, char** argv )
 	size_t iter=0;
 //	bmat1.print( std::cout, "bmat1" );
 	auto bmat2 = priv::gaussianElim( bmat1, iter );
-	bmat2.print( std::cout, "gaussianElim" );
+	bmat2.printMat( std::cout, "gaussianElim" );
 	MatM4ri mine = convertToM4ri( bmat2 );
 
 

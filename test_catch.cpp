@@ -33,7 +33,7 @@ TEST_CASE( "Conversions", "[tc]" )
 //-------------------------------------------------------------------------------------------
 TEST_CASE( "Chordless", "[t-chordless]" )
 {
-	std::array<graph_t,12> gg;
+	std::array<graph_t,14> gg;
 	graph_t g;
 	boost::add_edge( 0, 1, g );
 	boost::add_edge( 1, 2, g ) ;
@@ -109,7 +109,27 @@ TEST_CASE( "Chordless", "[t-chordless]" )
 		;                                      /*    \|     |/     */
 		;                                      /*     5-----4      */
 	}
-
+	{
+		gg[12] = g;                          //     0-------------1
+		boost::add_edge( 2, 3, gg[12] );     //     |             |
+		boost::add_edge( 3, 4, gg[12] );     //     |           --2
+		boost::add_edge( 4, 5, gg[12] );     //     5------\   /  /
+		boost::add_edge( 5, 0, gg[12] );     //      \   ---+--  /
+		;                                    //       \ /    \  /
+		boost::add_edge( 2, 4, gg[12] );     //        4-------3
+		boost::add_edge( 3, 5, gg[12] );
+	}
+	{
+		gg[13] = g;                        //  7--0--1--2---3--4---5---6
+		boost::add_edge( 2, 3, gg[13] );   //     |  |\    /   |   |
+		boost::add_edge( 3, 4, gg[13] );   //     |  | \--/    /   |
+		boost::add_edge( 4, 5, gg[13] );   //     |   \-------/    |
+		boost::add_edge( 5, 0, gg[13] );   //     \----------------/
+		boost::add_edge( 1, 3, gg[13] );
+		boost::add_edge( 1, 4, gg[13] );
+		boost::add_edge( 5, 6, gg[13] );
+		boost::add_edge( 0, 7, gg[13] );
+	}
 	{
 		std::vector<size_t> v1{ 0,1,2 };
 		CHECK( priv::isChordless( v1, gg[0] ) );
@@ -187,6 +207,25 @@ TEST_CASE( "Chordless", "[t-chordless]" )
 		auto vec2 = priv::extractChordlessCycles( v3b, gg[11] );
 		CHECK( priv::vectorHolds( vec2, std::vector<size_t>{2,3,4} ) );
 		CHECK( priv::vectorHolds( vec2, std::vector<size_t>{0,1,2,4,6,7} ) );
+	}
+	{
+		std::vector<size_t> v1{ 2,3,4 };
+		CHECK( priv::isChordless( v1, gg[12] ) );
+		std::vector<size_t> v2{ 3,4,5 };
+		CHECK( priv::isChordless( v2, gg[12] ) );
+		std::vector<size_t> v3{ 0,1,2,4,5 };
+		CHECK( priv::isChordless( v3, gg[12] ) );
+		std::vector<size_t> v4{ 0,1,2,3,5 };
+		CHECK( priv::isChordless( v4, gg[12] ) );
+
+		std::vector<size_t> v5{ 0,1,2,3,4,5 };
+		CHECK( !priv::isChordless( v5, gg[12] ) );
+
+		auto vec = priv::extractChordlessCycles( v5, gg[12] );
+		CHECK( priv::vectorHolds( vec, std::vector<size_t>{2,3,4} ) );
+		CHECK( priv::vectorHolds( vec, std::vector<size_t>{3,4,5} ) );
+		CHECK( priv::vectorHolds( vec, std::vector<size_t>{0,1,2,4,5} ) );
+		CHECK( priv::vectorHolds( vec, std::vector<size_t>{0,1,2,3,5} ) );
 	}
 }
 
