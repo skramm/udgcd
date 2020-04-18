@@ -574,6 +574,22 @@ GetSortedTrimmed( const std::vector<T>& v_in )
 }
 #endif
 //-------------------------------------------------------------------------------------------
+template<typename T>
+void
+normalizeCycle( std::vector<T>& cycle )
+{
+	assert( cycle.size() > 2 );
+
+	putSmallestElemFirst( cycle ); // turn 2-1-4-5 into 1-4-5-2
+
+	if( cycle.back() < cycle[1] )                     // if we have 1-4-5-2, then
+	{
+		std::reverse( cycle.begin(), cycle.end() );   // we transform it into 2-5-4-1
+		putSmallestElemFirst( cycle );                // and put smallest first: 1-2-5-4
+	}
+}
+
+//-------------------------------------------------------------------------------------------
 /// Removes the parts that are not part of the cycle, and normalize the order
 /**
 Example:

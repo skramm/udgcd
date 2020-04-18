@@ -13,6 +13,9 @@ Attempt using a tree and a DFS
 #include <boost/graph/undirected_dfs.hpp>
 #include <boost/graph/depth_first_search.hpp>
 
+
+#include "udgcd.hpp"
+
 /// Type of vertices in the tree. Hold an index on the source vertex in undirected graph
 template<typename T>
 struct TreeNode
@@ -47,7 +50,7 @@ printVector( std::ostream& f, const std::vector<T>& vec )
 
 #define COUT for(int i=0; i<depth; i++ ) std::cout << "  "; std::cout
 //--------------------------------------------------------
-/// Convert undirected graph to tree
+/// Convert undirected graph to tree. Recursive
 template<typename vertex_t, typename graph_t>
 void
 fill_tree(
@@ -60,7 +63,7 @@ fill_tree(
 )
 {
 	static int depth;
-	depth++;
+
 	auto current = tree[t_current].src_vertex;
 	COUT << __FUNCTION__ << "(): current=" << current << "\n";
 
@@ -74,21 +77,27 @@ fill_tree(
 		p_it.first++
 	)
 	{
-		vertex_t source = boost::source( *p_it.first, gr );
+//		vertex_t source = boost::source( *p_it.first, gr );
 		vertex_t next   = boost::target( *p_it.first, gr );
 		COUT << "L1: depth=" << depth << " current=" << current << ": edge " << *p_it.first << " target=" << next << "\n";
 
 		auto it = std::find( cvec.begin(), cvec.end(), next );
 		if( it != cvec.end() )     // found in the current path
 		{
-			COUT << "next=" << next << " found, *it=" << *it << "\n";
+//			COUT << "next=" << next << " found, *it=" << *it << "\n";
 			if( cvec.size() > 1 )
 			{
 				auto it_previous = std::end(cvec) - 2;
-				if( *it != *it_previous )
+				if( *it != *it_previous )            // and not the previous node
 				{
 					COUT << "-FOUND in PATH, stop: vec:"; printVector( std::cout, cvec );
-					out.push_back( cvec );
+
+					std::vector<vertex_t> newvec( cvec.end()-it );                 // copy from the location of found item
+					COUT << "newvec size=" << newvec.size() << "\n";
+					std::copy( it, cvec.end(), newvec.begin() );
+					udgcd::priv::normalizeCycle( newvec );
+					if( std::find( out.begin(), out.end(), newvec ) == out.end() )  // if cycle not already in set
+						out.push_back( newvec );                                    // then add it to the output set
 					return;
 				}
 			}
@@ -97,7 +106,10 @@ fill_tree(
 		{
 			if( next == cycle.back() )   // if last element of cycle
 			{
+				cvec.push_back( next );
 				COUT << "-Found last: " << next << ", return, vec: "; printVector( std::cout, cvec );
+				if( cvec != cycle && cvec.size()>2 )   // if NOT the same as input cycle,
+					out.push_back( cvec );            // we add it to the output set
 				return;
 			}
 			else
@@ -106,12 +118,13 @@ fill_tree(
 				auto t_next = boost::add_vertex( tree );
 				tree[t_next].src_vertex = next;
 				boost::add_edge( t_current, t_next, tree );   // add edge in tree
+				depth++;
 				fill_tree( tree, cycle, t_next, gr, cvec, out );
+				depth--;
 			}
 		}
 	}
 	COUT << "END\n";
-	depth--;
 }
 
 //--------------------------------------------------------
