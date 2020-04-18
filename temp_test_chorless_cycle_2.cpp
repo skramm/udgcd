@@ -96,8 +96,9 @@ fill_tree(
 					COUT << "newvec size=" << newvec.size() << "\n";
 					std::copy( it, cvec.end(), newvec.begin() );
 					udgcd::priv::normalizeCycle( newvec );
-					if( std::find( out.begin(), out.end(), newvec ) == out.end() )  // if cycle not already in set
-						out.push_back( newvec );                                    // then add it to the output set
+					if( std::find( out.begin(), out.end(), newvec ) == out.end() )  // if cycle not already in set,
+						if( udgcd::priv::isChordless( newvec, gr ) )                // AND is chordless,
+							out.push_back( newvec );                                // then add it to the output set
 					return;
 				}
 			}
@@ -162,6 +163,8 @@ extractChordlessCycles( const std::vector<vertex_t>& cycle, const graph_t& gr )
 //                            ^
 //                         current
 
+	udgcd::priv::checkCycles( out, gr );
+
 	std::cout << "\nOUTPUT SET:\n";
 	for( const auto& cycle: out)
 	{
@@ -189,9 +192,8 @@ using  graph_t = boost::adjacency_list<
 int main()
 {
 	graph_t g;
-	boost::add_edge( 0, 1, g );
-	boost::add_edge( 1, 2, g ) ;
-
+	boost::add_edge( 0, 1, g );   //           8--9
+	boost::add_edge( 1, 2, g );   //           |
 	boost::add_edge( 0, 7, g );   //  7--0--1--2---3--4---5---6
 	boost::add_edge( 2, 3, g );   //     |  |\    /   |   |
 	boost::add_edge( 3, 4, g );   //     |  | \--/    /   |
@@ -200,6 +202,9 @@ int main()
 	boost::add_edge( 1, 3, g );
 	boost::add_edge( 1, 4, g );
 	boost::add_edge( 5, 6, g );
+
+	boost::add_edge( 2, 8, g );
+	boost::add_edge( 9, 9, g );
 
 	std::vector<size_t> vec{ 0,1,2,3,4,5 };
 	auto res = extractChordlessCycles( vec, g );
