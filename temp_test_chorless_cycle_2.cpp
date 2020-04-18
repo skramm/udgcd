@@ -77,7 +77,6 @@ fill_tree(
 		p_it.first++
 	)
 	{
-//		vertex_t source = boost::source( *p_it.first, gr );
 		vertex_t next   = boost::target( *p_it.first, gr );
 		COUT << "L1: depth=" << depth << " current=" << current << ": edge " << *p_it.first << " target=" << next << "\n";
 
@@ -129,23 +128,29 @@ fill_tree(
 }
 
 //--------------------------------------------------------
-#if 0
-class myDFSVisitor : public boost::default_dfs_visitor
+/// Remove in the set of vector \c in the longest one
+/**
+\todo 20200418: This could probably be optimized by swapping the value of the
+longest one with the last one, so the erase operation ha a minimal cost.
+But is it worth it ?
+*/
+template<typename T>
+void
+removeLongest( std::vector<T>& in )
 {
-	public:
-		template < typename Vertex, typename Graph >
-  		void discover_vertex(Vertex u, const Graph & g) const
+	auto it = std::max_element(
+		in.begin(),
+		in.end(),
+		[]                           // lambda
+		(const T& a, const T& b)
 		{
-			std::cout << "At " << u << std::endl;
+			return a.size()<b.size();
 		}
+	);
+//	std::cout << "longest is "; printVector( std::cout, *it );
+	in.erase( it );
+}
 
-		template < typename Edge, typename Graph >
-  		void examine_edge(Edge e, const Graph& g) const
- 		{
-			 std::cout << "Examining edges " << e << std::endl;
-		}
-};
-#endif
 //--------------------------------------------------------
 template<typename vertex_t, typename graph_t>
 std::vector<std::vector<vertex_t>>
@@ -153,6 +158,7 @@ extractChordlessCycles( const std::vector<vertex_t>& cycle, const graph_t& gr )
 {
 	std::vector<std::vector<vertex_t>> out;
 	std::cout << __FUNCTION__ << "()\n";
+
 // build tree (call to recursive function)
 	tree_t<vertex_t> tree;
 	std::vector<vertex_t> empty;
@@ -160,8 +166,7 @@ extractChordlessCycles( const std::vector<vertex_t>& cycle, const graph_t& gr )
 	tree[tfirst].src_vertex = cycle[0];
 
 	fill_tree( tree, cycle, tfirst, gr, empty, out );
-//                            ^
-//                         current
+	removeLongest( out );
 
 	udgcd::priv::checkCycles( out, gr );
 
@@ -208,5 +213,9 @@ int main()
 
 	std::vector<size_t> vec{ 0,1,2,3,4,5 };
 	auto res = extractChordlessCycles( vec, g );
+
+	boost::add_edge( 3, 5, g );
+
+	auto res2 = extractChordlessCycles( vec, g );
 
 }
