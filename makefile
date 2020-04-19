@@ -21,7 +21,7 @@ COLOR_OFF="\e[0m"
 CFLAGS = -std=c++11 -Wall -O2 -Iinclude -Wno-unused-result
 
 # TEMP
-#CFLAGS += -DUDGCD_REDUCE_MATRIX
+CFLAGS += -DUDGCD_REDUCE_MATRIX
 #CFLAGS += -DUDGCD_REMOVE_NONCHORDLESS
 
 # test_m4ri.cpp: wrapper_m4ri.hpp
