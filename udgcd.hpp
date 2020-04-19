@@ -998,6 +998,9 @@ buildBinaryMatrix(
 /// See buildReverseBinaryMap()
 using RevBinMap = std::vector<std::pair<size_t,size_t>>;
 
+template<typename vertex_t>
+using RevBinMap2 = std::vector<VertexPair<vertex_t>>;
+
 //-------------------------------------------------------------------------------------------
 /// Builds an table giving from an index in the binary vector the indexes of the two vertices
 /// that are connected. See \ref convertBC2VC()
@@ -1304,7 +1307,7 @@ buildIncidenceMat( const graph_t& gr )
 
 	size_t i=0;
 	for(
-		auto p_it=boost::edges(gr);
+		auto p_it = boost::edges(gr);
 		p_it.first != p_it.second;
 		p_it.first++, i++
 	)
@@ -1545,10 +1548,23 @@ removeChords( std::vector<std::vector<vertex_t>>& cycles, const graph_t& gr )
 
 template<typename vertex_t>
 priv::BinaryVec
-buildIncidenceVector( const std::vector<vertex_t>& cycle, const RevBinMap& incid_ref )
+buildIncidenceVector( const std::vector<vertex_t>& cycle, const RevBinMap2<vertex_t>& incidMap )
 {
-	priv::BinaryVec out( nb_edges );
+	priv::BinaryVec out( incidMap.size() );
 
+	std::cout << __FUNCTION__ << "() in="; printVector( std::cout, cycle );
+
+	for( size_t i=0; i<cycle.size(); ++i )
+	{
+		auto v1 = cycle[i];
+		auto v2 = cycle[ i==0 ? cycle[cycle.size()-1] : cycle[i-1] ];
+		VertexPair<vertex_t> vp( v1, v2 );
+
+		auto it = std::find( incidMap.begin(), incidMap.end(), vp );
+		assert( it != incidMap.end() ); // should not happen !
+		out[ it - incidMap.begin() ] = 1;
+	}
+	std::cout << __FUNCTION__ << "() vector=";  printBitVector( std::cout, out );
 	return out;
 }
 
@@ -1568,17 +1584,30 @@ dotProduct( const BinaryVec& v1, const BinaryVec& v2 )
 /// Builds the reference incidence map
 /**
 This ones differs from buildReverseBinaryMap() in the sense that it only builds the
-map (a vector actyually) for edges that are present in the graph, whilst the other one
+map (a vector actually) for edges that are present in the graph, whilst the other one
 builds it for ALL possible edges.
 
 \todo 20200419: Try to evaluate the difference in case of large, sparse graphs
 */
-template<typename graph_t>
-RevBinMap
+template<typename vertex_t, typename graph_t>
+RevBinMap2<vertex_t>
 buildTrueIncidMap( const graph_t& gr )
 {
-	RevBinMap out;
+	RevBinMap2<vertex_t> out;
 
+	size_t i=0;
+	for(                              // enumerate all edges
+		auto p_it = boost::edges(gr);
+		p_it.first != p_it.second;
+		p_it.first++, i++
+	)
+	{
+		auto v1 = boost::source( *p_it.first, gr );
+		auto v2 = boost::target( *p_it.first, gr );
+		auto vp = VertexPair<vertex_t>(v1,v2);
+		if( std::find( out.begin(), out.end(), vp ) == out.end() )
+			out.push_back( vp );
+	}
 	return out;
 }
 
@@ -1596,7 +1625,8 @@ removeRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& gr )
 
 	assert( v_in.size()>1 );
 
-	RevBinMap incidMap = buildTrueIncidMap( gr );
+	RevBinMap2<vertex_t> incidMap = buildTrueIncidMap<vertex_t,graph_t>( gr );
+//	RevBinMap2<vertex_t> incidMap = buildTrueIncidMap( gr );
 
 	std::vector<std::vector<vertex_t>> out;
 	out.push_back( v_in.front() );
@@ -1610,8 +1640,8 @@ removeRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& gr )
 	bool finished = false;
 	do
 	{
-		auto bincyc = buildIncidenceVector( v_in[i], incidMap );
-		std::cout << "loop iter " << i << " cycle:" << v_in[i] << "n bin=" << bincyc << "\n";
+		auto bincyc = buildIncidenceVector<vertex_t>( v_in[i], incidMap );
+		std::cout << "loop iter " << i << " cycle:"; printVector( std::cout, v_in[i] ); std::cout << ", bin="; printBitVector( std::cout, bincyc );
 		binmat.printMat( std::cout );
 
 		for( const auto& li: binmat )
@@ -1991,6 +2021,7 @@ findCycles( graph_t& g, UdgcdInfo& info )
 	std::map<typename graph_t::edge_descriptor, boost::default_color_type> edge_color;
 	auto ecmap = boost::make_assoc_property_map( edge_color );
 
+#if 0
 	auto imat = priv::buildIncidenceMat<graph_t,vertex_t>( g );
 	imat.printMat( std::cout );
 	MatM4ri m4rmi = convertToM4ri( imat );
@@ -1998,6 +2029,7 @@ findCycles( graph_t& g, UdgcdInfo& info )
 	mzd_echelonize_pluq( m4rmi._data, 1 );
 	auto imat2 = convertFromM4ri( m4rmi );
 	imat2.printMat( std::cout );
+#endif
 
 //////////////////////////////////////
 // step 1: do a DFS
@@ -2078,7 +2110,7 @@ findCycles( graph_t& g, UdgcdInfo& info )
 // step 4 (post process): remove redundant cycles using Gaussian Elimination
 //////////////////////////////////////
 
-#if 0
+#if 1
 	auto v_cycles2 = priv::removeRedundant2( *p_cycles, boost::num_vertices(g) );
 #else
 	auto v_cycles2 = priv::removeRedundant( *p_cycles, boost::num_vertices(g) );
