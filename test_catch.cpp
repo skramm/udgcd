@@ -199,7 +199,8 @@ TEST_CASE( "Chordless", "[t-chordless]" )
 		std::vector<size_t> v3b{ 0,1,2,3,4,5,6 };
 		CHECK( !priv::isChordless( v3a, gg[11] ) );
 		CHECK( !priv::isChordless( v3b, gg[11] ) );
-
+	}
+#if 0
 		auto vec = priv::extractChordlessCycles( v3a, gg[11] );
 		CHECK( priv::vectorHolds( vec, std::vector<size_t>{2,3,4} ) );
 		CHECK( priv::vectorHolds( vec, std::vector<size_t>{0,1,2,4,5,7} ) );
@@ -227,6 +228,7 @@ TEST_CASE( "Chordless", "[t-chordless]" )
 		CHECK( priv::vectorHolds( vec, std::vector<size_t>{0,1,2,4,5} ) );
 		CHECK( priv::vectorHolds( vec, std::vector<size_t>{0,1,2,3,5} ) );
 	}
+#endif
 }
 
 //-------------------------------------------------------------------------------------------
@@ -490,6 +492,7 @@ TEST_CASE( "test GaussianElimination", "[test2]" )
 	}
 }
 #endif
+
 //-------------------------------------------------------------------------------------------
 udgcd::priv::BinaryVec
 buildBinVect( const char* s )
@@ -499,6 +502,36 @@ buildBinVect( const char* s )
 	udgcd::priv::BinaryVec bp{str};
 	return bp;
 }
+//-------------------------------------------------------------------------------------------
+TEST_CASE( "test dotproduct", "[tdp]" )
+{
+	{
+		priv::BinaryVec v1{ buildBinVect("00000") };
+		priv::BinaryVec v2{ buildBinVect("00000") };
+		CHECK( priv::dotProduct( v1, v2 ) == 0 );
+	}
+	{
+		priv::BinaryVec v1{ buildBinVect("11100") };
+		priv::BinaryVec v2{ buildBinVect("00000") };
+		CHECK( priv::dotProduct( v1, v2 ) == 0 );
+	}
+	{
+		priv::BinaryVec v1{ buildBinVect("11100") };
+		priv::BinaryVec v2{ buildBinVect("00011") };
+		CHECK( priv::dotProduct( v1, v2 ) == 0 );
+	}
+	{
+		priv::BinaryVec v1{ buildBinVect("11110") };
+		priv::BinaryVec v2{ buildBinVect("00011") };
+		CHECK( priv::dotProduct( v1, v2 ) == 1 );
+	}
+	{
+		priv::BinaryVec v1{ buildBinVect("11111") };
+		priv::BinaryVec v2{ buildBinVect("00011") };
+		CHECK( priv::dotProduct( v1, v2 ) == 0 );
+	}
+}
+
 //-------------------------------------------------------------------------------------------
 #if 0
 TEST_CASE( "test buildPairSetFromBinaryVec", "[test5]" )
@@ -514,8 +547,8 @@ edges:  0  0  0  0  1  1  1  2  2  3
 vector: 1  0  1  0  0  0  1  0  0  1
 */
 	size_t     nb_vertices = 5;
-	udgcd::priv::BinaryVec v_in{ buildBinVect("1010001001") };
-	udgcd::priv::RevBinMap  rev_map = udgcd::priv::buildReverseBinaryMap( nb_vertices );
+	priv::BinaryVec v_in{ buildBinVect("1010001001") };
+	priv::RevBinMap  rev_map = udgcd::priv::buildReverseBinaryMap( nb_vertices );
 
 	auto m = udgcd::priv::buildPairSetFromBinaryVec<size_t>( v_in, rev_map );
 	std::map<size_t,size_t> res={

@@ -206,6 +206,7 @@ This type will allow to fetch some relevant information on what the matrix holds
 */
 struct BinaryMatrix
 {
+	friend bool operator == ( const BinaryMatrix&, const BinaryMatrix& );
 	std::vector<BinaryVec> _data;
 
 	BinaryMatrix( size_t nbLines, size_t nbCols )
@@ -239,6 +240,8 @@ struct BinaryMatrix
 
 	void addLine( const BinaryVec& bvec )
 	{
+		if( nbLines() )                                    // make sure that the added vector has the same
+			assert( bvec.size() == _data.back().size() );  // size as the one we are adding
 		_data.push_back(bvec);
 	}
 
@@ -249,6 +252,7 @@ struct BinaryMatrix
 			_data[i].push_back( vin[i] );
 	}
 
+	/// Creates a binary vector, fills it with the column content, and returns it
 	BinaryVec getCol( size_t col ) const
 	{
 		assert( col<nbCols() );
@@ -267,6 +271,13 @@ struct BinaryMatrix
 	{
 		assert( idx<nbLines() );
 		return _data[idx];
+	}
+	size_t count() const
+	{
+		size_t c = 0;
+		for( const auto& l: _data )
+			c += l.count();
+		return c;
 	}
     BinaryMatInfo getInfo() const
     {
@@ -349,10 +360,27 @@ struct BinaryMatrix
 	}
 };
 
+inline
+bool
+operator == ( const BinaryMatrix& m1, const BinaryMatrix& m2 )
+{
+	if( m1.nbLines() != m2.nbLines() )
+		return false;
+	if( m1.nbCols() != m2.nbCols() )
+		return false;
+
+	for( size_t i=0; i<m1.nbLines(); i++ )
+		if( m1.line(i) != m2.line(i) )
+			return false;
+	return true;
+}
+
 //-------------------------------------------------------------------------------------------
 /// A binary matrix with an added data member so we know to which
-/// edge a given column is about
+/// edge a given column is about. Holds incidence matrix,
 /**
+that has
+
 See https://en.wikipedia.org/wiki/Incidence_matrix#Undirected_and_directed_graphs
 */
 template<typename vertex_t>
@@ -1514,6 +1542,95 @@ removeChords( std::vector<std::vector<vertex_t>>& cycles, const graph_t& gr )
 }
 
 //-------------------------------------------------------------------------------------------
+
+template<typename vertex_t>
+priv::BinaryVec
+buildIncidenceVector( const std::vector<vertex_t>& cycle, const RevBinMap& incid_ref )
+{
+	priv::BinaryVec out( nb_edges );
+
+	return out;
+}
+
+//-------------------------------------------------------------------------------------------
+int
+dotProduct( const BinaryVec& v1, const BinaryVec& v2 )
+{
+	size_t countOnes = 0;
+	assert( v1.size()  == v2.size() );
+	for( size_t i=0; i<v1.size(); i++ )
+		if( v1[i] == 1 && v2[i] == 1 )                // if both 1, we have a 1 (AND)
+			countOnes++;
+	return countOnes%2;           // if odd number of ones, then output is 1 (XOR)
+}
+
+//-------------------------------------------------------------------------------------------
+/// Builds the reference incidence map
+/**
+This ones differs from buildReverseBinaryMap() in the sense that it only builds the
+map (a vector actyually) for edges that are present in the graph, whilst the other one
+builds it for ALL possible edges.
+
+\todo 20200419: Try to evaluate the difference in case of large, sparse graphs
+*/
+template<typename graph_t>
+RevBinMap
+buildTrueIncidMap( const graph_t& gr )
+{
+	RevBinMap out;
+
+	return out;
+}
+
+//-------------------------------------------------------------------------------------------
+/// Post-process step: Horton ?
+/**
+- assumes set is sorted (shortest first)
+- arg is not const, because it gets sorted here.
+*/
+template<typename vertex_t, typename graph_t>
+std::vector<std::vector<vertex_t>>
+removeRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& gr )
+{
+	std::cout << __FUNCTION__ << "() START : " << v_in.size() << " cycles\n";
+
+	assert( v_in.size()>1 );
+
+	RevBinMap incidMap = buildTrueIncidMap( gr );
+
+	std::vector<std::vector<vertex_t>> out;
+	out.push_back( v_in.front() );
+
+	auto v = buildIncidenceVector( v_in.front(), incidMap );
+
+	BinaryMatrix binmat;
+	binmat.addLine( v );
+
+	size_t i=1;
+	bool finished = false;
+	do
+	{
+		auto bincyc = buildIncidenceVector( v_in[i], incidMap );
+		std::cout << "loop iter " << i << " cycle:" << v_in[i] << "n bin=" << bincyc << "\n";
+		binmat.printMat( std::cout );
+
+		for( const auto& li: binmat )
+		{
+			if( dotProduct( li, bincyc) == 0 )
+				finished = true;                // NOT independent
+			else
+				binmat.addLine( bincyc );
+
+		}
+
+
+	}
+	while ( !finished );
+
+	return out;
+}
+
+//-------------------------------------------------------------------------------------------
 /// Post-process step: removes cycles based on Gaussian Elimination
 /**
 arg is not const, because it gets sorted here.
@@ -1579,14 +1696,29 @@ removeRedundant( std::vector<std::vector<vertex_t>>& v_in, size_t nbVertices )
 	auto binMat_out = gaussianElim( binMat_in, nbIter1 );
 	COUT << "gaussianElim: nbIter=" << nbIter1 << '\n';
 #else
-	MatM4ri m4rmi = convertToM4ri( binMat_in );
-	MatM4ri m4rmi2 = m4rmi;
+	MatM4ri m4rmiA1 = convertToM4ri( binMat_in );
+	MatM4ri m4rmiA0 = m4rmiA1;
+	MatM4ri m4rmiB1 = m4rmiA1;
+	MatM4ri m4rmiB0 = m4rmiA1;
 
-	mzd_echelonize_naive( m4rmi._data, 1 );
-//	mzd_echelonize_naive( m4rmi2._data, 0 );
-//	mzd_echelonize_pluq( m4rmi._data, 0 );
+	mzd_echelonize_naive( m4rmiA1._data, 1 );
+	mzd_echelonize_naive( m4rmiA0._data, 0 );
+	mzd_echelonize_pluq(  m4rmiB1._data, 1 );
+	mzd_echelonize_pluq(  m4rmiB0._data, 0 );
 
-	auto binMat_out = convertFromM4ri( m4rmi );
+
+	convertFromM4ri( m4rmiA0 ).printMat( std::cout, "A0" );
+	convertFromM4ri( m4rmiA1 ).printMat( std::cout, "A1" );
+	convertFromM4ri( m4rmiB0 ).printMat( std::cout, "B0" );
+	convertFromM4ri( m4rmiB1 ).printMat( std::cout, "B1" );
+
+	auto binMat_out_0 = convertFromM4ri( m4rmiA0 );
+	auto binMat_out_1 = convertFromM4ri( m4rmiA1 );
+
+	BinaryMatrix* p_binmat = &binMat_out_0;
+	if( binMat_out_1.count() < binMat_out_0.count() )
+		p_binmat = &binMat_out_1;
+
 //	auto binMat_out2 = convertFromM4ri( m4rmi2 );
 //	std::cout << "binMat_out2:\n"; binMat_out2.printMat( std::cout );
 #endif
@@ -1599,8 +1731,8 @@ removeRedundant( std::vector<std::vector<vertex_t>>& v_in, size_t nbVertices )
 //	std::cout << "v_bpaths size=" << v_bpaths.size() << '\n';
 // convert back binary cycles to vertex-based cycles,
 
-	std::cout << "binMat_out:\n"; binMat_out.printMat( std::cout );
-	return convertBinary2Vertex<vertex_t>( binMat_out, nbVertices );
+	std::cout << "binMat_out:\n"; p_binmat->printMat( std::cout );
+	return convertBinary2Vertex<vertex_t>( *p_binmat, nbVertices );
 
 #endif
 }
@@ -1946,7 +2078,11 @@ findCycles( graph_t& g, UdgcdInfo& info )
 // step 4 (post process): remove redundant cycles using Gaussian Elimination
 //////////////////////////////////////
 
+#if 0
+	auto v_cycles2 = priv::removeRedundant2( *p_cycles, boost::num_vertices(g) );
+#else
 	auto v_cycles2 = priv::removeRedundant( *p_cycles, boost::num_vertices(g) );
+#endif
 	p_cycles = &v_cycles2;
 
 #ifdef UDGCD_DO_CYCLE_CHECKING
@@ -1958,7 +2094,7 @@ findCycles( graph_t& g, UdgcdInfo& info )
 #endif
 	priv::printStatus( std::cout, *p_cycles, __LINE__ );
 
-
+#if 0
 	info.setTimeStamp();
 	auto v_cycles3 = priv::removeChords( *p_cycles, g );
 	p_cycles = &v_cycles3;
@@ -1970,8 +2106,8 @@ findCycles( graph_t& g, UdgcdInfo& info )
 //		exit(1);
 	}
 #endif
-	priv::printStatus( std::cout, *p_cycles, __LINE__ );
-
+//	priv::printStatus( std::cout, *p_cycles, __LINE__ );
+#endif
 
 	info.setTimeStamp();
 	info.nbFinalCycles = p_cycles->size();

@@ -36,18 +36,24 @@ int g_idx = 0;
 /// Prints some details on graph and returns nb of expected cycles
 /**
 (assumes that no two vertices have two edges that join them !)
+
+See https://en.wikipedia.org/wiki/Dense_graph
 */
 template<typename graph_t>
 size_t
 printGraphInfo( const graph_t& g )
 {
-	std::cout << "Graph info:"
-		<< "\n -nb of vertices=" << boost::num_vertices(g)
-		<< "\n -nb of edges=" << boost::num_edges(g);
+	auto v = boost::num_vertices(g);
+	auto e = boost::num_edges(g);
 
-	std::vector<size_t> component( boost::num_vertices( g ) );
+	std::cout << "Graph info:"
+		<< "\n -nb of vertices=" << v
+		<< "\n -nb of edges=" << e
+		<< "\n -density=" << 1.0 * e / v / (v-1);
+
+	std::vector<size_t> component( v );
 	auto nb_cc = boost::connected_components( g, &component[0] );
-	auto nb_cycles = boost::num_edges(g) -  boost::num_vertices(g) + nb_cc;
+	auto nb_cycles = e -  v + nb_cc;
 	std::cout  << "\n -nb graphs=" << nb_cc
 		<< "\n  => nb cycles expected=" << nb_cycles << '\n';
 	return nb_cycles;

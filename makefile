@@ -97,14 +97,14 @@ rungen: $(GEN_GSAMPLES_OUTPUT) $(BIN_DIR)/read_graph
 	@echo "target $@ done"
 
 # runs cycle detection process on all provided samples
-runsam: $(GEN_SAMPLES_OUTPUT) $(BIN_DIR)/read_graph | clearlogfile
+runsam: clearlogfile $(GEN_SAMPLES_OUTPUT) $(BIN_DIR)/read_graph
 	@echo "target $@ done"
 
 
-clearlogfile:
+clearlogfile: makefile
 	@echo "Running make target 'runsam', results:" > runsam.log
 
-out/stdout_graph_%.txt: samples/graph_%.txt $(BIN_DIR)/read_graph
+out/stdout_graph_%.txt: samples/graph_%.txt $(BIN_DIR)/read_graph makefile
 	@echo "processing file $<"
 	@-$(BIN_DIR)/read_graph $< > $@;\
 	STATUS=$$?; echo "file $<: exit with $$STATUS" >> runsam.log
