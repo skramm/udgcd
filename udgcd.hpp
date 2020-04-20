@@ -379,7 +379,9 @@ operator == ( const BinaryMatrix& m1, const BinaryMatrix& m2 )
 /// A binary matrix with an added data member so we know to which
 /// edge a given column is about. Holds incidence matrix,
 /**
-that has
+that describes the whole graph
+- rows: vertices
+- cols: edges
 
 See https://en.wikipedia.org/wiki/Incidence_matrix#Undirected_and_directed_graphs
 */
@@ -999,7 +1001,8 @@ buildBinaryMatrix(
 
 //-------------------------------------------------------------------------------------------
 /// See buildReverseBinaryMap()
-using RevBinMap = std::vector<std::pair<size_t,size_t>>;
+template<typename T>
+using RevBinMap = std::vector<std::pair<T,T>>;
 
 /// An incidence map using only the edges actually present in the graph.
 /// See buildTrueIncidMap() and page \ref p_data_reprentation.
@@ -1008,10 +1011,10 @@ using RevBinMap2 = std::vector<VertexPair<vertex_t>>;
 
 //-------------------------------------------------------------------------------------------
 /// Builds an table giving from an index in the binary vector the indexes of the two vertices
-/// that are connected. See \ref convertBC2VC()
+/// that are connected. See \ref convertBC2VC() and page \ref p_data_reprentation.
 /**
-\li Size: \f$ n*(n-1)/2 \f$
-\li Example for n=5 (=> size=10)
+\li Size: \f$ v*(v-1)/2 \f$
+\li Example for \f$ v=5 \f$ (=> size=10)
 \verbatim
 0 | 0 1
 1 | 0 2
@@ -1025,6 +1028,7 @@ using RevBinMap2 = std::vector<VertexPair<vertex_t>>;
 9 | 3 4
 \endverbatim
 */
+//template<typename T>
 RevBinMap
 buildReverseBinaryMap( size_t nb_vertices )
 {
@@ -1043,7 +1047,6 @@ buildReverseBinaryMap( size_t nb_vertices )
 		}
 		out[i].first  = v1;
 		out[i].second = v2++;
-//		COUT << i << ": (" << out[i].first << " - " << out[i].second << ")\n";
 	}
 	return out;
 }
@@ -1167,8 +1170,10 @@ convertBinVec2VPV()
 /**
 \sa convertCycle2VPV()
 
-Takes as input a vector of pairs: <code>{12-18},{12-22},{9-18},{9-4},{4-22}</code><br>
-and will return the cycle: <code>4-9-18-12-22</code>
+Takes as input a vector of pairs:<br>
+<code>{12-18},{12-22},{9-18},{9-4},{4-22}</code><br>
+and will return the cycle:<br>
+<code>4-9-18-12-22</code>
 */
 template<typename vertex_t>
 std::vector<vertex_t>
@@ -1563,18 +1568,20 @@ removeChords( std::vector<std::vector<vertex_t>>& cycles, const graph_t& gr )
 /**
 Here, the length of the vector is equal to \f$ e \f$, number of edges.
 
+Reverse operation done with convertIVtoCycle()
+
 See page \ref p_data_representation.
 */
 template<typename vertex_t>
 priv::BinaryVec
 buildIncidenceVector( const std::vector<vertex_t>& cycle, const RevBinMap2<vertex_t>& incidMap )
 {
+	PRINT_FUNCTION;
+
 	priv::BinaryVec out( incidMap.size() );
 
-	std::cout << __FUNCTION__ << "() in="; printVector( std::cout, cycle );
-
-	std::cout<<"incidMap:\n";
-	printVector( std::cout, incidMap );
+//	std::cout << __FUNCTION__ << "() in="; printVector( std::cout, cycle );
+//	std::cout<<"incidMap:\n";	printVector( std::cout, incidMap );
 
 	for( size_t i=0; i<cycle.size(); ++i )
 	{
@@ -1586,10 +1593,36 @@ buildIncidenceVector( const std::vector<vertex_t>& cycle, const RevBinMap2<verte
 		assert( it != incidMap.end() ); // should not happen !
 		out[ it - incidMap.begin() ] = 1;
 	}
-	std::cout << __FUNCTION__ << "() vector=";  printBitVector( std::cout, out );
+//	std::cout << __FUNCTION__ << "() vector=";  printBitVector( std::cout, out );
 	return out;
 }
 
+//-------------------------------------------------------------------------------------------
+/// Converts cycle expressed as an binary incidence vector to a set of cycles
+/**
+Reverse opertaion done with buildIncidenceVector()
+*/
+/*
+template<typename vertex_t>
+std::vector<vertex_t>
+convertIVtoCycle( const BinaryVector& binvec, const RevBinMap2<vertex_t>& incidMap )
+{
+	PRINT_FUNCTION;
+
+	assert( binvec.size() == incidMap.size() );
+
+	std::vector<vertex_t> cycle;
+	for( size_t i=0; i<binvec.size(); i++ )
+	{
+		if( binvec[i] == 1 )
+		{
+			auto p = incidMap[i];
+
+		}
+	}
+	return cycle;
+}
+*/
 //-------------------------------------------------------------------------------------------
 int
 dotProduct( const BinaryVec& v1, const BinaryVec& v2 )
@@ -1635,6 +1668,9 @@ This ones differs from buildReverseBinaryMap() in the sense that it only builds 
 map (a vector actually) for edges that are present in the graph, whilst the other one
 builds it for ALL possible edges.
 
+Once build, we can convert a cycle expressed as a set of vertices to the corresponding binary form with
+buildIncidenceVector()
+
 \todo 20200419: Try to evaluate the difference in case of large, sparse graphs
 */
 template<typename vertex_t, typename graph_t>
@@ -1679,24 +1715,64 @@ removeRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& gr )
 
 	RevBinMap2<vertex_t> incidMap = buildTrueIncidMap<vertex_t,graph_t>( gr );
 
-	std::vector<std::vector<vertex_t>> out;
+	size_t idx = 0;
+	for( const auto& p : incidMap )
+		std::cout << idx++ << ": " << p << "\n";
 
-/*	for( size_t i=0; i<v_in.size(); i++ )
+
+	std::vector<std::vector<vertex_t>> out;
+//	out.push_back( v_in.front() );
+	std::cout << "-input 0: "; printVector( std::cout, v_in.front()  );
+
+	BinaryMatrix mat;
+	mat.addLine( buildIncidenceVector( v_in[0], incidMap ) );
+
+	for( size_t i=1; i<v_in.size(); i++ )
 	{
+		auto v = buildIncidenceVector( v_in[i], incidMap );
+		std::cout << "-input " << i << ": "; printVector( std::cout, v_in[i] ); printBitVector( std::cout, v );
+
+		bool all_indep = true;
+		for( size_t j=i+1; j<mat.nbLines(); j++ )
+		{
+//			if (i != j)
+			{
+				auto v2 = mat.line( j );
+				std::cout << " j=" << j << ": checking with "; printBitVector( std::cout, v2 );
+				if( dotProduct( v, v2 ) == 0 )
+				{
+					std::cout << " -NOT independent\n";
+					all_indep = false;
+				}
+				else
+				{
+					std::cout << " -independent\n";
+				}
+			}
+
+		}
+		if( all_indep )
+			mat.addLine( v );
+
 // Find C_i as the shortest cycle in G s.t. < C_i , S_i> = 1
-		for( size_t j=0; j<v_in.size(); j++ )
+/*		for( size_t j=0; j<v_in.size(); j++ )
 		{
 			auto v = buildIncidenceVector( v_in[j], incidMap );
 			auto siz = v_in[j].size();
 			if( dotProduct( li, bincyc) == 0 )
 		}
-
+*/
 
 	}
-*/
-	out.push_back( v_in.front() );
+	std::cout << "Nb LInes of bin mat=" << mat.nbLines() << "\n";
+	for( size_t j=0; j<mat.nbLines(); j++ )
+	{
+		auto cy = convertBC2VC( mat.line(j), incidMap );
+		out.push_back( cy );
+	}
 
-	auto v = buildIncidenceVector( v_in.front(), incidMap );
+
+/*	auto v = buildIncidenceVector( v_in.front(), incidMap );
 
 	BinaryMatrix binmat;
 	binmat.addLine( v );
@@ -1720,7 +1796,7 @@ removeRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& gr )
 			finished = true;
 	}
 	while ( !finished );
-
+*/
 	return out;
 }
 
@@ -1761,10 +1837,10 @@ removeRedundant(
 #ifdef UDGCD_REDUCE_MATRIX
 	std::cout << "use matrix reduction step !\n";
 
-	RevBinMap2<vertex_t> incidMap = buildTrueIncidMap<vertex_t,graph_t>( gr );
+/*	RevBinMap2<vertex_t> incidMap = buildTrueIncidMap<vertex_t,graph_t>( gr );
 	size_t idx = 0;
 	for( const auto& p : incidMap )
-		std::cout << idx++ << ": " << p << "\n";
+		std::cout << idx++ << ": " << p << "\n";*/
 
 	auto nec = binMat_in.getNonEmptyCols();
 	auto bm_in2 = reduceMatrix( binMat_in, nec );
@@ -2127,7 +2203,7 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 // step 4 (post process): remove redundant cycles using Gaussian Elimination
 //////////////////////////////////////
 
-#if 0
+#if 1
 	auto v_cycles2 = priv::removeRedundant2( *p_cycles, gr );
 #else
 	#ifdef UDGCD_REDUCE_MATRIX
