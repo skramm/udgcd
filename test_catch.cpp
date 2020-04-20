@@ -9,6 +9,8 @@ https://github.com/philsquared/Catch/
 #include "catch.hpp"
 
 #include "udgcd.hpp"
+//#include "common_sample.h"
+
 using namespace udgcd;
 
 using  graph_t = boost::adjacency_list<
@@ -200,7 +202,7 @@ TEST_CASE( "Chordless", "[t-chordless]" )
 		CHECK( !priv::isChordless( v3a, gg[11] ) );
 		CHECK( !priv::isChordless( v3b, gg[11] ) );
 	}
-#if 0
+/*
 		auto vec = priv::extractChordlessCycles( v3a, gg[11] );
 		CHECK( priv::vectorHolds( vec, std::vector<size_t>{2,3,4} ) );
 		CHECK( priv::vectorHolds( vec, std::vector<size_t>{0,1,2,4,5,7} ) );
@@ -208,7 +210,7 @@ TEST_CASE( "Chordless", "[t-chordless]" )
 		auto vec2 = priv::extractChordlessCycles( v3b, gg[11] );
 		CHECK( priv::vectorHolds( vec2, std::vector<size_t>{2,3,4} ) );
 		CHECK( priv::vectorHolds( vec2, std::vector<size_t>{0,1,2,4,6,7} ) );
-	}
+*/
 	{
 		std::vector<size_t> v1{ 2,3,4 };
 		CHECK( priv::isChordless( v1, gg[12] ) );
@@ -222,13 +224,13 @@ TEST_CASE( "Chordless", "[t-chordless]" )
 		std::vector<size_t> v5{ 0,1,2,3,4,5 };
 		CHECK( !priv::isChordless( v5, gg[12] ) );
 
-		auto vec = priv::extractChordlessCycles( v5, gg[12] );
+/*		auto vec = priv::extractChordlessCycles( v5, gg[12] );
 		CHECK( priv::vectorHolds( vec, std::vector<size_t>{2,3,4} ) );
 		CHECK( priv::vectorHolds( vec, std::vector<size_t>{3,4,5} ) );
 		CHECK( priv::vectorHolds( vec, std::vector<size_t>{0,1,2,4,5} ) );
 		CHECK( priv::vectorHolds( vec, std::vector<size_t>{0,1,2,3,5} ) );
+*/
 	}
-#endif
 }
 
 //-------------------------------------------------------------------------------------------
@@ -303,7 +305,7 @@ ProcessTest( std::vector<size_t>& cycle, size_t nbVertices )
 //	std::cout << "binary vector:"
 //	udgcd::priv::PrintBitVector( std::cout, bpa );
 
-	auto rev_map = udgcd::priv::buildReverseBinaryMap( nbVertices );
+	auto rev_map = udgcd::priv::buildReverseBinaryMap<size_t>( nbVertices );
 	REQUIRE( rev_map.size() == nbCombinations );
 
 	auto cycle2 = udgcd::priv::convertBC2VC<size_t>( bpa, rev_map );

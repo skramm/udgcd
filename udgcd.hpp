@@ -872,6 +872,7 @@ extractChordlessCycles( const std::vector<vertex_t>& cycle, const graph_t& gr )
 	return out;
 }
 //-------------------------------------------------------------------------------------------
+#if 0
 /// Generic search function: returns true if vector \c vec holds \c data
 template<typename T>
 bool
@@ -881,6 +882,7 @@ vectorHolds( const std::vector<T>& vec, const T& data )
 		return false;
 	return true;
 }
+#endif
 //-------------------------------------------------------------------------------------------
 #ifdef UDGCD_REMOVE_NONCHORDLESS
 /// Remove non-chordless cycles
@@ -997,17 +999,11 @@ buildBinaryMatrix(
 	}
 	return out;
 }
-//-------------------------------------------------------------------------------------------
 
 //-------------------------------------------------------------------------------------------
-/// See buildReverseBinaryMap()
+/// See page \ref p_data_reprentation.
 template<typename T>
-using RevBinMap = std::vector<std::pair<T,T>>;
-
-/// An incidence map using only the edges actually present in the graph.
-/// See buildTrueIncidMap() and page \ref p_data_reprentation.
-template<typename vertex_t>
-using RevBinMap2 = std::vector<VertexPair<vertex_t>>;
+using RevBinMap = std::vector<VertexPair<T>>;
 
 //-------------------------------------------------------------------------------------------
 /// Builds an table giving from an index in the binary vector the indexes of the two vertices
@@ -1028,14 +1024,14 @@ using RevBinMap2 = std::vector<VertexPair<vertex_t>>;
 9 | 3 4
 \endverbatim
 */
-//template<typename T>
-RevBinMap
+template<typename T>
+RevBinMap<T>
 buildReverseBinaryMap( size_t nb_vertices )
 {
 	PRINT_FUNCTION;
 	size_t nb_combinations = nb_vertices*(nb_vertices-1)/2;
 	COUT << "nb_vertices=" << nb_vertices << " nb_combinations=" << nb_combinations << '\n';
-	RevBinMap out( nb_combinations );
+	RevBinMap<T> out( nb_combinations );
 	size_t v1 = 0;
 	size_t v2 = 1;
 	for( size_t i=0; i<nb_combinations; ++i )
@@ -1045,8 +1041,8 @@ buildReverseBinaryMap( size_t nb_vertices )
 			v1++;
 			v2 = v1 + 1;
 		}
-		out[i].first  = v1;
-		out[i].second = v2++;
+		out[i].v1 = v1;
+		out[i].v2 = v2++;
 	}
 	return out;
 }
@@ -1077,15 +1073,16 @@ checkVertexPairSet( const std::vector<VertexPair<vertex_t>>& vp, bool print=true
 	}
 	return correct;
 }
+
 //-------------------------------------------------------------------------------------------
 /// Convert cycle expressed as a binary vector to a Vector of Pair of Vertices (VPV)
 /// See \ref p_data_representation
-template<typename vertex_t>
+template<typename vertex_t, typename T>
 std::vector<VertexPair<vertex_t>>
 convertBinVec2VPV_v2
 (
 	const BinaryVec&           v_in,    ///< A binary vector holding 1 at each position where there is an edge
-	const RevBinMap&           rev_map, ///< Reverse map, build with buildReverseBinaryMap()
+	const RevBinMap<T>&        rev_map, ///< Reverse map, build with buildReverseBinaryMap()
 	const std::vector<size_t>& nec      ///< non-empty columns of the original matrix
 )
 {
@@ -1093,14 +1090,8 @@ convertBinVec2VPV_v2
 //	std::cout << v_in << "\n";
 	std::vector<VertexPair<vertex_t>> v_out;
 	for( size_t i=0; i<v_in.size(); ++i )
-	{
 		if( v_in[i] == 1 ) // if we find a '1', then we have found a connection
-		{
-			vertex_t v1 = rev_map[nec[i]].first;   // the two nodes
-			vertex_t v2 = rev_map[nec[i]].second;  // that are connected
-			v_out.push_back( VertexPair<vertex_t>(v1,v2) );
-		}
-	}
+			v_out.push_back( rev_map[nec[i]] );
 	return v_out;
 }
 
@@ -1112,12 +1103,12 @@ convertBinVec2VPV_v2
 The idea here is to avoid doing an extensive search each time to see if node is already present, which
 can be costly for large cycles.
 */
-template<typename vertex_t>
+template<typename vertex_t, typename T>
 std::vector<VertexPair<vertex_t>>
 convertBinVec2VPV
 (
-	const BinaryVec& v_in,          ///< A binary vector holding 1 at each position where there is an edge
-	const RevBinMap& rev_map        ///< Reverse map, see buildReverseBinaryMap()
+	const BinaryVec&    v_in,          ///< A binary vector holding 1 at each position where there is an edge
+	const RevBinMap<T>& rev_map        ///< Reverse map, see buildReverseBinaryMap()
 )
 {
 	PRINT_FUNCTION;
@@ -1127,9 +1118,13 @@ convertBinVec2VPV
 	{
 		if( v_in[i] == 1 ) // if we find a '1', then we have found a connection
 		{
+#if 0
 			vertex_t v1 = rev_map[i].first;   // the two nodes
 			vertex_t v2 = rev_map[i].second;  // that are connected
 			v_out.push_back( VertexPair<vertex_t>(v1,v2) );
+#else
+			v_out.push_back( rev_map[i] );
+#endif
 		}
 	}
 	return v_out;
@@ -1276,11 +1271,11 @@ convertCycles2VVPV( const std::vector<std::vector<vertex_t>>& cycles )
 
 //-------------------------------------------------------------------------------------------
 /// Similar to convertBC2VC() but to be used in case we do the "matrix reduction" trick
-template<typename vertex_t>
+template<typename vertex_t, typename T>
 std::vector<vertex_t>
 convertBC2VC_v2(
 	const BinaryVec&           v_in,       ///< input binary path
-	const RevBinMap&           rev_map,    ///< required map, has to be build before, see buildReverseBinaryMap()
+	const RevBinMap<T>&        rev_map,    ///< required map, has to be build before, see buildReverseBinaryMap()
 	const std::vector<size_t>& nec         ///< non-empty columns
 )
 {
@@ -1349,13 +1344,13 @@ Algorithm:
 \todo The downside of this approach is that we need to build before the \c rev_map, that can be pretty big...
 Maybe we can find a better way ?
 
-\bug discovered on 2020-03-09. To trigger: bin/read_graph samples2/graph_1583824532.txt.
+\bug discovered on 2020-03-09. To trigger: bin/read_graph samples2/graph_1583824532.txt (actually NOT in this function)
 */
-template<typename vertex_t>
+template<typename vertex_t, typename T>
 std::vector<vertex_t>
 convertBC2VC(
-	const BinaryVec& v_in,        ///< input binary path
-	const RevBinMap& rev_map      ///< required map, has to be build before, see buildReverseBinaryMap()
+	const BinaryVec&    v_in,        ///< input binary path
+	const RevBinMap<T>& rev_map      ///< required map, has to be build before, see buildReverseBinaryMap()
 )
 {
 	PRINT_FUNCTION;
@@ -1499,7 +1494,7 @@ convertBinary2Vertex_v2
 
 	v_out.reserve( binmat.nbCols() ); // to avoid unnecessary memory reallocations and copies
 
-	auto rev_map = buildReverseBinaryMap( nbVertices );
+	auto rev_map = buildReverseBinaryMap<size_t>( nbVertices );
 	COUT << "revmap size=" << rev_map.size() << '\n';
 
 	for( auto bcycle: binmat )
@@ -1528,7 +1523,7 @@ convertBinary2Vertex
 
 	v_out.reserve( binmat.nbCols() ); // to avoid unnecessary memory reallocations and copies
 
-	auto rev_map = buildReverseBinaryMap( nbVertices );
+	auto rev_map = buildReverseBinaryMap<size_t>( nbVertices );
 
 	for( auto bcycle: binmat )
 		if( bcycle.count() )
@@ -1574,7 +1569,7 @@ See page \ref p_data_representation.
 */
 template<typename vertex_t>
 priv::BinaryVec
-buildIncidenceVector( const std::vector<vertex_t>& cycle, const RevBinMap2<vertex_t>& incidMap )
+buildIncidenceVector( const std::vector<vertex_t>& cycle, const RevBinMap<vertex_t>& incidMap )
 {
 	PRINT_FUNCTION;
 
@@ -1674,11 +1669,11 @@ buildIncidenceVector()
 \todo 20200419: Try to evaluate the difference in case of large, sparse graphs
 */
 template<typename vertex_t, typename graph_t>
-RevBinMap2<vertex_t>
+RevBinMap<vertex_t>
 buildTrueIncidMap( const graph_t& gr )
 {
 	std::cout << __FUNCTION__ << "()\n";
-	RevBinMap2<vertex_t> out;
+	RevBinMap<vertex_t> out;
 
 	size_t i=0;
 	for(                              // enumerate all edges
@@ -1713,12 +1708,11 @@ removeRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& gr )
 	if( v_in.size() < 2 )
 		return v_in;
 
-	RevBinMap2<vertex_t> incidMap = buildTrueIncidMap<vertex_t,graph_t>( gr );
+	RevBinMap<vertex_t> incidMap = buildTrueIncidMap<vertex_t,graph_t>( gr );
 
 	size_t idx = 0;
 	for( const auto& p : incidMap )
 		std::cout << idx++ << ": " << p << "\n";
-
 
 	std::vector<std::vector<vertex_t>> out;
 //	out.push_back( v_in.front() );
@@ -1753,21 +1747,11 @@ removeRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& gr )
 		}
 		if( all_indep )
 			mat.addLine( v );
-
-// Find C_i as the shortest cycle in G s.t. < C_i , S_i> = 1
-/*		for( size_t j=0; j<v_in.size(); j++ )
-		{
-			auto v = buildIncidenceVector( v_in[j], incidMap );
-			auto siz = v_in[j].size();
-			if( dotProduct( li, bincyc) == 0 )
-		}
-*/
-
 	}
 	std::cout << "Nb LInes of bin mat=" << mat.nbLines() << "\n";
 	for( size_t j=0; j<mat.nbLines(); j++ )
 	{
-		auto cy = convertBC2VC( mat.line(j), incidMap );
+		auto cy = convertBC2VC<vertex_t>( mat.line(j), incidMap );
 		out.push_back( cy );
 	}
 

@@ -9,6 +9,8 @@
 
 Home page: https://github.com/skramm/udgcd
 */
+#ifndef HG_COMMON_SAMPLE_H
+#define HG_COMMON_SAMPLE_H
 
 #include <boost/version.hpp>
 #include "boost/graph/graphviz.hpp"
@@ -355,3 +357,5 @@ processGraph( graph_t& g )
 	return std::make_pair(diff, cycles );
 }
 //-------------------------------------------------------------------
+
+#endif // HG_COMMON_SAMPLE_H
