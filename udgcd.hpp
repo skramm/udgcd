@@ -902,17 +902,18 @@ removeNonChordless( const std::vector<std::vector<vertex_t>>& v_in, const graph_
 /// Builds the binary vector \c binvect associated to the cycle \c cycle.
 /// The index vector \c idx_vec is used to fetch the index in binary vector from the two vertices indexes
 /**
-- sample input: 1-3-5
+This function builds the \b full vector, that is for all possible edges.
+See page \ref p_data_reprensentation.
 
 \todo 20200413: write down the reason why the function does not return the result, and passes it
 as reference. Must be a reason but can't remember each time!
 */
 template<typename vertex_t>
 void
-buildBinaryVector(
+buildFullBinaryVector(
 	const std::vector<vertex_t>& cycle,    ///< input cycle
 	BinaryVec&                   binvect,  ///< output binary vector (must be allocated)
-	const std::vector<size_t>&   idx_vec   ///< reference index vector, see how it is build in \ref buildBinaryMatrix() and \ref buildBinaryIndexVec(()
+	const std::vector<size_t>&   idx_vec   ///< reference index vector, see how it is build in \ref buildBinaryMatrix() and \ref buildFullBinaryIndex(()
 )
 {
 	PRINT_FUNCTION;
@@ -927,11 +928,11 @@ buildBinaryVector(
 //	printBitVector( std::cout, binvect );
 }
 //-------------------------------------------------------------------------------------------
-/// Build table of series $y_n = y_{n-1}+N-n-1$
+/// Build table of series \f$ y_n = y_{n-1}+N-n-1 \f$
 /**
-This is needed to build the binary vector associated with a path, see \ref buildBinaryVector()
+This is needed to build the binary vector associated with a path, see \ref buildFullBinaryVector()
 
-For example, if 6 vertices (indexes 0 to 5), then there are 6*(6-1)/2 = 15 possible edges:
+For example, if 6 vertices (indexes 0 to 5), then there are \f$ 6*(6-1)/2 = 15 \f$ possible edges:
 \verbatim
         0  1  2  3  4  5  6  7  8  9  10 11 12 13 14
 edges:  01-02-03-04-05-12-13-14-15-23-24-25-34-35-45
@@ -949,15 +950,15 @@ For example, for a graph having 6 vertices, and we want to know the index in the
 for the edge between vertices 2 and 4, then the above formula gives:<br>
 <code> idx = idx_vec[2] + 4 - 1 </code><br>
 We have <code> idx[2] = 7 </code>, so the index of that edge will be
-<code> 7 + 4 -1 = 10 </code><br>
+\f$ 7 + 4 -1 = 10 \f$<br>
 This can be checked above.
 
-\sa p_data_representation
+See page \ref p_data_representation.
 
 \todo Maybe we can remove the first value, as it is always 0.
 */
 std::vector<size_t>
-buildBinaryIndexVec( size_t nbVertices )
+buildFullBinaryIndex( size_t nbVertices )
 {
 	PRINT_FUNCTION;
 
@@ -983,13 +984,13 @@ buildBinaryMatrix(
 
 //	assert( v_cycles.size() == v_binvect.size() );
 
-	std::vector<size_t> idx_vec = buildBinaryIndexVec( nbVertices );
+	std::vector<size_t> idx_vec = buildFullBinaryIndex( nbVertices );
 	std::cout << "idx_vec: "; printVector( std::cout, idx_vec );
 
 	for( size_t i=0; i<v_cycles.size(); i++ )
 	{
 		std::cout << "build for: "; printVector( std::cout, v_cycles[i]);
-		buildBinaryVector( v_cycles[i], out.line(i), idx_vec );
+		buildFullBinaryVector( v_cycles[i], out.line(i), idx_vec );
 		std::cout << " => result="; printBitVector( std::cout, out.line(i) );
 	}
 	return out;
@@ -1000,6 +1001,8 @@ buildBinaryMatrix(
 /// See buildReverseBinaryMap()
 using RevBinMap = std::vector<std::pair<size_t,size_t>>;
 
+/// An incidence map using only the edges actually present in the graph.
+/// See buildTrueIncidMap() and page \ref p_data_reprentation.
 template<typename vertex_t>
 using RevBinMap2 = std::vector<VertexPair<vertex_t>>;
 
@@ -1140,8 +1143,12 @@ Order matters !
 With the above example, this would be:
 <code>( {2-6},{6-14},{14-17},{17-2} )</code>.
 Here, the order doesn't matter.
-\li as a binary vector, which is related to a reference index map.<br>
-The function buildBinaryIndexVec() will build this reference map, given the number of vertices.
+\li as a binary vector, which is related to a reference index map.
+<br>
+The function buildFullBinaryIndex() will build the reference map, given the number of vertices, and for ALL possible edges
+(even if they don't appear in the graph).
+Thus, it's number of columns can be quickly large (equal to \f$ v*(v-1)/2 \f$ )
+
 In such a vector, we have a 1 at every position where there is an edge.
 
 To convert a binary vector to a vector of vertices is done with convertBC2VC()
@@ -1149,6 +1156,8 @@ or convertBC2VC_v2() if matrix reduction is used.
 
 To convert a binary vector to a Vector of Pair of Vertices, see
 convertBinVec2VPV()
+
+
 
 */
 
@@ -1498,6 +1507,9 @@ convertBinary2Vertex_v2
 }
 //-------------------------------------------------------------------------------------------
 /// Convert vector of cycles expressed as binary vectors to vector of cycles expressed as a vector of vertices
+/**
+This function assumes the binary vector is "full", i.e. its length is \f$ v \times (v-1) / 2 \f$
+*/
 template<typename vertex_t>
 std::vector<std::vector<vertex_t>>
 convertBinary2Vertex
@@ -1547,7 +1559,12 @@ removeChords( std::vector<std::vector<vertex_t>>& cycles, const graph_t& gr )
 }
 
 //-------------------------------------------------------------------------------------------
+/// Builds and returns the binary incidence vector associated to \c cycle , given the index \c incidMap.
+/**
+Here, the length of the vector is equal to \f$ e \f$, number of edges.
 
+See page \ref p_data_representation.
+*/
 template<typename vertex_t>
 priv::BinaryVec
 buildIncidenceVector( const std::vector<vertex_t>& cycle, const RevBinMap2<vertex_t>& incidMap )

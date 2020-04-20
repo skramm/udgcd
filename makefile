@@ -127,7 +127,7 @@ show: $(SRC_FILES)
 
 
 doc:
-	doxygen doxyfile 1>$(OBJ_DIR)/doxygen.stdout 2>$(OBJ_DIR)/doxygen.stderr
+	doxygen misc/doxyfile 1>$(OBJ_DIR)/doxygen.stdout 2>$(OBJ_DIR)/doxygen.stderr
 	xdg-open build/html/index.html
 
 clean:
@@ -141,8 +141,8 @@ cleanall: clean cleandoc cleanout
 	@-rm $(EXEC_FILES)
 
 cleandoc:
-	@-rm -r html/*
-	@-rmdir html
+	@-rm -r build/html/*
+#	@-rmdir html
 
 svg: $(SVG_FILES)
 	@echo "target $@ done"

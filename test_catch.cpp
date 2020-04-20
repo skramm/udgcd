@@ -271,18 +271,18 @@ TEST_CASE( "connected", "[t-conn]" )
 
 
 //-------------------------------------------------------------------------------------------
-TEST_CASE( "test buildBinaryIndexVec", "[testbiv]" )
+TEST_CASE( "test buildFullBinaryIndex", "[testbiv]" )
 {
 	size_t nbVertices = 6;
 	{
 		std::vector<size_t> expected = {0,4,7,9,10};
-		std::vector<size_t> idx_vec = priv::buildBinaryIndexVec( nbVertices );
+		std::vector<size_t> idx_vec = priv::buildFullBinaryIndex( nbVertices );
 		REQUIRE( idx_vec == expected );
 	}
 	{
 		nbVertices = 7;
 		std::vector<size_t> expected = {0,5,9,12,14,15};
-		std::vector<size_t> idx_vec = priv::buildBinaryIndexVec( nbVertices );
+		std::vector<size_t> idx_vec = priv::buildFullBinaryIndex( nbVertices );
 		REQUIRE( idx_vec == expected );
 	}
 }
@@ -293,12 +293,12 @@ TEST_CASE( "test buildBinaryIndexVec", "[testbiv]" )
 void
 ProcessTest( std::vector<size_t>& cycle, size_t nbVertices )
 {
-	auto bim = udgcd::priv::buildBinaryIndexVec( nbVertices );
+	auto bim = udgcd::priv::buildFullBinaryIndex( nbVertices );
 	REQUIRE( bim.size() == nbVertices-1 );
 
 	auto nbCombinations = nbVertices * (nbVertices-1) / 2;
 	udgcd::priv::BinaryVec bpa( nbCombinations );
-	udgcd::priv::buildBinaryVector( cycle, bpa, bim );
+	udgcd::priv::buildFullBinaryVector( cycle, bpa, bim );
 
 //	std::cout << "binary vector:"
 //	udgcd::priv::PrintBitVector( std::cout, bpa );
