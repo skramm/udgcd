@@ -272,6 +272,19 @@ struct BinaryMatrix
 		assert( idx<nbLines() );
 		return _data[idx];
 	}
+	void clear()
+	{
+		for( auto & li: _data )
+			li.clear();
+	}
+
+	void setDiag()
+	{
+		clear();
+		for( size_t i=0; i<nbLines(); i++ )
+			_data[i][i] = 1;
+	}
+	/// return number of ones
 	size_t count() const
 	{
 		size_t c = 0;
@@ -1691,7 +1704,72 @@ buildTrueIncidMap( const graph_t& gr )
 	std::cout << __FUNCTION__ << "() map size=" << out.size() << "\n";
 	return out;
 }
+//-------------------------------------------------------------------------------------------
+/// Post-process step: 2005 Melhorn and Dimitrios Michail, page 3
+/**
+- assumes set is sorted (shortest first)
+- arg is not const, because it gets sorted here.
+*/
+template<typename vertex_t, typename graph_t>
+std::vector<std::vector<vertex_t>>
+removeRedundant3( std::vector<std::vector<vertex_t>>& v_in, const graph_t& gr )
+{
+	std::cout << __FUNCTION__ << "() START : " << v_in.size() << " cycles\n";
 
+	assert( !v_in.empty() );
+	if( v_in.size() < 2 )
+		return v_in;
+
+	RevBinMap<vertex_t> incidMap = buildTrueIncidMap<vertex_t,graph_t>( gr );
+
+	size_t idx = 0;
+	for( const auto& p : incidMap )
+		std::cout << idx++ << ": " << p << "\n";
+
+	std::vector<std::vector<vertex_t>> out;
+
+	auto N = boost::num_edges(gr) - boost::num_vertices(gr) + 1; /// \todo: correct this; only valid if 1 connected graph !!!
+	BinaryMatrix mat_S( N, N );
+
+	mat_S.setDiag();
+
+	for( size_t i=0; i<N; i++ )
+	{
+		auto Si = mat_S.line(i);
+
+// step 1: find shorted cycle s.t <C i , S_i> = 1
+		size_t min_value = 11111; // std::max_element();
+		size_t min_value_idx=0;
+		BinaryVec C;
+		for( size_t j=0; j<v_in.size(); j++ )
+		{
+			C = buildIncidenceVector( v_in[j], incidMap );
+			if( dotProduct( C, mat_S.line(i) ) == 1 )
+			{
+				std::cout << "Found <Si,Ci>=1 for j=" << j << "\n";
+				if( v_in[j].size() < min_value )
+				{
+					min_value = v_in[j].size();
+					min_value_idx = i;
+				}
+			}
+		}
+		std::cout << "minimal cycle at pos " << min_value_idx;
+		auto Ci = buildIncidenceVector( v_in[min_value_idx], incidMap );
+		std::cout << ": "; printBitVector( std::cout, Ci );
+// step 2
+		for( size_t j=i+1; j<N; j++ )
+		{
+			auto Sj = mat_S.line(j);
+			if( dotProduct( Ci, Sj ) == 1 )
+				mat_S.line(j) = Si ^ Sj;
+		}
+
+	}
+
+// convert to cycles
+
+}
 //-------------------------------------------------------------------------------------------
 /// Post-process step: taken from Almadi slides
 /**
@@ -1727,13 +1805,13 @@ removeRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& gr )
 		std::cout << "-input " << i << ": "; printVector( std::cout, v_in[i] ); printBitVector( std::cout, v );
 
 		bool all_indep = true;
-		for( size_t j=i+1; j<mat.nbLines(); j++ )
+		for( size_t j=0; j<mat.nbLines(); j++ )
 		{
-//			if (i != j)
+			if (i != j)
 			{
 				auto v2 = mat.line( j );
 				std::cout << " j=" << j << ": checking with "; printBitVector( std::cout, v2 );
-				if( dotProduct( v, v2 ) == 0 )
+				if( dotProduct( v, v2 ) == 1 )
 				{
 					std::cout << " -NOT independent\n";
 					all_indep = false;
@@ -1746,7 +1824,10 @@ removeRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& gr )
 
 		}
 		if( all_indep )
+		{
 			mat.addLine( v );
+			mat.printMat( std::cout );
+		}
 	}
 	std::cout << "Nb LInes of bin mat=" << mat.nbLines() << "\n";
 	for( size_t j=0; j<mat.nbLines(); j++ )
@@ -2187,8 +2268,8 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 // step 4 (post process): remove redundant cycles using Gaussian Elimination
 //////////////////////////////////////
 
-#if 1
-	auto v_cycles2 = priv::removeRedundant2( *p_cycles, gr );
+#if 0
+	auto v_cycles2 = priv::removeRedundant3( *p_cycles, gr );
 #else
 	#ifdef UDGCD_REDUCE_MATRIX
 		auto v_cycles2 = priv::removeRedundant( *p_cycles, boost::num_vertices(gr), gr );
