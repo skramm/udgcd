@@ -96,7 +96,7 @@ fill_tree(
 					std::copy( it, cvec.end(), newvec.begin() );
 					udgcd::priv::normalizeCycle( newvec );
 					if( std::find( out.begin(), out.end(), newvec ) == out.end() )  // if cycle not already in set,
-						if( udgcd::priv::isChordless( newvec, gr ) )                // AND is chordless,
+						if( udgcd::priv::chords::isChordless( newvec, gr ) )                // AND is chordless,
 							out.push_back( newvec );                                // then add it to the output set
 					return;
 				}

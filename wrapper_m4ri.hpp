@@ -2,6 +2,7 @@
 \file wrapper_m4ri.hpp
 \brief C++ wrapper, see https://bitbucket.org/malb/m4ri/
 */
+
 #ifndef HG_WRAPPER_M4RI_HPP
 #define HG_WRAPPER_M4RI_HPP
 
@@ -13,7 +14,6 @@
 //#include <m4ri/config.h>
 #include <m4ri/m4ri.h>
 
-//#include "udgcd.hpp"
 
 /// Wrapper over the m4ri dense matrix datatype
 struct MatM4ri
@@ -94,7 +94,6 @@ MatM4ri& MatM4ri::operator = ( MatM4ri&& other )
 	return *this;
 }
 
-
 void MatM4ri::set( size_t row, size_t col, int val )
 {
 	assert( _data != nullptr );
@@ -132,4 +131,5 @@ operator << ( std::ostream& f, const MatM4ri& mat )
 	}
 	return f;
 }
+
 #endif // HG_WRAPPER_M4RI_HPP

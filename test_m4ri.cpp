@@ -6,13 +6,15 @@
 
 #include <iostream>
 #include "udgcd.hpp"
-#include "wrapper_m4ri.hpp"
+//#include "wrapper_m4ri.hpp"
+//#include "wrapper_m4ri_convert.hpp"
 
 using namespace udgcd;
 
 //-------------------------------------------------------------------
 int main(int, char*[])
 {
+#if 0
 	MatM4ri m(5,10);
 	m.randomize();
 	MatM4ri m2(m);
@@ -35,6 +37,7 @@ int main(int, char*[])
 
 	MatM4ri m3 = convertToM4ri( bmat2 );
 	std::cout << "m3:\n" << m3;
+#endif
 }
 
 //-------------------------------------------------------------------

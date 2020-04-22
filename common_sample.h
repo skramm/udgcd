@@ -16,7 +16,7 @@ Home page: https://github.com/skramm/udgcd
 #include "boost/graph/graphviz.hpp"
 #include <boost/graph/connected_components.hpp>
 
-//#define UDGCD_REMOVE_NONCHORDLESS
+
 #define UDGCD_DO_CYCLE_CHECKING
 //#define UDGCD_LOG_FUNC
 //#define UDGCD_PRINT_STEPS

@@ -134,102 +134,85 @@ TEST_CASE( "Chordless", "[t-chordless]" )
 	}
 	{
 		std::vector<size_t> v1{ 0,1,2 };
-		CHECK( priv::isChordless( v1, gg[0] ) );
+		CHECK( priv::chords::isChordless( v1, gg[0] ) );
 	}
 	{
 		std::vector<size_t> v1{ 0,1,2,3 };
-		CHECK( !priv::isChordless( v1, gg[1] ) );
+		CHECK( !priv::chords::isChordless( v1, gg[1] ) );
 		std::vector<size_t> v2{ 0,2,3 };
-		CHECK( v2 == priv::removeChords( v1, gg[1] ) );
+		CHECK( v2 == priv::chords::removeChords( v1, gg[1] ) );
 	}
 	{
 		std::vector<size_t> v1{ 0,1,2,3 };
-		CHECK( priv::isChordless( v1, gg[2] ) );
+		CHECK( priv::chords::isChordless( v1, gg[2] ) );
 	}
 	{
 		std::vector<size_t> v1{ 0,1,2,3 };
-		CHECK( !priv::isChordless( v1,gg[3] ) );
+		CHECK( !priv::chords::isChordless( v1,gg[3] ) );
 		std::vector<size_t> v2{ 0,1,3 };
-		CHECK( v2 == priv::removeChords( v1, gg[3] ) );
+		CHECK( v2 == priv::chords::removeChords( v1, gg[3] ) );
 	}
 	{
 		std::vector<size_t> v1{ 0,1,2,4,5 };
-		CHECK(  priv::isChordless( v1, gg[4] ) );
-		CHECK( !priv::isChordless( v1, gg[5] ) );
+		CHECK(  priv::chords::isChordless( v1, gg[4] ) );
+		CHECK( !priv::chords::isChordless( v1, gg[5] ) );
 
 		std::vector<size_t> v2{ 0,1,2,5 };
-		CHECK( v2 == priv::removeChords( v1, gg[5] ) );
+		CHECK( v2 == priv::chords::removeChords( v1, gg[5] ) );
 	}
 	{
 		std::vector<size_t> v1{ 0,1,2,3,4,5 };
-		CHECK(  priv::isChordless( v1, gg[6] ) );
-		CHECK( !priv::isChordless( v1, gg[7] ) );
+		CHECK(  priv::chords::isChordless( v1, gg[6] ) );
+		CHECK( !priv::chords::isChordless( v1, gg[7] ) );
 
 		std::vector<size_t> v2{ 0,1,2,5 };
-		CHECK( v2 == priv::removeChords( v1, gg[7] ) );
+		CHECK( v2 == priv::chords::removeChords( v1, gg[7] ) );
 	}
 	{
 		std::vector<size_t> v1{ 0,1,2,3,4,5,6 };
-		CHECK(  priv::isChordless( v1, gg[8] ) );
-		CHECK( !priv::isChordless( v1, gg[9] ) );
+		CHECK(  priv::chords::isChordless( v1, gg[8] ) );
+		CHECK( !priv::chords::isChordless( v1, gg[9] ) );
 
 		std::vector<size_t> v2{ 0,1,2,5,6 };
-		CHECK( v2 == priv::removeChords( v1, gg[9] ) );
+		CHECK( v2 == priv::chords::removeChords( v1, gg[9] ) );
 	}
-
 	{
 		std::vector<size_t> v1{ 0,1,2,3,4,5,6 };
-		CHECK( !priv::isChordless( v1, gg[10] ) );
+		CHECK( !priv::chords::isChordless( v1, gg[10] ) );
 
 		std::vector<size_t> v2a{ 0,1,2,4,5 };
-		CHECK( priv::isChordless( v2a, gg[10] ) );
+		CHECK( priv::chords::isChordless( v2a, gg[10] ) );
 		std::vector<size_t> v2b{ 2,3,4 };
-		CHECK( priv::isChordless( v2b, gg[10] ) );
+		CHECK( priv::chords::isChordless( v2b, gg[10] ) );
 		std::vector<size_t> v2c{ 0,5,6 };
-		CHECK( priv::isChordless( v2c, gg[10] ) );
+		CHECK( priv::chords::isChordless( v2c, gg[10] ) );
 
 		std::vector<size_t> v2{ 0,1,2,5,6 };
-		CHECK( v2c == priv::removeChords( v1, gg[10] ) );
+		CHECK( v2c == priv::chords::removeChords( v1, gg[10] ) );
 	}
 	{
 		std::vector<size_t> v1{ 0,1,2,4,5,6 };
-		CHECK( priv::isChordless( v1, gg[11] ) );
+		CHECK( priv::chords::isChordless( v1, gg[11] ) );
 		std::vector<size_t> v2{ 0,1,2,4,5,7 };
-		CHECK( priv::isChordless( v2, gg[11] ) );
+		CHECK( priv::chords::isChordless( v2, gg[11] ) );
 
 		std::vector<size_t> v3a{ 0,1,2,3,4,5,7 };
 		std::vector<size_t> v3b{ 0,1,2,3,4,5,6 };
-		CHECK( !priv::isChordless( v3a, gg[11] ) );
-		CHECK( !priv::isChordless( v3b, gg[11] ) );
+		CHECK( !priv::chords::isChordless( v3a, gg[11] ) );
+		CHECK( !priv::chords::isChordless( v3b, gg[11] ) );
 	}
-/*
-		auto vec = priv::extractChordlessCycles( v3a, gg[11] );
-		CHECK( priv::vectorHolds( vec, std::vector<size_t>{2,3,4} ) );
-		CHECK( priv::vectorHolds( vec, std::vector<size_t>{0,1,2,4,5,7} ) );
-
-		auto vec2 = priv::extractChordlessCycles( v3b, gg[11] );
-		CHECK( priv::vectorHolds( vec2, std::vector<size_t>{2,3,4} ) );
-		CHECK( priv::vectorHolds( vec2, std::vector<size_t>{0,1,2,4,6,7} ) );
-*/
 	{
 		std::vector<size_t> v1{ 2,3,4 };
-		CHECK( priv::isChordless( v1, gg[12] ) );
+		CHECK( priv::chords::isChordless( v1, gg[12] ) );
 		std::vector<size_t> v2{ 3,4,5 };
-		CHECK( priv::isChordless( v2, gg[12] ) );
+		CHECK( priv::chords::isChordless( v2, gg[12] ) );
 		std::vector<size_t> v3{ 0,1,2,4,5 };
-		CHECK( priv::isChordless( v3, gg[12] ) );
+		CHECK( priv::chords::isChordless( v3, gg[12] ) );
 		std::vector<size_t> v4{ 0,1,2,3,5 };
-		CHECK( priv::isChordless( v4, gg[12] ) );
+		CHECK( priv::chords::isChordless( v4, gg[12] ) );
 
 		std::vector<size_t> v5{ 0,1,2,3,4,5 };
-		CHECK( !priv::isChordless( v5, gg[12] ) );
-
-/*		auto vec = priv::extractChordlessCycles( v5, gg[12] );
-		CHECK( priv::vectorHolds( vec, std::vector<size_t>{2,3,4} ) );
-		CHECK( priv::vectorHolds( vec, std::vector<size_t>{3,4,5} ) );
-		CHECK( priv::vectorHolds( vec, std::vector<size_t>{0,1,2,4,5} ) );
-		CHECK( priv::vectorHolds( vec, std::vector<size_t>{0,1,2,3,5} ) );
-*/
+		CHECK( !priv::chords::isChordless( v5, gg[12] ) );
 	}
 }
 
@@ -300,7 +283,7 @@ ProcessTest( std::vector<size_t>& cycle, size_t nbVertices )
 
 	auto nbCombinations = nbVertices * (nbVertices-1) / 2;
 	udgcd::priv::BinaryVec bpa( nbCombinations );
-	udgcd::priv::buildFullBinaryVector( cycle, bpa, bim );
+	udgcd::priv::deprec::buildFullBinaryVector( cycle, bpa, bim );
 
 //	std::cout << "binary vector:"
 //	udgcd::priv::PrintBitVector( std::cout, bpa );

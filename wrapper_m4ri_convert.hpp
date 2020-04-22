@@ -10,7 +10,8 @@
 //#include "udgcd.hpp"
 
 
-MatM4ri convertToM4ri( const udgcd::priv::BinaryMatrix& mat_in )
+MatM4ri
+convertToM4ri( const udgcd::priv::BinaryMatrix& mat_in )
 {
 	MatM4ri out( mat_in.nbLines(), mat_in.nbCols() );
 	size_t row = 0;

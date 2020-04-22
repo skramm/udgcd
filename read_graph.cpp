@@ -8,6 +8,8 @@
 \brief read a graph in simple text format, searches for cycles, and make sure these are correct
 
 Also generates a .dot file that can be graphically rendered with Graphviz
+
+\todo 20200422: Add DOT as input file format !
 */
 
 #include <iostream>
@@ -36,6 +38,11 @@ typedef boost::graph_traits<graph_t>::edge_descriptor   edge_t;
 int main( int argc, const char** argv )
 {
 	SHOW_INFO;
+
+#ifdef UDGCD_USE_M4RI
+	std::cout << "Build using libM4ri\n";
+#endif
+
 	if( argc < 2 )
 	{
 		std::cout << "missing input filename, exit.\n";

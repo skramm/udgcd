@@ -20,13 +20,11 @@ COLOR_OFF="\e[0m"
 # -Wno-unused-result is to avoid the warning on call to std::system() when calling dot (see void CallDot() )
 CFLAGS = -std=c++11 -Wall -O2 -Iinclude -Wno-unused-result
 
-# TEMP
-#CFLAGS += -DUDGCD_REDUCE_MATRIX
-#CFLAGS += -DUDGCD_REMOVE_NONCHORDLESS
 
 # test_m4ri.cpp: wrapper_m4ri.hpp
 
-LDFLAGS +=-lm4ri
+# remove if no need to compare the output ti some ground truth
+CFLAGS += -DUDGCD_NORMALIZE_CYCLES
 
 ifeq "$(PRINT_STEPS)" "Y"
 	CFLAGS += -DUDGCD_PRINT_STEPS
@@ -41,6 +39,11 @@ ifeq "$(DEBUG)" "Y"
 	LDFLAGS += -g
 else
 	LDFLAGS += -s
+endif
+
+ifeq "$(M4RI)" "Y"
+	CFLAGS += -DUDGCD_USE_M4RI
+	LDFLAGS +=-lm4ri
 endif
 
 SHELL=/bin/bash

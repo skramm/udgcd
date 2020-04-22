@@ -6,13 +6,15 @@
 
 #include <iostream>
 #include "udgcd.hpp"
-#include "wrapper_m4ri.hpp"
+//#include "wrapper_m4ri.hpp"
+//#include "wrapper_m4ri_convert.hpp"
 
 using namespace udgcd;
 
 //-------------------------------------------------------------------
 int main( int argc, char** argv )
 {
+#if 0
 	int r = 10;
 	int c = 20;
 	if( argc == 3 )
@@ -45,6 +47,7 @@ int main( int argc, char** argv )
 	mzd_echelonize_naive( m._data, 1 );
 	std::cout << m;
 	std::cout << ( mzd_equal( mine._data, m._data ) ? " -equal\n" : " -diff\n" );
+#endif
 }
 
 //-------------------------------------------------------------------

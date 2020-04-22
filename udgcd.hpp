@@ -13,7 +13,6 @@ Inspired from http://www.boost.org/doc/libs/1_58_0/libs/graph/example/undirected
 
 \todo 2020-03-09: add a data structure that can measure the run-time depth of the recursive functions
 
-\todo 2020-04-12: see sample 41: seems we have a non chordless cycle !!!
 See file README.md
 */
 
@@ -28,8 +27,10 @@ See file README.md
 #include <boost/graph/undirected_dfs.hpp>
 #include <boost/dynamic_bitset.hpp>       // needed ! Allows bitwise operations on dynamic size boolean vectors
 
-// TEMP
-#include "wrapper_m4ri.hpp"
+#ifdef UDGCD_USE_M4RI
+	#include "wrapper_m4ri.hpp"
+#endif
+
 
 #ifdef UDGCD_LOG_FUNC
 	#define PRINT_FUNCTION std::cout << "*** start function " <<  __FUNCTION__ << "()\n"
@@ -435,7 +436,10 @@ struct IncidenceMatrix : public BinaryMatrix
 } // namespace priv
 } // namespace udgcd
 
-#include "wrapper_m4ri_convert.hpp"
+#ifdef UDGCD_USE_M4RI
+	#include "wrapper_m4ri_convert.hpp"
+#endif
+
 namespace udgcd {
 namespace priv {
 
@@ -533,54 +537,6 @@ explore(
 	return found;
 }
 //-------------------------------------------------------------------------------------------
-#if 0
-/// Private, don't use.
-/**
- Remove twins : vector that are the same, but in reverse order
-*/
-template<typename T>
-std::vector<std::vector<T>>
-removeOppositePairs( const std::vector<std::vector<T>>& v_cycles )
-{
-	PRINT_FUNCTION;
-	assert( v_cycles.size() );
-
-	std::vector<std::vector<T>> out;      // output vector
-	out.reserve( v_cycles.size() );       // preallocate memory
-
-	std::vector<bool> flags( v_cycles.size(), true ); // some flags to keep track of which elements are reversed
-
-	for( size_t i=0; i<v_cycles.size()-1; ++i )
-	{
-		if( flags[i] )
-		{
-			out.push_back( v_cycles[i] );                        //  1 - add current vector into output
-
-#ifdef UDGCD_DEV_MODE
-			COUT << "-Considering path " << i << ":  "; printVector( std::cout, v_cycles[i] );
-#endif
-			std::vector<T> rev = v_cycles[i];                       // step 1: build a reversed copy of the current vector
-			std::reverse( rev.begin(), rev.end() );
-			for( size_t j=i+1; j<v_cycles.size(); ++j )                  // step 2: parse the rest of the list, and check
-				if( flags[j] && rev == v_cycles[j] )                     // if similar, then
-				{
-//					out.push_back( v_cycles[i] );                        //  1 - add current vector into output
-					flags[j] = false;                                 //  2 -  invalidate the reversed one
-#ifdef UDGCD_DEV_MODE
-					COUT << " -> discarding path " << j << ":  "; printVector( std::cout, v_cycles[j] );
-#endif
-				}
-		}
-	}
-// adding last one, if not discarded
-
-	if( flags.back() )
-		out.push_back( v_cycles.back() );
-
-	return out;
-}
-#endif
-//-------------------------------------------------------------------------------------------
 template<typename T>
 void
 putSmallestElemFirst( std::vector<T>& vec )
@@ -588,35 +544,10 @@ putSmallestElemFirst( std::vector<T>& vec )
 	auto it = std::min_element( vec.begin(), vec.end() );     // rotate so that smallest is first
 	std::rotate( vec.begin(), it, vec.end() );
 }
+
 //-------------------------------------------------------------------------------------------
-#if 0
-/// Private, don't use.
-/**
-Helper function for RemoveIdentical()
-
-Given an input vector "DABCD", it will return "ABCD" (removal of duplicate element, and first element is the smallest)
-*/
-template<typename T>
-std::vector<T>
-GetSortedTrimmed( const std::vector<T>& v_in )
-{
-	assert( v_in.front() == v_in.back() ); // check that this is a cycle
-	assert( v_in.size() > 2 );             // a (complete) cycle needs to be at least 3 vertices long
-
-	std::vector<T> v_out( v_in.size() - 1 );                      // Trim: remove
-	std::copy( v_in.cbegin(), v_in.cend()-1, v_out.begin() );     //  last element
-
-	putSmallestElemFirst( v_out );
-
-	if( v_out.back() < v_out[1] )                     // if we have 1-4-3-2, then
-	{
-		std::reverse( v_out.begin(), v_out.end() );   // we transform it into 2-3-4-1
-		putSmallestElemFirst( v_out );                // and put smallest first: 1-2-3-4
-	}
-	return v_out;
-}
-#endif
-//-------------------------------------------------------------------------------------------
+/// Normalize the cycle: puts the smallest index in first position, and reverses it if needed
+/// so that the second element if less than the last one.
 template<typename T>
 void
 normalizeCycle( std::vector<T>& cycle )
@@ -633,6 +564,17 @@ normalizeCycle( std::vector<T>& cycle )
 }
 
 //-------------------------------------------------------------------------------------------
+/// Normalizes the set of cycles, see normalizeCycle()
+template<typename T>
+void
+normalizeCycles( std::vector<std::vector<T>>& cycles )
+{
+	for( auto& cycle: cycles )
+		normalizeCycle( cycle );
+}
+
+
+//-------------------------------------------------------------------------------------------
 /// Removes the parts that are not part of the cycle, and normalize the order
 /**
 Example:
@@ -645,8 +587,8 @@ template<typename T>
 std::vector<T>
 findTrueCycle( const std::vector<T>& cycle )
 {
-//	PRINT_FUNCTION;
-//	COUT << "in: "; PrintVector( std::cout, cycle );
+	PRINT_FUNCTION;
+
 	assert( cycle.size() > 2 ); // 3 or more nodes
 	if( cycle.size() == 3 )     // if 3 nodes, just return the input path
 		return cycle;
@@ -715,39 +657,6 @@ cleanCycles( const std::vector<std::vector<T>>& v_cycles )
 	std::cout << __FUNCTION__ << "(): nb of identical cycles removed=" << identical << "\n";
 	return out;
 }
-//-------------------------------------------------------------------------------------------
-#if 0
-/// Private, don't use.
-/**
-Remove identical strings that are the same up to the starting point
-It also sorts the paths by rotating them so that the node of smallest index is first
-*/
-template<typename T>
-std::vector<std::vector<T>>
-RemoveIdentical( const std::vector<std::vector<T>>& v_cycles )
-{
-	PRINT_FUNCTION;
-	assert( v_cycles.size() );
-
-	if( v_cycles.size() == 1 )                                   // if single path in input, then we justs add it, after trimming/sorting
-	{
-		std::vector<std::vector<T>> out( 1, GetSortedTrimmed( v_cycles[0] ) );
-		return out;
-	}
-
-	std::vector<std::vector<T>> out( v_cycles.size() );
-	for( size_t i=0; i<v_cycles.size(); i++ )            // 1 - fill output vector with sorted/trimmed paths
-		out[i] = GetSortedTrimmed( v_cycles[i] );
-
-	std::sort( out.begin(), out.end() );                 // 2 - sort
-	out.erase(                                           // 3 - erase the ones that are
-		std::unique( out.begin(), out.end() ),           //  consecutive duplicates
-		out.end()
-	);
-
-	return out;
-}
-#endif
 
 //-------------------------------------------------------------------------------------------
 /// Returns true if vertices \c v1 and \c v2 are connected by an edge
@@ -770,6 +679,12 @@ areConnected( const vertex_t& v1, const vertex_t& v2, const graph_t& g )
 	}
 	return false;
 }
+
+//######################
+/// Holds all chordless cycles related code, not used at present
+namespace chords {
+//######################
+
 //-------------------------------------------------------------------------------------------
 /// Return true if cycle is chordless
 /**
@@ -808,10 +723,10 @@ template<typename vertex_t, typename graph_t>
 std::vector<vertex_t>
 removeChords( const std::vector<vertex_t>& cycle, const graph_t& gr )
 {
+	PRINT_FUNCTION;
+
 	if( cycle.size() < 4 ) // no need to test if less than 4 vertices
 		return cycle;
-
-//	std::cout << __FUNCTION__ << "(): cycle size=" << cycle.size() << ": "; printVector( std::cout, cycle );
 
 	std::vector<vertex_t> out;
 	out.push_back( cycle[0] );
@@ -821,27 +736,20 @@ removeChords( const std::vector<vertex_t>& cycle, const graph_t& gr )
 	for( i=0; i<cycle.size()-1; ++i )
 	{
 		connected = false;
-//		std::cout << "i=" << i << "\n";
 		for( size_t j=i+2; j<cycle.size(); ++j )
 		{
-//			std::cout << "  j=" << j << "\n";
 			if( i != 0 || j != cycle.size()-1 )
 				if( areConnected( cycle[i], cycle[j], gr ) )
 				{
 					connected = true;
 					idx_connected = j;
 					break;
-//					std::cout << "  -connected\n";
 				}
 		}
 		if( !connected )
-		{
-//			std::cout << "  NC: adding " << i+1 << " node=" << cycle[i+1] << "\n";
 			out.push_back( cycle[i+1] );
-		}
 		else
 		{
-//			std::cout << "  C: adding " << idx_connected << " node=" << cycle[idx_connected] << "\n";
 			out.push_back( cycle[idx_connected] );
 			i = idx_connected;
 		}
@@ -853,51 +761,18 @@ removeChords( const std::vector<vertex_t>& cycle, const graph_t& gr )
 	return out;
 }
 //-------------------------------------------------------------------------------------------
-/// Extract form a given input cycle all the potential chordless cycles
-/**
-Example: for this graph
-
-\verbatim
-       0--1--2
-      /|     |\
-     / |     | \
-    6  |     |  3
-     \ |     | /
-      \|     |/
-       5-----4
-\endverbatim
-And the input cycle <code>0-1-2-3-4-5-6</code>,
-this function should return the three vectors:
-\verbatim
-0-5-6
-2-3-4
-0-1-2-4-5
-\endverbatim
-
-\todo Write this !
-*/
 template<typename vertex_t, typename graph_t>
 std::vector<std::vector<vertex_t>>
-extractChordlessCycles( const std::vector<vertex_t>& cycle, const graph_t& gr )
+removeChords( std::vector<std::vector<vertex_t>>& cycles, const graph_t& gr )
 {
 	std::vector<std::vector<vertex_t>> out;
-
+	out.reserve( cycles.size() );
+	for( const auto& cycle : cycles )
+		out.push_back( removeChords( cycle, gr ) );
 	return out;
 }
+
 //-------------------------------------------------------------------------------------------
-#if 0
-/// Generic search function: returns true if vector \c vec holds \c data
-template<typename T>
-bool
-vectorHolds( const std::vector<T>& vec, const T& data )
-{
-	if( std::find( std::begin(vec), std::end(vec), data ) == std::end(vec) )
-		return false;
-	return true;
-}
-#endif
-//-------------------------------------------------------------------------------------------
-#ifdef UDGCD_REMOVE_NONCHORDLESS
 /// Remove non-chordless cycles
 template<typename vertex_t, typename graph_t>
 std::vector<std::vector<vertex_t>>
@@ -913,7 +788,16 @@ removeNonChordless( const std::vector<std::vector<vertex_t>>& v_in, const graph_
 			v_out.push_back( cycle );
 	return v_out;
 }
-#endif // UDGCD_REMOVE_NONCHORDLESS
+
+//######################
+} // namespace chords
+//######################
+
+
+//######################
+/// Holds some deprecated/unused code, but kept, well... just in case.
+namespace deprec {
+//######################
 
 //-------------------------------------------------------------------------------------------
 /// Builds the binary vector \c binvect associated to the cycle \c cycle.
@@ -944,6 +828,11 @@ buildFullBinaryVector(
 	}
 //	printBitVector( std::cout, binvect );
 }
+
+//######################
+} // namespace deprec
+//######################
+
 //-------------------------------------------------------------------------------------------
 /// Build table of series \f$ y_n = y_{n-1}+N-n-1 \f$
 /**
@@ -985,6 +874,11 @@ buildFullBinaryIndex( size_t nbVertices )
 		idx_map[i] = idx_map[i-1] + nbVertices - i - 1;
 	return idx_map;
 }
+
+//######################
+namespace deprec {
+//######################
+
 //-------------------------------------------------------------------------------------------
 /// Builds all the binary vectors for all the cycles, using ALL potential edges (not only the ones used)
 template<typename vertex_t>
@@ -1013,8 +907,12 @@ buildBinaryMatrix(
 	return out;
 }
 
+//######################
+} // namespace deprec
+//######################
+
 //-------------------------------------------------------------------------------------------
-/// See page \ref p_data_reprentation.
+/// A vector holding a pair of indexes/vertices. See page \ref p_data_reprentation.
 template<typename T>
 using RevBinMap = std::vector<VertexPair<T>>;
 
@@ -1042,6 +940,7 @@ RevBinMap<T>
 buildReverseBinaryMap( size_t nb_vertices )
 {
 	PRINT_FUNCTION;
+
 	size_t nb_combinations = nb_vertices*(nb_vertices-1)/2;
 	COUT << "nb_vertices=" << nb_vertices << " nb_combinations=" << nb_combinations << '\n';
 	RevBinMap<T> out( nb_combinations );
@@ -1087,6 +986,10 @@ checkVertexPairSet( const std::vector<VertexPair<vertex_t>>& vp, bool print=true
 	return correct;
 }
 
+//######################
+namespace deprec {
+//######################
+
 //-------------------------------------------------------------------------------------------
 /// Convert cycle expressed as a binary vector to a Vector of Pair of Vertices (VPV)
 /// See \ref p_data_representation
@@ -1109,10 +1012,39 @@ convertBinVec2VPV_v2
 }
 
 //-------------------------------------------------------------------------------------------
+/// Similar to convertBC2VC() but to be used in case we do the "matrix reduction" trick
+template<typename vertex_t, typename T>
+std::vector<vertex_t>
+convertBC2VC_v2(
+	const BinaryVec&           v_in,       ///< input binary path
+	const RevBinMap<T>&        rev_map,    ///< required map, has to be build before, see buildReverseBinaryMap()
+	const std::vector<size_t>& nec         ///< non-empty columns
+)
+{
+	PRINT_FUNCTION;
+
+// step 1: build set of pairs from binary vector
+	auto v_pvertex = convertBinVec2VPV_v2<vertex_t>( v_in, rev_map, nec );
+	assert( v_pvertex.size()>0 );
+
+	if( false == checkVertexPairSet( v_pvertex ) )
+	{
+		std::cout << "Fatal error: invalid set of pairs\n";
+		std::exit(1);
+	}
+
+// step 2: build cycle from set of pairs
+	return convertVPV2Cycle( v_pvertex );
+}
+
+//######################
+} // namespace deprec
+//######################
+
+//-------------------------------------------------------------------------------------------
 /// Convert cycle expressed as a binary vector to a Vector of Pair of Vertices (VPV)
 /// See \ref p_data_representation
 /**
-
 The idea here is to avoid doing an extensive search each time to see if node is already present, which
 can be costly for large cycles.
 */
@@ -1128,18 +1060,9 @@ convertBinVec2VPV
 
 	std::vector<VertexPair<vertex_t>> v_out;
 	for( size_t i=0; i<v_in.size(); ++i )
-	{
-		if( v_in[i] == 1 ) // if we find a '1', then we have found a connection
-		{
-#if 0
-			vertex_t v1 = rev_map[i].first;   // the two nodes
-			vertex_t v2 = rev_map[i].second;  // that are connected
-			v_out.push_back( VertexPair<vertex_t>(v1,v2) );
-#else
+		if( v_in[i] == 1 )                       // if we find a '1', then we have found a connection
 			v_out.push_back( rev_map[i] );
-#endif
-		}
-	}
+
 	return v_out;
 }
 //-------------------------------------------------------------------------------------------
@@ -1253,8 +1176,6 @@ convertCycle2VPV( const std::vector<vertex_t>& cycle )
 		vertex_t v1 = cycle[i];
 		vertex_t v2 = ( i != cycle.size()-1 ? cycle[i+1] : cycle[0] );
 
-//		std::cout << i << " : " << cycle[i] << " : " << v1 << "-" << v2 << "\n";
-
 		VertexPair<vertex_t> pair(v1,v2);
 		out.push_back( pair );
 	}
@@ -1283,68 +1204,6 @@ convertCycles2VVPV( const std::vector<std::vector<vertex_t>>& cycles )
 }
 
 //-------------------------------------------------------------------------------------------
-/// Similar to convertBC2VC() but to be used in case we do the "matrix reduction" trick
-template<typename vertex_t, typename T>
-std::vector<vertex_t>
-convertBC2VC_v2(
-	const BinaryVec&           v_in,       ///< input binary path
-	const RevBinMap<T>&        rev_map,    ///< required map, has to be build before, see buildReverseBinaryMap()
-	const std::vector<size_t>& nec         ///< non-empty columns
-)
-{
-	PRINT_FUNCTION;
-
-// step 1: build set of pairs from binary vector
-	auto v_pvertex = convertBinVec2VPV_v2<vertex_t>( v_in, rev_map, nec );
-	assert( v_pvertex.size()>0 );
-
-#if 0
-	std::cout << "VERTEX MAP v2: size=" << v_pvertex.size() << "\n";
-	size_t i = 0;
-	for( const auto& vp: v_pvertex )
-		std::cout << i++ << ":" << vp.v1 << "-" << vp.v2 << "\n";
-#endif
-
-	if( false == checkVertexPairSet( v_pvertex ) )
-	{
-		std::cout << "Fatal error: invalid set of pairs\n";
-		std::exit(1);
-	}
-
-// step 2: build cycle from set of pairs
-	return convertVPV2Cycle( v_pvertex );
-}
-
-//-------------------------------------------------------------------------------------------
-/// Builds and returns the incidence matrix for graph \c gr
-template<typename graph_t,typename vertex_t>
-IncidenceMatrix<vertex_t>
-buildIncidenceMat( const graph_t& gr )
-{
-	assert( boost::num_vertices( gr ) > 2 );
-	assert( boost::num_edges(    gr ) > 2 );
-
-	IncidenceMatrix<vertex_t> out(
-		boost::num_vertices( gr ),   // rows
-		boost::num_edges(    gr )    // cols
-	);
-
-	size_t i=0;
-	for(
-		auto p_it = boost::edges(gr);
-		p_it.first != p_it.second;
-		p_it.first++, i++
-	)
-	{
-		auto v1 = boost::source( *p_it.first, gr );
-		auto v2 = boost::target( *p_it.first, gr );
-		out.setPair( v1, v2, i );
-	}
-	return out;
-
-}
-
-//-------------------------------------------------------------------------------------------
 /// Convert, for a given graph, a Binary Cycle (BC) \c v_in to a Vertex Cycle (VC)
 /**
 Algorithm:
@@ -1354,10 +1213,6 @@ Algorithm:
 
 * step 2: parse the map, and add the vertices to the output vector
 
-\todo The downside of this approach is that we need to build before the \c rev_map, that can be pretty big...
-Maybe we can find a better way ?
-
-\bug discovered on 2020-03-09. To trigger: bin/read_graph samples2/graph_1583824532.txt (actually NOT in this function)
 */
 template<typename vertex_t, typename T>
 std::vector<vertex_t>
@@ -1400,7 +1255,6 @@ convertBC2VC(
 
 Assumes no identical rows
 */
-//template<typename vertex_t> // TEMP
 inline
 BinaryMatrix
 gaussianElim( BinaryMatrix& m_in, size_t& nbIter ) // /* TEMP */, size_t nbVertices, const std::vector<size_t>& nec )
@@ -1417,11 +1271,8 @@ gaussianElim( BinaryMatrix& m_in, size_t& nbIter ) // /* TEMP */, size_t nbVerti
 	nbIter = 0;
 	bool done = false;
 
-//	m_in.print( std::cout, "m_in INITIAL" );
 
-// TEMP
-//	auto rev_map = buildReverseBinaryMap( nbVertices );
-
+/// \todo 20200422: Any reason not to use a BinaryVec here ?
 	std::vector<bool> tag(nb_rows,false);
 	do
 	{
@@ -1444,22 +1295,11 @@ gaussianElim( BinaryMatrix& m_in, size_t& nbIter ) // /* TEMP */, size_t nbVerti
 				tag[row] = true;
 				if( row < nb_rows-1 )
 				{
-//					for( size_t i=0; i<nb_rows; i++ )      // search for all following rows that have a 1 in that column
-//						if( i != row )
 					for( size_t i=row+1; i<nb_rows; i++ )      // search for all following rows that have a 1 in that column
 					{
 						if( tag[i] == false )                  // AND that are not tagged.
 							if( m_in.line(i)[col] == 1 )            // it there is, we XOR them with initial line
-							{
-//								std::cout << " -row " << i << " changes:\nwas: "; printBitVector( std::cout, m_in.line(i) );
 								m_in.line(i) = m_in.line(i) ^ m_in.line(row);
-//								std::cout << "now: "; printBitVector( std::cout, m_in.line(i) );
-#if 0
-								auto v_pvertex = convertBinVec2VPV_v2<vertex_t>( m_in.line(i), rev_map, nec );
-								if( false == checkVertexPairSet( v_pvertex, false ) )
-									COUT << "Invalid vector!\n";
-#endif
-							}
 					}
 				}
 				COUT << "BREAK loop\n";
@@ -1478,16 +1318,14 @@ gaussianElim( BinaryMatrix& m_in, size_t& nbIter ) // /* TEMP */, size_t nbVerti
 			COUT << "All lines tagged, end\n";
 			done = true;
 		}
-#if 0
-	COUT << "-m_in: " << m_in.nbLines() << "x" << m_in.nbCols() << '\n';
-		m_in.print( std::cout,  "m_in" );
-	COUT << "-m_out: " << m_out.nbLines() << "x" << m_out.nbCols() << '\n';
-		m_out.print( std::cout, "m_out" );
-#endif
 	}
 	while( !done );
 	return m_out;
 }
+
+//######################
+namespace deprec {
+//######################
 
 //-------------------------------------------------------------------------------------------
 /// Convert vector of cycles expressed as binary vectors to vector of cycles expressed as a vector of vertices.
@@ -1518,54 +1356,29 @@ convertBinary2Vertex_v2
 		}
 	return v_out;
 }
+
+//######################
+} // namespace deprec
+//######################
+
 //-------------------------------------------------------------------------------------------
 /// Convert vector of cycles expressed as binary vectors to vector of cycles expressed as a vector of vertices
-/**
-This function assumes the binary vector is "full", i.e. its length is \f$ v \times (v-1) / 2 \f$
-*/
 template<typename vertex_t>
 std::vector<std::vector<vertex_t>>
-convertBinary2Vertex_2
+convertBinary2Vertex
 (
 	const BinaryMatrix&        binmat,     ///< input binary matrix
 	const RevBinMap<vertex_t>& incidMap    ///< incidence map
 )
 {
+	PRINT_FUNCTION;
+
 	std::vector<std::vector<vertex_t>> out;
 	for( const auto& li: binmat )
 		out.push_back( convertBC2VC<vertex_t>( li, incidMap ) );
 	return out;
 }
 
-//-------------------------------------------------------------------------------------------
-/// Convert vector of cycles expressed as binary vectors to vector of cycles expressed as a vector of vertices
-/**
-This function assumes the binary vector is "full", i.e. its length is \f$ v \times (v-1) / 2 \f$
-*/
-template<typename vertex_t>
-std::vector<std::vector<vertex_t>>
-convertBinary2Vertex
-(
-	const BinaryMatrix& binmat,
-	size_t              nbVertices
-)
-{
-	PRINT_FUNCTION;
-	std::vector<std::vector<vertex_t>> v_out;
-
-	v_out.reserve( binmat.nbCols() ); // to avoid unnecessary memory reallocations and copies
-
-	auto rev_map = buildReverseBinaryMap<size_t>( nbVertices );
-
-	for( auto bcycle: binmat )
-		if( bcycle.count() )
-		{
-			auto cycle = convertBC2VC<vertex_t>( bcycle, rev_map );
-			v_out.push_back( cycle );
-		}
-
-	return v_out;
-}
 //-------------------------------------------------------------------------------------------
 /// Returns the same matrix but with empty cols removed
 BinaryMatrix
@@ -1574,19 +1387,6 @@ reduceMatrix( const BinaryMatrix& m_in, const std::vector<size_t>& nonEmptyCols 
 	BinaryMatrix out( m_in.nbLines() );
 	for( auto idx: nonEmptyCols )
 		out.addCol( m_in.getCol(idx) );
-	return out;
-}
-
-
-//-------------------------------------------------------------------------------------------
-template<typename vertex_t, typename graph_t>
-std::vector<std::vector<vertex_t>>
-removeChords( std::vector<std::vector<vertex_t>>& cycles, const graph_t& gr )
-{
-	std::vector<std::vector<vertex_t>> out;
-	out.reserve( cycles.size() );
-	for( const auto& cycle : cycles )
-		out.push_back( removeChords( cycle, gr ) );
 	return out;
 }
 
@@ -1607,9 +1407,6 @@ buildIncidenceVector( const std::vector<vertex_t>& cycle, const RevBinMap<vertex
 
 	priv::BinaryVec out( incidMap.size() );
 
-//	std::cout << __FUNCTION__ << "() in="; printVector( std::cout, cycle );
-//	std::cout<<"incidMap:\n";	printVector( std::cout, incidMap );
-
 	for( size_t i=0; i<cycle.size(); ++i )
 	{
 		auto v1 = cycle[i];
@@ -1620,7 +1417,6 @@ buildIncidenceVector( const std::vector<vertex_t>& cycle, const RevBinMap<vertex
 		assert( it != incidMap.end() ); // should not happen !
 		out[ it - incidMap.begin() ] = 1;
 	}
-//	std::cout << __FUNCTION__ << "() vector=";  printBitVector( std::cout, out );
 	return out;
 }
 
@@ -1678,7 +1474,7 @@ template<typename vertex_t, typename graph_t>
 RevBinMap<vertex_t>
 buildTrueIncidMap( const graph_t& gr )
 {
-	std::cout << __FUNCTION__ << "()\n";
+	PRINT_FUNCTION;
 	RevBinMap<vertex_t> out;
 
 	size_t i=0;
@@ -1699,17 +1495,18 @@ buildTrueIncidMap( const graph_t& gr )
 }
 //-------------------------------------------------------------------------------------------
 /// Builds all the binary vectors for all the cycles, using only the existing edges in the graph
-template<typename graph_t,typename vertex_t>
+/**
+\todo Some optimization needed here: the matrix is first built, then we copy another value on each line.
+Find a way to build each line in-place.
+*/
+template<typename vertex_t>
 BinaryMatrix
 buildBinaryMatrix2(
-	const std::vector<std::vector<vertex_t>>& v_cycles,     ///< input cycles
-	const graph_t&                            gr,            ///< graph
-	const RevBinMap<vertex_t>&                incidMap
+	const std::vector<std::vector<vertex_t>>& v_cycles,    ///< input cycles
+	const RevBinMap<vertex_t>&                incidMap     ///< Incidence map
 )
 {
 	PRINT_FUNCTION;
-
-//	RevBinMap<vertex_t> incidMap = buildTrueIncidMap<vertex_t,graph_t>( gr );
 
 	BinaryMatrix out( v_cycles.size(), incidMap.size() );  // lines x cols
 
@@ -1719,8 +1516,12 @@ buildBinaryMatrix2(
 	return out;
 }
 
+//######################
+namespace deprec {
+//######################
+
 //-------------------------------------------------------------------------------------------
-/// Post-process step: 2005 Melhorn and Dimitrios Michail, page 3
+/// Post-process step: 2005 Melhorn and Dimitrios Michail, page 3 (UNFINISHED !!!)
 /**
 - assumes set is sorted (shortest first)
 - arg is not const, because it gets sorted here.
@@ -1729,7 +1530,7 @@ template<typename vertex_t, typename graph_t>
 std::vector<std::vector<vertex_t>>
 removeRedundant3( std::vector<std::vector<vertex_t>>& v_in, const graph_t& gr )
 {
-	std::cout << __FUNCTION__ << "() START : " << v_in.size() << " cycles\n";
+	PRINT_FUNCTION;
 
 	assert( !v_in.empty() );
 	if( v_in.size() < 2 )
@@ -1786,7 +1587,7 @@ removeRedundant3( std::vector<std::vector<vertex_t>>& v_in, const graph_t& gr )
 
 }
 //-------------------------------------------------------------------------------------------
-/// Post-process step: taken from Almadi slides
+/// Post-process step: taken from Almadi slides (UNFINISHED !!!)
 /**
 - assumes set is sorted (shortest first)
 - arg is not const, because it gets sorted here.
@@ -1836,7 +1637,6 @@ removeRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& gr )
 					std::cout << " -independent\n";
 				}
 			}
-
 		}
 		if( all_indep )
 		{
@@ -1851,49 +1651,23 @@ removeRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& gr )
 		out.push_back( cy );
 	}
 
-
-/*	auto v = buildIncidenceVector( v_in.front(), incidMap );
-
-	BinaryMatrix binmat;
-	binmat.addLine( v );
-
-	size_t i=1;
-	bool finished = false;
-	do
-	{
-		auto bincyc = buildIncidenceVector<vertex_t>( v_in[i], incidMap );
-		std::cout << "loop iter " << i << " cycle:"; printVector( std::cout, v_in[i] ); std::cout << ", bin="; printBitVector( std::cout, bincyc );
-		binmat.printMat( std::cout );
-		bool isZero = false;
-		for( const auto& li: binmat )
-		{
-			if( dotProduct( li, bincyc) == 0 )
-				isZero = true;                // NOT independent
-			else
-				binmat.addLine( bincyc );
-		}
-		if( isZero == true )
-			finished = true;
-	}
-	while ( !finished );
-*/
 	return out;
 }
+
+//######################
+} // namespace deprec
+//######################
 
 //-------------------------------------------------------------------------------------------
 /// Post-process step: removes cycles based on Gaussian Elimination
 /**
 arg is not const, because it gets sorted here.
 */
-
 template<typename vertex_t, typename graph_t>
 std::vector<std::vector<vertex_t>>
 removeRedundant(
 	std::vector<std::vector<vertex_t>>& v_in,
-//	size_t nbVertices
-//#ifdef UDGCD_REDUCE_MATRIX
 	const graph_t& gr
-//#endif
 )
 {
 	PRINT_FUNCTION;
@@ -1904,37 +1678,17 @@ removeRedundant(
 		return v_in;
 
 // build for each cycle its associated binary vector
-#if 0
-	auto binMat_in = buildBinaryMatrix( v_in, nbVertices );
-#else
 	priv::RevBinMap<vertex_t> incidMap = buildTrueIncidMap<vertex_t,graph_t>( gr );
-	auto binMat_in = buildBinaryMatrix2( v_in, gr, incidMap );
-#endif
+	auto binMat_in = buildBinaryMatrix2( v_in, incidMap );
 
 	binMat_in.getInfo().print( std::cout );//, "removeRedundant(): input binary matrix" );
 	BinaryMatrix* p_binmat_in = &binMat_in;
 
-
-
-#ifdef UDGCD_REDUCE_MATRIX
-	std::cout << "use matrix reduction step !\n";
-
-/*	RevBinMap2<vertex_t> incidMap = buildTrueIncidMap<vertex_t,graph_t>( gr );
-	size_t idx = 0;
-	for( const auto& p : incidMap )
-		std::cout << idx++ << ": " << p << "\n";*/
-
-	auto nec = binMat_in.getNonEmptyCols();
-	auto bm_in2 = reduceMatrix( binMat_in, nec );
-	p_binmat_in = &bm_in2;
-#else // UDGCD_REDUCE_MATRIX
-	std::cout << "NO matrix reduction step !\n";
-#endif
-
 	p_binmat_in->printMat( std::cout, "binMat_in" );
 
 	BinaryMatrix* p_binmat = nullptr;
-#if 1
+
+#ifndef UDGCD_USE_M4RI
 	size_t nbIter1 = 0;
 	auto binMat_out = gaussianElim( *p_binmat_in, nbIter1 );
 	COUT << "gaussianElim: nbIter=" << nbIter1 << '\n';
@@ -1942,18 +1696,14 @@ removeRedundant(
 #else
 	MatM4ri m4rmiA1 = convertToM4ri( *p_binmat_in );
 	MatM4ri m4rmiA0 = m4rmiA1;
-//	MatM4ri m4rmiB1 = m4rmiA1;
-//	MatM4ri m4rmiB0 = m4rmiA1;
 
-	mzd_echelonize_naive( m4rmiA1._data, 1 );
-	mzd_echelonize_naive( m4rmiA0._data, 0 );
-//	mzd_echelonize_pluq(  m4rmiB1._data, 1 );
-//	mzd_echelonize_pluq(  m4rmiB0._data, 0 );
+//	mzd_echelonize_naive( m4rmiA1._data, 1 );
+//	mzd_echelonize_naive( m4rmiA0._data, 0 );
+	mzd_echelonize_pluq(  m4rmiA1._data, 1 );
+	mzd_echelonize_pluq(  m4rmiA0._data, 0 );
 
 	convertFromM4ri( m4rmiA0 ).printMat( std::cout, "A0" );
 	convertFromM4ri( m4rmiA1 ).printMat( std::cout, "A1" );
-//	convertFromM4ri( m4rmiB0 ).printMat( std::cout, "B0" );
-//	convertFromM4ri( m4rmiB1 ).printMat( std::cout, "B1" );
 
 	auto binMat_out_0 = convertFromM4ri( m4rmiA0 );
 	auto binMat_out_1 = convertFromM4ri( m4rmiA1 );
@@ -1964,14 +1714,14 @@ removeRedundant(
 #endif
 
 	p_binmat->printMat( std::cout, "binMat_out" );
-/*
-#ifdef UDGCD_REDUCE_MATRIX
-	return convertBinary2Vertex_v2<vertex_t>( *p_binmat, nbVertices, nec );
+
+#ifdef UDGCD_NORMALIZE_CYCLES
+	auto out = convertBinary2Vertex( *p_binmat, incidMap );
+	normalizeCycles( out );
+	return out;
 #else
-	return convertBinary2Vertex<vertex_t>( *p_binmat, nbVertices );
+	return convertBinary2Vertex( *p_binmat, incidMap );
 #endif
-*/
-	return convertBinary2Vertex_2( *p_binmat, incidMap );
 }
 
 //-------------------------------------------------------------------------------------------
@@ -2048,7 +1798,6 @@ std::pair<size_t,size_t>
 checkCycles( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& gr )
 {
 	PRINT_FUNCTION;
-//	std::cout << __FUNCTION__ << "(): checking " << v_in.size() << " cycles\n";
 
 	size_t c1 = 0;
 	size_t c2 = 0;
@@ -2063,7 +1812,7 @@ checkCycles( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& gr )
 			c1++;
 		}
 
-		bool b2 = isChordless( cycle, gr );
+		bool b2 = chords::isChordless( cycle, gr );
 		if( !b2 )
 		{
 //			std::cout << __FUNCTION__ << "(): Error, computed cycle not chordless:\n"; printVector( std::cout, cycle );
@@ -2202,16 +1951,6 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 	std::map<typename graph_t::edge_descriptor, boost::default_color_type> edge_color;
 	auto ecmap = boost::make_assoc_property_map( edge_color );
 
-#if 0
-	auto imat = priv::buildIncidenceMat<graph_t,vertex_t>( gr );
-	imat.printMat( std::cout );
-	MatM4ri m4rmi = convertToM4ri( imat );
-//	mzd_echelonize_naive( m4rmi._data, 1 );
-	mzd_echelonize_pluq( m4rmi._data, 1 );
-	auto imat2 = convertFromM4ri( m4rmi );
-	imat2.printMat( std::cout );
-#endif
-
 //////////////////////////////////////
 // step 1: do a DFS
 //////////////////////////////////////
@@ -2268,24 +2007,6 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 	priv::printStatus( std::cout, *p_cycles, __LINE__ );
 
 
-#ifdef UDGCD_REMOVE_NONCHORDLESS
-// post process 3: remove non-chordless cycles
-	auto v_cycles1 = priv::removeNonChordless( v_cycles0, gr );
-	p_cycles = &v_cycles1;
-	priv::printStatus( std::cout, *p_cycles, __LINE__ );
-
-	info.setTimeStamp();
-	info.nbNonChordlessCycles = v_cycles1.size();
-
-	#ifdef UDGCD_DO_CYCLE_CHECKING
-
-	if( 0 != priv::checkCycles( *p_cycles, gr ).first )
-	{
-		std::cerr << "udgcd: ERROR: INVALID CYCLE DETECTED, line " << __LINE__ << "\n";
-//		exit(1);
-	}
-	#endif
-#endif
 
 //////////////////////////////////////
 // step 4 (post process): remove redundant cycles using Gaussian Elimination
@@ -2294,11 +2015,7 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 #if 0
 	auto v_cycles2 = priv::removeRedundant3( *p_cycles, gr );
 #else
-	#ifdef UDGCD_REDUCE_MATRIX
-		auto v_cycles2 = priv::removeRedundant( *p_cycles, boost::num_vertices(gr), gr );
-	#else
-		auto v_cycles2 = priv::removeRedundant( *p_cycles, gr );
-	#endif
+	auto v_cycles2 = priv::removeRedundant( *p_cycles, gr );
 #endif
 	p_cycles = &v_cycles2;
 
@@ -2311,20 +2028,6 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 #endif
 	priv::printStatus( std::cout, *p_cycles, __LINE__ );
 
-#if 0
-	info.setTimeStamp();
-	auto v_cycles3 = priv::removeChords( *p_cycles, gr );
-	p_cycles = &v_cycles3;
-
-#ifdef UDGCD_DO_CYCLE_CHECKING
-	if( 0 != priv::checkCycles( *p_cycles, gr ).first )
-	{
-		std::cerr << "udgcd: ERROR: INVALID CYCLE DETECTED, line " << __LINE__ << "\n";
-//		exit(1);
-	}
-#endif
-//	priv::printStatus( std::cout, *p_cycles, __LINE__ );
-#endif
 
 	info.setTimeStamp();
 	info.nbFinalCycles = p_cycles->size();
