@@ -343,15 +343,19 @@ processGraph( graph_t& g )
 
 	udgcd::priv::printStatus( std::cout, cycles, __LINE__ );
 
-	auto nbi = udgcd::priv::checkCycles( cycles, g );
-	if( nbi != 0 )
+	auto check = udgcd::priv::checkCycles( cycles, g );
+	if( check.first != 0 )
 	{
-		std::cout << "ERROR: " << nbi << " incorrect cycles found\n";
+		std::cout << "ERROR: " << check.first << " incorrect cycles found\n";
 		return std::make_pair(-1, cycles );
+	}
+	if( check.second != 0 )
+	{
+		std::cout << "Found: " << check.second << " non chordless cycles\n";
 	}
 
 	info.print( std::cout );
-	info.printCSV( std::cerr );
+//	info.printCSV( std::cerr );
 
 	auto diff = (int)cycles.size() - (int)expected;
 	return std::make_pair(diff, cycles );

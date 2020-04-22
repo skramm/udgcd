@@ -1525,6 +1525,25 @@ This function assumes the binary vector is "full", i.e. its length is \f$ v \tim
 */
 template<typename vertex_t>
 std::vector<std::vector<vertex_t>>
+convertBinary2Vertex_2
+(
+	const BinaryMatrix&        binmat,     ///< input binary matrix
+	const RevBinMap<vertex_t>& incidMap    ///< incidence map
+)
+{
+	std::vector<std::vector<vertex_t>> out;
+	for( const auto& li: binmat )
+		out.push_back( convertBC2VC<vertex_t>( li, incidMap ) );
+	return out;
+}
+
+//-------------------------------------------------------------------------------------------
+/// Convert vector of cycles expressed as binary vectors to vector of cycles expressed as a vector of vertices
+/**
+This function assumes the binary vector is "full", i.e. its length is \f$ v \times (v-1) / 2 \f$
+*/
+template<typename vertex_t>
+std::vector<std::vector<vertex_t>>
 convertBinary2Vertex
 (
 	const BinaryMatrix& binmat,
@@ -1606,32 +1625,6 @@ buildIncidenceVector( const std::vector<vertex_t>& cycle, const RevBinMap<vertex
 }
 
 //-------------------------------------------------------------------------------------------
-/// Converts cycle expressed as an binary incidence vector to a set of cycles
-/**
-Reverse opertaion done with buildIncidenceVector()
-*/
-/*
-template<typename vertex_t>
-std::vector<vertex_t>
-convertIVtoCycle( const BinaryVector& binvec, const RevBinMap2<vertex_t>& incidMap )
-{
-	PRINT_FUNCTION;
-
-	assert( binvec.size() == incidMap.size() );
-
-	std::vector<vertex_t> cycle;
-	for( size_t i=0; i<binvec.size(); i++ )
-	{
-		if( binvec[i] == 1 )
-		{
-			auto p = incidMap[i];
-
-		}
-	}
-	return cycle;
-}
-*/
-//-------------------------------------------------------------------------------------------
 int
 dotProduct( const BinaryVec& v1, const BinaryVec& v2 )
 {
@@ -1704,6 +1697,28 @@ buildTrueIncidMap( const graph_t& gr )
 	std::cout << __FUNCTION__ << "() map size=" << out.size() << "\n";
 	return out;
 }
+//-------------------------------------------------------------------------------------------
+/// Builds all the binary vectors for all the cycles, using only the existing edges in the graph
+template<typename graph_t,typename vertex_t>
+BinaryMatrix
+buildBinaryMatrix2(
+	const std::vector<std::vector<vertex_t>>& v_cycles,     ///< input cycles
+	const graph_t&                            gr,            ///< graph
+	const RevBinMap<vertex_t>&                incidMap
+)
+{
+	PRINT_FUNCTION;
+
+//	RevBinMap<vertex_t> incidMap = buildTrueIncidMap<vertex_t,graph_t>( gr );
+
+	BinaryMatrix out( v_cycles.size(), incidMap.size() );  // lines x cols
+
+	for( size_t i=0; i<v_cycles.size(); i++ )
+		out.line(i) = buildIncidenceVector( v_cycles[i], incidMap );
+
+	return out;
+}
+
 //-------------------------------------------------------------------------------------------
 /// Post-process step: 2005 Melhorn and Dimitrios Michail, page 3
 /**
@@ -1870,18 +1885,15 @@ removeRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& gr )
 /**
 arg is not const, because it gets sorted here.
 */
-#ifdef UDGCD_REDUCE_MATRIX
+
 template<typename vertex_t, typename graph_t>
-#else
-template<typename vertex_t>
-#endif
 std::vector<std::vector<vertex_t>>
 removeRedundant(
 	std::vector<std::vector<vertex_t>>& v_in,
-	size_t nbVertices
-#ifdef UDGCD_REDUCE_MATRIX
-	, const graph_t& gr
-#endif
+//	size_t nbVertices
+//#ifdef UDGCD_REDUCE_MATRIX
+	const graph_t& gr
+//#endif
 )
 {
 	PRINT_FUNCTION;
@@ -1892,7 +1904,12 @@ removeRedundant(
 		return v_in;
 
 // build for each cycle its associated binary vector
+#if 0
 	auto binMat_in = buildBinaryMatrix( v_in, nbVertices );
+#else
+	priv::RevBinMap<vertex_t> incidMap = buildTrueIncidMap<vertex_t,graph_t>( gr );
+	auto binMat_in = buildBinaryMatrix2( v_in, gr, incidMap );
+#endif
 
 	binMat_in.getInfo().print( std::cout );//, "removeRedundant(): input binary matrix" );
 	BinaryMatrix* p_binmat_in = &binMat_in;
@@ -1916,19 +1933,22 @@ removeRedundant(
 
 	p_binmat_in->printMat( std::cout, "binMat_in" );
 
-#if 0
+	BinaryMatrix* p_binmat = nullptr;
+#if 1
+	size_t nbIter1 = 0;
 	auto binMat_out = gaussianElim( *p_binmat_in, nbIter1 );
 	COUT << "gaussianElim: nbIter=" << nbIter1 << '\n';
+	p_binmat = &binMat_out;
 #else
 	MatM4ri m4rmiA1 = convertToM4ri( *p_binmat_in );
 	MatM4ri m4rmiA0 = m4rmiA1;
-	MatM4ri m4rmiB1 = m4rmiA1;
-	MatM4ri m4rmiB0 = m4rmiA1;
+//	MatM4ri m4rmiB1 = m4rmiA1;
+//	MatM4ri m4rmiB0 = m4rmiA1;
 
 	mzd_echelonize_naive( m4rmiA1._data, 1 );
 	mzd_echelonize_naive( m4rmiA0._data, 0 );
-	mzd_echelonize_pluq(  m4rmiB1._data, 1 );
-	mzd_echelonize_pluq(  m4rmiB0._data, 0 );
+//	mzd_echelonize_pluq(  m4rmiB1._data, 1 );
+//	mzd_echelonize_pluq(  m4rmiB0._data, 0 );
 
 	convertFromM4ri( m4rmiA0 ).printMat( std::cout, "A0" );
 	convertFromM4ri( m4rmiA1 ).printMat( std::cout, "A1" );
@@ -1937,19 +1957,21 @@ removeRedundant(
 
 	auto binMat_out_0 = convertFromM4ri( m4rmiA0 );
 	auto binMat_out_1 = convertFromM4ri( m4rmiA1 );
-#endif
 
-	BinaryMatrix* p_binmat = &binMat_out_0;
+	p_binmat = &binMat_out_0;
 	if( binMat_out_1.count() < binMat_out_0.count() )
 		p_binmat = &binMat_out_1;
+#endif
 
 	p_binmat->printMat( std::cout, "binMat_out" );
-
+/*
 #ifdef UDGCD_REDUCE_MATRIX
 	return convertBinary2Vertex_v2<vertex_t>( *p_binmat, nbVertices, nec );
 #else
 	return convertBinary2Vertex<vertex_t>( *p_binmat, nbVertices );
 #endif
+*/
+	return convertBinary2Vertex_2( *p_binmat, incidMap );
 }
 
 //-------------------------------------------------------------------------------------------
@@ -2013,41 +2035,42 @@ isACycle( const std::vector<vertex_t>& cycle, const graph_t& gr )
 }
 
 //-------------------------------------------------------------------------------------------
-/// Returns the number of cycles that are incorrect
+/// Checks the cycles in \c V_in and returns as a pair of values:
 /**
-This function is only there for checking purposes
+- first: the number of cycles in \c v_in that are NOT cycles
+- second: the number of cycles that are NOT chordless
+
+This function is only there for checking purposes.
+It does NOT check that the number of cycles is the correct one.
 */
 template<typename vertex_t, typename graph_t>
-size_t
+std::pair<size_t,size_t>
 checkCycles( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& gr )
 {
 	PRINT_FUNCTION;
-	std::cout << __FUNCTION__ << "(): checking " << v_in.size() << " cycles\n";
+//	std::cout << __FUNCTION__ << "(): checking " << v_in.size() << " cycles\n";
 
-	size_t c = 0;
+	size_t c1 = 0;
+	size_t c2 = 0;
 	for( auto cycle: v_in )
 	{
 		assert( cycle.size() );
 
-//		std::cout << "cycle:\n"; PrintVector( std::cout, cycle );
-
 		bool b = isACycle( cycle, gr );
 		if( !b )
 		{
-			std::cout << __FUNCTION__ << "(): Error, computed cycle not a cycle:\n";
-			printVector( std::cout, cycle );
-			c++;
+//			std::cout << __FUNCTION__ << "(): Error, computed cycle not a cycle:\n"; printVector( std::cout, cycle );
+			c1++;
 		}
 
 		bool b2 = isChordless( cycle, gr );
 		if( !b2 )
 		{
-			std::cout << __FUNCTION__ << "(): Error, computed cycle not chordless:\n";
-			printVector( std::cout, cycle );
-			c++;
+//			std::cout << __FUNCTION__ << "(): Error, computed cycle not chordless:\n"; printVector( std::cout, cycle );
+			c2++;
 		}
 	}
-	return c;
+	return std::make_pair(c1,c2);
 }
 
 } // namespace priv
@@ -2256,7 +2279,7 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 
 	#ifdef UDGCD_DO_CYCLE_CHECKING
 
-	if( 0 != priv::checkCycles( *p_cycles, gr ) )
+	if( 0 != priv::checkCycles( *p_cycles, gr ).first )
 	{
 		std::cerr << "udgcd: ERROR: INVALID CYCLE DETECTED, line " << __LINE__ << "\n";
 //		exit(1);
@@ -2274,13 +2297,13 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 	#ifdef UDGCD_REDUCE_MATRIX
 		auto v_cycles2 = priv::removeRedundant( *p_cycles, boost::num_vertices(gr), gr );
 	#else
-		auto v_cycles2 = priv::removeRedundant( *p_cycles, boost::num_vertices(gr) );
+		auto v_cycles2 = priv::removeRedundant( *p_cycles, gr );
 	#endif
 #endif
 	p_cycles = &v_cycles2;
 
 #ifdef UDGCD_DO_CYCLE_CHECKING
-	if( 0 != priv::checkCycles( *p_cycles, gr ) )
+	if( 0 != priv::checkCycles( *p_cycles, gr ).first )
 	{
 		std::cerr << "udgcd: ERROR: INVALID CYCLE DETECTED, line " << __LINE__ << "\n";
 //		exit(1);
@@ -2294,7 +2317,7 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 	p_cycles = &v_cycles3;
 
 #ifdef UDGCD_DO_CYCLE_CHECKING
-	if( 0 != priv::checkCycles( *p_cycles, gr ) )
+	if( 0 != priv::checkCycles( *p_cycles, gr ).first )
 	{
 		std::cerr << "udgcd: ERROR: INVALID CYCLE DETECTED, line " << __LINE__ << "\n";
 //		exit(1);
