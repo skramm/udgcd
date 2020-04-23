@@ -340,7 +340,7 @@ struct BinaryMatrix
 
 	void printMat( std::ostream& f, std::string msg=std::string() ) const
 	{
-		size_t i=0;
+		size_t c=0, i=0;
 		f << "BinaryMatrix: " << msg << ", nbLines=" << nbLines() << " nbCols=" << nbCols() << "\n";
 		for( auto line: *this )
 		{
@@ -353,7 +353,9 @@ struct BinaryMatrix
 					f << '.';
 			}
 			f << " | #" << line.count() << "\n";
+			c += line.count();
 		}
+		f << "Total count=" << c << "\n";
 	}
 
 /// Returns a vector having as size the number of columns and holding the number of "1" the column has
@@ -388,6 +390,11 @@ operator == ( const BinaryMatrix& m1, const BinaryMatrix& m2 )
 			return false;
 	return true;
 }
+
+
+//######################
+namespace deprec {
+//######################
 
 //-------------------------------------------------------------------------------------------
 /// A binary matrix with an added data member so we know to which
@@ -431,6 +438,11 @@ struct IncidenceMatrix : public BinaryMatrix
 		BinaryMatrix::printMat( f, "IncidenceMatrix" );
 	}
 };
+//-------------------------------------------------------------------------------------------
+
+//######################
+} // namespace deprec
+//######################
 
 // TEMP
 } // namespace priv
@@ -464,13 +476,13 @@ printBitVectors( std::ostream& f, const T& vec )
 /**
 \warning Have to be sure there \b is a cycle, else infinite recursion !
 */
-template <class Vertex, class Graph>
+template <class vertex_t, class graph_t>
 bool
 explore(
-	const Vertex& v1,                            ///< the starting vertex we want to explore
-	const Graph&  g,
-	std::vector<std::vector<Vertex>>& vv_paths,
-	std::vector<std::vector<Vertex>>& v_cycles, ///< this is where we store the paths that have cycles
+	const vertex_t& v1,                            ///< the starting vertex we want to explore
+	const graph_t&  gr,
+	std::vector<std::vector<vertex_t>>& vv_paths,
+	std::vector<std::vector<vertex_t>>& v_cycles, ///< this is where we store the paths that have cycles
 	int depth = 0
 )
 {
@@ -480,35 +492,21 @@ explore(
 	static int max_depth = std::max( depth, max_depth );
 	assert( vv_paths.size()>0 );
 
-//	typename boost::graph_traits<Graph>::out_edge_iterator ei, ei_end;
-//	boost::tie(ei, ei_end) = out_edges( v1, g );
-
-//	COUTP << "nb of edges = " << ei_end - ei << "\n";
-//	size_t edge_idx = 0;
-
-//	std::vector<Vertex> src_path = vv_paths[vv_paths.size()-1];
-	std::vector<Vertex> src_path = vv_paths.back();
-
-#ifdef UDGCD_DEV_MODE
-//	COUT << "src_path: "; PrintVector( std::cout, src_path );
-//	int iter=0;
-//	auto tmp = boost::out_edges( v1, g );
-//	size_t nbedges = tmp.second - tmp.first;
-#endif
+	std::vector<vertex_t> src_path = vv_paths.back();
 
 	bool found = false;
-	for( auto oei = boost::out_edges( v1, g ); oei.first != oei.second; ++oei.first ) //, ++edge_idx )         // iterating on all the output edges
+	for( auto oei = boost::out_edges( v1, gr ); oei.first != oei.second; ++oei.first )          // iterating on all the output edges
 	{
 		bool b = false;
-		Vertex v2a = boost::source(*oei.first, g);
-		Vertex v2b = boost::target(*oei.first, g);
+		vertex_t v2a = boost::source( *oei.first, gr );
+		vertex_t v2b = boost::target( *oei.first, gr );
 #ifdef UDGCD_DEV_MODE
 //		COUT << ++iter << '/' << nbedges << " - v1=" << v1 << ": connected edges v2a=" << v2a << " v2b=" << v2b << "\n";
 #endif
 		if( v2b == v1 && v2a == src_path[0] ) // we just found the edge that we started on, so no need to finish the current iteration, just move on.
 			continue;
 
-		std::vector<Vertex> newv(src_path);  // create new path from source
+		std::vector<vertex_t> newv(src_path);  // create new path from source
 		bool AddNode = true;
 		if( newv.size() > 1 )
 			if( newv[ newv.size()-2 ] == v2b )
@@ -528,7 +526,7 @@ explore(
 				newv.push_back( v2b );         // else add'em and continue
 //				COUT << "  -adding vector ";  for( const auto& vv:newv )	COUT << vv << "-"; COUT << "\n";
 				vv_paths.push_back( newv );
-				b = explore( v2b, g, vv_paths, v_cycles, depth );
+				b = explore( v2b, gr, vv_paths, v_cycles, depth );
 			}
 		}
 		if( b )
@@ -537,6 +535,7 @@ explore(
 	return found;
 }
 //-------------------------------------------------------------------------------------------
+/// putSmallestElemFirst
 template<typename T>
 void
 putSmallestElemFirst( std::vector<T>& vec )
@@ -572,7 +571,6 @@ normalizeCycles( std::vector<std::vector<T>>& cycles )
 	for( auto& cycle: cycles )
 		normalizeCycle( cycle );
 }
-
 
 //-------------------------------------------------------------------------------------------
 /// Removes the parts that are not part of the cycle, and normalize the order
@@ -668,13 +666,13 @@ by a static binary vector, givening the result instantly from an index value.
 */
 template<typename vertex_t, typename graph_t>
 bool
-areConnected( const vertex_t& v1, const vertex_t& v2, const graph_t& g )
+areConnected( const vertex_t& v1, const vertex_t& v2, const graph_t& gr )
 {
-	auto pair_edge = boost::out_edges( v1, g );                      // get iterator range on edges
+	auto pair_edge = boost::out_edges( v1, gr );                      // get iterator range on edges
 	for( auto it = pair_edge.first; it != pair_edge.second; ++it )
 	{
-		assert( boost::source( *it, g ) == v1 );
-		if( v2 == boost::target( *it, g ) )
+		assert( boost::source( *it, gr ) == v1 );
+		if( v2 == boost::target( *it, gr ) )
 			return true;
 	}
 	return false;
@@ -701,7 +699,7 @@ no two vertices of the cycle are connected by an edge that does not itself belon
 */
 template<typename vertex_t, typename graph_t>
 bool
-isChordless( const std::vector<vertex_t>& path, const graph_t& g )
+isChordless( const std::vector<vertex_t>& path, const graph_t& gr )
 {
 	if( path.size() < 4 ) // no need to test if less than 4 vertices
 		return true;
@@ -711,7 +709,7 @@ isChordless( const std::vector<vertex_t>& path, const graph_t& g )
 		for( size_t j=i+2; j<path.size(); ++j )
 		{
 			if( i != 0 || j != path.size()-1 )
-				if( areConnected( path[i], path[j], g ) )
+				if( areConnected( path[i], path[j], gr ) )
 					return false;
 		}
 	}
@@ -793,6 +791,11 @@ removeNonChordless( const std::vector<std::vector<vertex_t>>& v_in, const graph_
 } // namespace chords
 //######################
 
+//-------------------------------------------------------------------------------------------
+/// A vector holding a pair of indexes/vertices. See page \ref p_data_reprentation.
+template<typename T>
+using RevBinMap = std::vector<VertexPair<T>>;
+
 
 //######################
 /// Holds some deprecated/unused code, but kept, well... just in case.
@@ -828,10 +831,6 @@ buildFullBinaryVector(
 	}
 //	printBitVector( std::cout, binvect );
 }
-
-//######################
-} // namespace deprec
-//######################
 
 //-------------------------------------------------------------------------------------------
 /// Build table of series \f$ y_n = y_{n-1}+N-n-1 \f$
@@ -875,10 +874,6 @@ buildFullBinaryIndex( size_t nbVertices )
 	return idx_map;
 }
 
-//######################
-namespace deprec {
-//######################
-
 //-------------------------------------------------------------------------------------------
 /// Builds all the binary vectors for all the cycles, using ALL potential edges (not only the ones used)
 template<typename vertex_t>
@@ -907,14 +902,6 @@ buildBinaryMatrix(
 	return out;
 }
 
-//######################
-} // namespace deprec
-//######################
-
-//-------------------------------------------------------------------------------------------
-/// A vector holding a pair of indexes/vertices. See page \ref p_data_reprentation.
-template<typename T>
-using RevBinMap = std::vector<VertexPair<T>>;
 
 //-------------------------------------------------------------------------------------------
 /// Builds an table giving from an index in the binary vector the indexes of the two vertices
@@ -958,6 +945,11 @@ buildReverseBinaryMap( size_t nb_vertices )
 	}
 	return out;
 }
+
+//######################
+} // namespace deprec
+//######################
+
 //-------------------------------------------------------------------------------------------
 /// Returns false if a given vertex appears more than once in the vector \c vp
 template<typename vertex_t>
@@ -1257,7 +1249,7 @@ Assumes no identical rows
 */
 inline
 BinaryMatrix
-gaussianElim( BinaryMatrix& m_in, size_t& nbIter ) // /* TEMP */, size_t nbVertices, const std::vector<size_t>& nec )
+gaussianElim( BinaryMatrix& m_in, size_t& nbIter )
 {
 	PRINT_FUNCTION;
 
@@ -1270,7 +1262,6 @@ gaussianElim( BinaryMatrix& m_in, size_t& nbIter ) // /* TEMP */, size_t nbVerti
 
 	nbIter = 0;
 	bool done = false;
-
 
 /// \todo 20200422: Any reason not to use a BinaryVec here ?
 	std::vector<bool> tag(nb_rows,false);
@@ -1357,6 +1348,17 @@ convertBinary2Vertex_v2
 	return v_out;
 }
 
+//-------------------------------------------------------------------------------------------
+/// Returns the same matrix but with empty cols removed
+BinaryMatrix
+reduceMatrix( const BinaryMatrix& m_in, const std::vector<size_t>& nonEmptyCols )
+{
+	BinaryMatrix out( m_in.nbLines() );
+	for( auto idx: nonEmptyCols )
+		out.addCol( m_in.getCol(idx) );
+	return out;
+}
+
 //######################
 } // namespace deprec
 //######################
@@ -1375,18 +1377,8 @@ convertBinary2Vertex
 
 	std::vector<std::vector<vertex_t>> out;
 	for( const auto& li: binmat )
-		out.push_back( convertBC2VC<vertex_t>( li, incidMap ) );
-	return out;
-}
-
-//-------------------------------------------------------------------------------------------
-/// Returns the same matrix but with empty cols removed
-BinaryMatrix
-reduceMatrix( const BinaryMatrix& m_in, const std::vector<size_t>& nonEmptyCols )
-{
-	BinaryMatrix out( m_in.nbLines() );
-	for( auto idx: nonEmptyCols )
-		out.addCol( m_in.getCol(idx) );
+		if( li.count() )     // if line holds some '1'
+			out.push_back( convertBC2VC<vertex_t>( li, incidMap ) );
 	return out;
 }
 
@@ -1432,10 +1424,10 @@ dotProduct( const BinaryVec& v1, const BinaryVec& v2 )
 	return countOnes%2;           // if odd number of ones, then output is 1 (XOR)
 }
 //-------------------------------------------------------------------------------------------
-/// Returns the mean number of nodes that the set of cycles has.
+/// Returns the total size of cycles and the mean number of nodes that the set of cycles has.
 template<typename vertex_t>
-double
-getMeanSize( const std::vector<std::vector<vertex_t>>& cycles )
+std::pair<size_t,double>
+getSizeInfo( const std::vector<std::vector<vertex_t>>& cycles )
 {
 	size_t sum=0;
 	std::for_each(
@@ -1446,15 +1438,18 @@ getMeanSize( const std::vector<std::vector<vertex_t>>& cycles )
 			{ sum += cycle.size(); }
 		);
 //	std::cout << "CYCLE MEAN SIZE="	<< 1.0 * sum / cycles.size()	<< "\n";
-	return 1.0*sum/cycles.size();
+	return std::make_pair( sum, 1.0*sum/cycles.size() );
 }
 //-------------------------------------------------------------------------------------------
 template<typename vertex_t>
 void
-printStatus( std::ostream& f, const std::vector<std::vector<vertex_t>>& cycles, int line )
+printStatus( std::ostream& f, const std::vector<std::vector<vertex_t>>& cycles, int line=0 )
 {
-	f << "l."<< line<< ": status: #=" << cycles.size()
-		<< ", mean size=" << getMeanSize( cycles ) << "\n";
+	f << "l." << ( line ? std::to_string(line) : std::string("???") )
+		<< ": status: #=" << cycles.size()
+		<< ", total size=" << getSizeInfo( cycles ).first
+		<< ", mean size="  << getSizeInfo( cycles ).second
+		<< "\n";
 	printPaths( f, cycles );
 }
 
@@ -1707,6 +1702,9 @@ removeRedundant(
 
 	auto binMat_out_0 = convertFromM4ri( m4rmiA0 );
 	auto binMat_out_1 = convertFromM4ri( m4rmiA1 );
+
+	printStatus( std::cout, convertBinary2Vertex( binMat_out_0, incidMap ) );
+	printStatus( std::cout, convertBinary2Vertex( binMat_out_1, incidMap ) );
 
 	p_binmat = &binMat_out_0;
 	if( binMat_out_1.count() < binMat_out_0.count() )

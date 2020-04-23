@@ -261,13 +261,13 @@ TEST_CASE( "test buildFullBinaryIndex", "[testbiv]" )
 	size_t nbVertices = 6;
 	{
 		std::vector<size_t> expected = {0,4,7,9,10};
-		std::vector<size_t> idx_vec = priv::buildFullBinaryIndex( nbVertices );
+		std::vector<size_t> idx_vec = priv::deprec::buildFullBinaryIndex( nbVertices );
 		REQUIRE( idx_vec == expected );
 	}
 	{
 		nbVertices = 7;
 		std::vector<size_t> expected = {0,5,9,12,14,15};
-		std::vector<size_t> idx_vec = priv::buildFullBinaryIndex( nbVertices );
+		std::vector<size_t> idx_vec = priv::deprec::buildFullBinaryIndex( nbVertices );
 		REQUIRE( idx_vec == expected );
 	}
 }
@@ -278,7 +278,7 @@ TEST_CASE( "test buildFullBinaryIndex", "[testbiv]" )
 void
 ProcessTest( std::vector<size_t>& cycle, size_t nbVertices )
 {
-	auto bim = udgcd::priv::buildFullBinaryIndex( nbVertices );
+	auto bim = udgcd::priv::deprec::buildFullBinaryIndex( nbVertices );
 	REQUIRE( bim.size() == nbVertices-1 );
 
 	auto nbCombinations = nbVertices * (nbVertices-1) / 2;
@@ -288,7 +288,7 @@ ProcessTest( std::vector<size_t>& cycle, size_t nbVertices )
 //	std::cout << "binary vector:"
 //	udgcd::priv::PrintBitVector( std::cout, bpa );
 
-	auto rev_map = udgcd::priv::buildReverseBinaryMap<size_t>( nbVertices );
+	auto rev_map = udgcd::priv::deprec::buildReverseBinaryMap<size_t>( nbVertices );
 	REQUIRE( rev_map.size() == nbCombinations );
 
 	auto cycle2 = udgcd::priv::convertBC2VC<size_t>( bpa, rev_map );
@@ -533,7 +533,7 @@ vector: 1  0  1  0  0  0  1  0  0  1
 */
 	size_t     nb_vertices = 5;
 	priv::BinaryVec v_in{ buildBinVect("1010001001") };
-	priv::RevBinMap  rev_map = udgcd::priv::buildReverseBinaryMap( nb_vertices );
+	priv::RevBinMap  rev_map = udgcd::priv::deprec::buildReverseBinaryMap( nb_vertices );
 
 	auto m = udgcd::priv::buildPairSetFromBinaryVec<size_t>( v_in, rev_map );
 	std::map<size_t,size_t> res={
