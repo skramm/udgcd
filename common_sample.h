@@ -34,6 +34,19 @@ Home page: https://github.com/skramm/udgcd
 extern std::string prog_id; // allocated in samples files
 int g_idx = 0;
 
+/// Used to store a vertex position, if the input dot file specifies it
+struct NodePos
+{
+	float x,y;
+};
+
+std::ostream&
+operator << ( std::ostream& f, NodePos np )
+{
+	f << "NodePos:" << np.x << "," << np.y << "\n";
+	return f;
+}
+
 //-------------------------------------------------------------------
 /// Prints some details on graph and returns nb of expected cycles
 /**
@@ -275,13 +288,13 @@ splitString( const std::string& s, char delim )
     return velems;
 }
 //-------------------------------------------------------------------
-/// Remove spurious spaces at beginning and end
+/// Remove spurious spaces (or other character) at beginning and end
 std::string
-trimString( std::string in )
+trimString( std::string in, char c = ' ' )
 {
-	auto lamb = [] ( std::string a, size_t& idx )    // lambda
+	auto lamb = [c] ( std::string a, size_t& idx )    // lambda
 		{
-			while( a[idx] == ' ' && idx < a.size() )
+			while( a[idx] == c && idx < a.size() )
 			idx++;
 		};
 
@@ -304,17 +317,17 @@ trimString( std::string in )
 [quote]
 build and link against the "boost_graph" and "boost_regex" libraries.
 [/quote]
-Thus, as we wan't to keep this "link-free", we do not use it.
-
-The counterpart is that we do not read the vertices/edges properties that can be given in a dot file.
-
+Thus, as we wan't to keep this "link-free", we do not use it.<br>
+The counterpart is that we do not read the vertices/edges properties that can be given in a dot file.<br>
 See https://www.boost.org/doc/libs/1_72_0/libs/graph/doc/read_graphviz.html
 
-Limitation/features :  as we do not handle labels, the index in input file will be the BGL vertex index.
+\warning This is a minimal reader, don't expect any fancy features.
+
+Limitation/features:  as we do not handle labels, the index in input file will be the BGL vertex index.
 Drawback: if a node is missing in input file, it will be in the generated graph, because BGL indexes are always
 consecutives.
 
-For example, see this input DOT file:
+For example, this input DOT file:
 \verbatim
 graph G {
 0--3;
@@ -331,8 +344,6 @@ graph G {
 }
 \endverbatim
 will generate a graph of 6 vertices (0 to 5), with only 0 and 1 connected.
-
-
 */
 template<typename graph_t>
 graph_t
@@ -348,7 +359,9 @@ loadGraph_dot( const char* fname )
 
 	size_t nb_lines     = 0;
 	size_t nb_empty     = 0;
-	size_t nb_comment   = 0;
+//	size_t nb_comment   = 0;
+
+	std::map<size_t,NodePos> mapPos; /// holds the position of node, if given
 
 	size_t max_vert_idx = 0;
 	std::vector<std::pair<size_t,size_t>> v_edges;
@@ -358,7 +371,7 @@ loadGraph_dot( const char* fname )
 		std::getline( f, temp );
 		nb_lines++;
 
-		if( temp.empty() )          // if empty
+		if( temp.empty() || temp.front() == '#' )          // if empty or comment
 			nb_empty++;
 		else                        // if NOT empty
 		{
@@ -373,13 +386,50 @@ loadGraph_dot( const char* fname )
 			if( trimmed.back() == ';' )   // if EOL, then remove that and proceed
 			{
 				auto s2 = trimmed.substr( 0, trimmed.size()-1 );
-//				std::cout << "line=" << trimmed <<  ", s2=" << s2 << "\n";
+				std::cout << "line=" << trimmed <<  ", s2=" << s2 << "\n";
 				auto v_tok = splitString( s2, "--" );
+
 				if( v_tok.size() == 0 )                      // vertex
 				{
+					NodePos np;
+					bool pos_is_given = false;
+					auto p1 = s2.find( "[" );                  // check for attributes
+					if( p1 != std::string::npos )
+					{
+						auto p2 = s2.find( "]" );
+						std::cout << "p1=" << p1 << " p2=" << p2 << "\n";
+						if( p2 == std::string::npos || p2 == p1+1 )
+							throw "invalid line: " + s2;
+						auto sv = trimString( s2.substr( 0, p1-1 ) );
+						auto sa = trimString( s2.substr( p1+1, p2-p1-1 ) );
+						std::cout << "sv='" << sv << "' sa='" << sa << "'\n";
+						auto v_att = splitString( sa, '=' );
+						if( v_att.size() != 2 )
+							throw "invalid attribute string, line=" + s2;
+						if( v_att[0] != "pos" )
+							throw "unknown attribute string, line=" + s2;
+						auto val = trimString( v_att[1], '"' );
+						std::cout << "val1='" << val << std::endl;
+
+						if( val.back() == '!' )                    // if pos has an exclamation
+							val = val.substr( 0, val.size()-1 );   // mark, remove it
+						std::cout << "val2='" << val << "'\n";
+						auto v_values = splitString( val, ',' );
+						if( v_values.size() != 2 )
+							throw "invalid attribute string, line=" + s2;
+
+						pos_is_given = true;
+						np.x = std::stof( v_values[0] );
+						np.y = std::stof( v_values[1] );
+std::cout << np;
+						s2 = sv;
+					}
 					auto idx = std::stoul(s2);
 					if( max_vert_idx < idx )
 						max_vert_idx = idx;
+					if( pos_is_given )
+						mapPos[ idx ] = np;
+
 //					std::cout << "-max_vert_idx=" << max_vert_idx << "\n";
 				}
 				else
@@ -419,12 +469,14 @@ loadGraph_dot( const char* fname )
 	for( const auto& p: v_edges )
 		boost::add_edge( (vertex_t)p.first, (vertex_t)p.second, gr );
 
-
 	std::cout<< " - file info:"
 		<< "\n  - nb lines=" << nb_lines
 		<< "\n  - nb empty=" << nb_empty
-		<< "\n  - nb comment=" << nb_comment << '\n';
+//		<< "\n  - nb comment=" << nb_comment
+		<< '\n';
 
+//	std::cout << gr;
+//	exit(1);
 	return gr;
 }
 

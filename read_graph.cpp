@@ -5,7 +5,7 @@
 
 /**
 \file read_graph.cpp
-\brief read a graph in simple text format, searches for cycles, and make sure these are correct
+\brief Read a graph in a file, searches for cycles, and make sure these are correct.
 
 Also generates a .dot file that can be graphically rendered with Graphviz
 
@@ -21,13 +21,13 @@ std::string prog_id = "read_graph";
 #include "common_sample.h"
 
 
-
 //-------------------------------------------------------------------------------------------
 /// Some typedefs for readability
 typedef boost::adjacency_list<
 	boost::vecS,
 	boost::vecS,
-	boost::undirectedS
+	boost::undirectedS,
+	NodePos
 	> graph_t;
 
 typedef boost::graph_traits<graph_t>::vertex_descriptor vertex_t;
