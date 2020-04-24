@@ -48,7 +48,31 @@ int main( int argc, const char** argv )
 		std::cout << "missing input filename, exit.\n";
 		return 1;
 	}
-	graph_t g = loadGraph<graph_t>( argv[1] );
+	auto vs = splitString( argv[1], '.' );
+	if( vs.size() < 2 )
+	{
+		std::cerr << "Error, input file '" <<  argv[1] << "' has no extension\n";
+		return 1;
+	}
+
+	graph_t g;
+	if( vs.back() == "dot" )
+	{
+		g = loadGraph_dot<graph_t>( argv[1] );
+	}
+	else
+	{
+		if( vs.back() == "txt" )
+		{
+			g = loadGraph_txt<graph_t>( argv[1] );
+		}
+		else
+		{
+			std::cerr << "Error, input file '" <<  argv[1] << "' extension invalid\n";
+			return 1;
+		}
+	}
+
 
 	auto vs1 = splitString( argv[1], '/' );      // splits by '/', and keep the last one (filename)
 	auto vs2 = splitString( vs1.back(), '.' );     // splits by the point (if any)

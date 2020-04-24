@@ -309,25 +309,49 @@ Thus, as we wan't to keep this "link-free", we do not use it.
 The counterpart is that we do not read the vertices/edges properties that can be given in a dot file.
 
 See https://www.boost.org/doc/libs/1_72_0/libs/graph/doc/read_graphviz.html
+
+Limitation/features :  as we do not handle labels, the index in input file will be the BGL vertex index.
+Drawback: if a node is missing in input file, it will be in the generated graph, because BGL indexes are always
+consecutives.
+
+For example, see this input DOT file:
+\verbatim
+graph G {
+0--3;
+}
+\endverbatim
+This will generate a graph of 4 vertices, with 0 and 3 connected and 1 and 2 unconnected.
+
+Another example. This input DOT file:
+\verbatim
+graph G {
+2;
+5;
+0--1;
+}
+\endverbatim
+will generate a graph of 6 vertices (0 to 5), with only 0 and 1 connected.
+
+
 */
 template<typename graph_t>
 graph_t
-loadGraphViz( const char* fname )
+loadGraph_dot( const char* fname )
 {
-   	graph_t g;
-
 	std::cout<< " - Reading file:" << fname << '\n';
 	std::ifstream f( fname );
 	if( !f.is_open() )
 	{
-		std::cerr << "Unable to open file\n";
+		std::cerr << "Unable to open file '" << fname << "'\n";
 		throw "Unable to open file";
 	}
 
 	size_t nb_lines     = 0;
 	size_t nb_empty     = 0;
 	size_t nb_comment   = 0;
-	std::vector<size_t> v_vertex;
+
+	size_t max_vert_idx = 0;
+	std::vector<std::pair<size_t,size_t>> v_edges;
 	do
 	{
 		std::string temp;
@@ -338,53 +362,77 @@ loadGraphViz( const char* fname )
 			nb_empty++;
 		else                        // if NOT empty
 		{
-            auto trimmed = trimString( temp );
-            auto vs_spc = splitString( trimmed, " " );
+            auto trimmed = trimString( temp );         // remove unwanted spaces
+            auto vs_spc = splitString( trimmed, ' ' );
             if( vs_spc.size() > 2 )
             {
                 if( vs_spc[0] == "graph" )
                     std::cout << "graph name=" << vs_spc[1] << "\n";
             }
+
 			if( trimmed.back() == ';' )   // if EOL, then remove that and proceed
 			{
 				auto s2 = trimmed.substr( 0, trimmed.size()-1 );
-
-				auto vs_edges = splitString( s2, "--" );
-				if( vs_edges.size() == 0 )                      // vertex
+//				std::cout << "line=" << trimmed <<  ", s2=" << s2 << "\n";
+				auto v_tok = splitString( s2, "--" );
+				if( v_tok.size() == 0 )                      // vertex
 				{
-					v_vertex.push_back( std::stoi(s2) );
-					std::cout << "-adding vertex " << std::stoi(s2) << "\n";
+					auto idx = std::stoul(s2);
+					if( max_vert_idx < idx )
+						max_vert_idx = idx;
+//					std::cout << "-max_vert_idx=" << max_vert_idx << "\n";
 				}
 				else
 				{
-					if( vs_edges.size() == 3 )
+					if( v_tok.size() == 2 )
 					{
-
+						auto v0 = std::stoul( v_tok[0] );
+						auto v1 = std::stoul( v_tok[1] );
+						if( v1<v0 )
+							std::swap( v0, v1 );
+						v_edges.push_back( std::make_pair( v0, v1 ) );
+//						std::cout << "adding edge " << v0 << "-" << v1 << "\n";
 					}
 					else   // invalid line
 						throw std::string(__FUNCTION__) + "(): error, invalid line: " + trimmed;
 				}
-
 			}
-
-
         }
 	}
 	while( !f.eof() );
+
+// parse through set of pairs, and add the required vertices
+	for( const auto& p: v_edges )
+	{
+		if( p.first > max_vert_idx )
+			max_vert_idx = p.first;
+		if( p.second > max_vert_idx )
+			max_vert_idx = p.second;
+	}
+//	std::cout << "FINAL: max_vert_idx=" << max_vert_idx << "\n";
+
+   	graph_t gr;
+	for( size_t i=0; i<max_vert_idx; i++ )
+		boost::add_vertex( gr );
+
+	using vertex_t = typename boost::graph_traits<graph_t>::vertex_descriptor;
+	for( const auto& p: v_edges )
+		boost::add_edge( (vertex_t)p.first, (vertex_t)p.second, gr );
+
 
 	std::cout<< " - file info:"
 		<< "\n  - nb lines=" << nb_lines
 		<< "\n  - nb empty=" << nb_empty
 		<< "\n  - nb comment=" << nb_comment << '\n';
 
-	return g;
+	return gr;
 }
 
 //-------------------------------------------------------------------
 /// Load graph from custom simple format
 template<typename graph_t>
 graph_t
-loadGraph( const char* fname )
+loadGraph_txt( const char* fname )
 {
 	graph_t g;
 
