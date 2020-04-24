@@ -130,7 +130,7 @@ show: $(SRC_FILES)
 
 
 doc:
-	doxygen misc/doxyfile 1>$(OBJ_DIR)/doxygen.stdout 2>$(OBJ_DIR)/doxygen.stderr
+	doxygen misc/doxyfile 1>build/doxygen.stdout 2>build/doxygen.stderr
 	xdg-open build/html/index.html
 
 clean:

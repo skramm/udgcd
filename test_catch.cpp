@@ -9,7 +9,7 @@ https://github.com/philsquared/Catch/
 #include "catch.hpp"
 
 #include "udgcd.hpp"
-//#include "common_sample.h"
+#include "common_sample.h"
 
 using namespace udgcd;
 
@@ -274,7 +274,7 @@ TEST_CASE( "test buildFullBinaryIndex", "[testbiv]" )
 
 //-------------------------------------------------------------------------------------------
 /// Process test: converts input cycle (expressed as a vector of vertices) into
-/// a binary vector, converts it back, and checks that it is the same as input cycme
+/// a binary vector, converts it back, and checks that it is the same as input cycle
 void
 ProcessTest( std::vector<size_t>& cycle, size_t nbVertices )
 {
@@ -551,3 +551,37 @@ vector: 1  0  1  0  0  0  1  0  0  1
 }
 #endif
 //-------------------------------------------------------------------------------------------
+TEST_CASE( "splitstring", "[tsplit]" )
+{
+	{
+		std::string a("abc---efg---qqq");
+		auto t = splitString( a, "---" );
+
+		REQUIRE( t.size() == 3 );
+
+		CHECK( t[0] == "abc" );
+		CHECK( t[1] == "efg" );
+		CHECK( t[2] == "qqq" );
+	}
+	{
+		std::string a("abc");
+		auto t = splitString( a, "---" );
+		REQUIRE( t.size() == 0 );
+	}
+	{
+		std::string a("abc---");
+		auto t = splitString( a, "---" );
+		REQUIRE( t.size() == 1 );
+		CHECK( t[0] == "abc" );
+	}
+
+    CHECK( trimString( "abc" )       == "abc" );
+	CHECK( trimString( "    abc" )   == "abc" );
+	CHECK( trimString( "" )          == "" );
+	CHECK( trimString( "   " )       == "" );
+    CHECK( trimString( "abc   " )    == "abc" );
+    CHECK( trimString( "   abc   " ) == "abc" );
+
+}
+//-------------------------------------------------------------------------------------------
+

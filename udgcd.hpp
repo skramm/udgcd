@@ -792,7 +792,7 @@ removeNonChordless( const std::vector<std::vector<vertex_t>>& v_in, const graph_
 //######################
 
 //-------------------------------------------------------------------------------------------
-/// A vector holding a pair of indexes/vertices. See page \ref p_data_reprentation.
+/// A vector holding a pair of indexes/vertices. See page \ref p_data_representation.
 template<typename T>
 using RevBinMap = std::vector<VertexPair<T>>;
 
@@ -905,7 +905,7 @@ buildBinaryMatrix(
 
 //-------------------------------------------------------------------------------------------
 /// Builds an table giving from an index in the binary vector the indexes of the two vertices
-/// that are connected. See \ref convertBC2VC() and page \ref p_data_reprentation.
+/// that are connected. See \ref convertBC2VC() and page \ref p_data_representation.
 /**
 \li Size: \f$ v*(v-1)/2 \f$
 \li Example for \f$ v=5 \f$ (=> size=10)
@@ -2046,3 +2046,26 @@ findCycles( graph_t& g )
 } // udgcd namespace end
 
 #endif // HG_UDGCD_HPP
+
+/**
+\page p_sample_graphs Samples (in test)
+
+<table>
+<tr>
+<th>graph_0</th>
+<th>graph_1</th>
+<th>graph_2</th>
+</tr>
+<tr>
+<td>
+\dotfile graph_0_0.dot
+</td>
+<td>
+\dotfile graph_1_0.dot
+</td>
+<td>
+\dotfile graph_2_0.dot
+</td>
+</tr>
+</table>
+*/

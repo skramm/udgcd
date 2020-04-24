@@ -48,10 +48,10 @@ int main( int argc, const char** argv )
 		std::cout << "missing input filename, exit.\n";
 		return 1;
 	}
-	graph_t g = LoadGraph<graph_t>( argv[1] );
+	graph_t g = loadGraph<graph_t>( argv[1] );
 
-	auto vs1 = split_string( argv[1], '/' );      // splits by '/', and keep the last one (filename)
-	auto vs2 = split_string( vs1.back(), '.' );     // splits by the point (if any)
+	auto vs1 = splitString( argv[1], '/' );      // splits by '/', and keep the last one (filename)
+	auto vs2 = splitString( vs1.back(), '.' );     // splits by the point (if any)
 	RenderGraph( g, vs2[0] );
 
 	bool noProcess(false);

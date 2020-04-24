@@ -174,8 +174,8 @@ RenderGraph2( const graph_t& g, const std::vector<std::vector<vertex_t>>& cycles
 		auto idx1 = boost::source( *p_it.first, g );
 		auto idx2 = boost::target( *p_it.first, g );
 		udgcd::priv::VertexPair<vertex_t> p( idx1, idx2 );
-		if( pairSet.find(p) == pairSet.end() )
-			f << p.v1 << "--" << p.v2 << ";\n";
+		if( pairSet.find(p) == pairSet.end() )             // if not found in previous
+			f << p.v1 << "--" << p.v2 << ";\n";            // set of pairs, then add it.
 	}
 
 	f << "}\n";
@@ -206,6 +206,7 @@ RenderGraph2( const graph_t& g, std::vector<std::string>& v_names )
 /// Generates a dot file from graph \c g and calls the renderer (dot/Graphviz) to produce a svg image of the graph, with printing of color attributes
 /**
 Note: involving dynamic properties implies that the graph is modified at present, thus the argument cannot be const !
+
 See http://stackoverflow.com/questions/34160290/
 */
 template<typename graph_t, typename vertex_t>
@@ -228,6 +229,35 @@ RenderGraph3( graph_t& g )
 	g_idx++;
 }
 #endif
+
+//-------------------------------------------------------------------
+/// Tokenize with string as separator
+/**
+https://stackoverflow.com/questions/14265581/
+*/
+inline
+std::vector<std::string>
+splitString( const std::string& str, const std::string& delim )
+{
+	if( str.find( delim ) == std::string::npos )
+		return std::vector<std::string>();   // if none, then return empty vector
+
+    std::vector<std::string> tokens;
+    size_t prev = 0, pos = 0;
+    do
+    {
+        pos = str.find(delim, prev);
+        if( pos == std::string::npos )
+            pos = str.length();
+        std::string token = str.substr(prev, pos-prev);
+        if( !token.empty() )
+            tokens.push_back(token);
+        prev = pos + delim.length();
+    }
+    while( pos < str.length() && prev < str.length() );
+    return tokens;
+}
+
 //-------------------------------------------------------------------
 /// General string tokenizer, taken from http://stackoverflow.com/a/236803/193789
 /**
@@ -235,7 +265,7 @@ RenderGraph3( graph_t& g )
 */
 inline
 std::vector<std::string>
-split_string( const std::string &s, char delim )
+splitString( const std::string& s, char delim )
 {
 	std::vector<std::string> velems;
 	std::stringstream ss( s );
@@ -245,9 +275,116 @@ split_string( const std::string &s, char delim )
     return velems;
 }
 //-------------------------------------------------------------------
+/// Remove spurious spaces at beginning and end
+std::string
+trimString( std::string in )
+{
+	auto lamb = [] ( std::string a, size_t& idx )    // lambda
+		{
+			while( a[idx] == ' ' && idx < a.size() )
+			idx++;
+		};
+
+	size_t idx1 = 0;
+	lamb( in, idx1 );
+	std::string s1 = in.substr( idx1 );
+	std::reverse( s1.begin(), s1.end() );
+
+	size_t idx2 = 0;
+	lamb( s1, idx2 );
+	std::string out = s1.substr( idx2 );
+
+	std::reverse( out.begin(), out.end() );
+	return out;
+}
+//-------------------------------------------------------------------
+/// Read a graph in a DOT file (WIP !!!)
+/**
+\note Boost::graph provides a Graphviz/dot reader, but its usage requires to:
+[quote]
+build and link against the "boost_graph" and "boost_regex" libraries.
+[/quote]
+Thus, as we wan't to keep this "link-free", we do not use it.
+
+The counterpart is that we do not read the vertices/edges properties that can be given in a dot file.
+
+See https://www.boost.org/doc/libs/1_72_0/libs/graph/doc/read_graphviz.html
+*/
 template<typename graph_t>
 graph_t
-LoadGraph( const char* fname )
+loadGraphViz( const char* fname )
+{
+   	graph_t g;
+
+	std::cout<< " - Reading file:" << fname << '\n';
+	std::ifstream f( fname );
+	if( !f.is_open() )
+	{
+		std::cerr << "Unable to open file\n";
+		throw "Unable to open file";
+	}
+
+	size_t nb_lines     = 0;
+	size_t nb_empty     = 0;
+	size_t nb_comment   = 0;
+	std::vector<size_t> v_vertex;
+	do
+	{
+		std::string temp;
+		std::getline( f, temp );
+		nb_lines++;
+
+		if( temp.empty() )          // if empty
+			nb_empty++;
+		else                        // if NOT empty
+		{
+            auto trimmed = trimString( temp );
+            auto vs_spc = splitString( trimmed, " " );
+            if( vs_spc.size() > 2 )
+            {
+                if( vs_spc[0] == "graph" )
+                    std::cout << "graph name=" << vs_spc[1] << "\n";
+            }
+			if( trimmed.back() == ';' )   // if EOL, then remove that and proceed
+			{
+				auto s2 = trimmed.substr( 0, trimmed.size()-1 );
+
+				auto vs_edges = splitString( s2, "--" );
+				if( vs_edges.size() == 0 )                      // vertex
+				{
+					v_vertex.push_back( std::stoi(s2) );
+					std::cout << "-adding vertex " << std::stoi(s2) << "\n";
+				}
+				else
+				{
+					if( vs_edges.size() == 3 )
+					{
+
+					}
+					else   // invalid line
+						throw std::string(__FUNCTION__) + "(): error, invalid line: " + trimmed;
+				}
+
+			}
+
+
+        }
+	}
+	while( !f.eof() );
+
+	std::cout<< " - file info:"
+		<< "\n  - nb lines=" << nb_lines
+		<< "\n  - nb empty=" << nb_empty
+		<< "\n  - nb comment=" << nb_comment << '\n';
+
+	return g;
+}
+
+//-------------------------------------------------------------------
+/// Load graph from custom simple format
+template<typename graph_t>
+graph_t
+loadGraph( const char* fname )
 {
 	graph_t g;
 
@@ -266,7 +403,7 @@ LoadGraph( const char* fname )
 	{                            // read nb vertices
 		std::string temp;
 		std::getline( f, temp );
-		auto v_tok = split_string( temp, ':' );
+		auto v_tok = splitString( temp, ':' );
 		if( v_tok.size() < 2 )
 			throw "error 1st line";
 		size_t nb = std::atoi( v_tok[1].c_str() );
@@ -289,7 +426,7 @@ LoadGraph( const char* fname )
 				nb_comment++;
 			else                     // if NOT comment
 			{
-				auto v_tok = split_string( temp, '-' );
+				auto v_tok = splitString( temp, '-' );
 				if( v_tok.size() < 2 )
 				{
 					std::cerr << "not enough items on line " << nb_lines << ": -" << temp << "-\n";
