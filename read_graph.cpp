@@ -56,9 +56,10 @@ int main( int argc, const char** argv )
 	}
 
 	graph_t gr;
+	bool nodeHasPos(false);
 	if( vs.back() == "dot" )
 	{
-		gr = loadGraph_dot<graph_t>( argv[1] );
+		gr = loadGraph_dot<graph_t>( argv[1], nodeHasPos );
 	}
 	else
 	{
@@ -76,7 +77,7 @@ int main( int argc, const char** argv )
 
 	auto vs1 = splitString( argv[1], '/' );      // splits by '/', and keep the last one (filename)
 	auto vs2 = splitString( vs1.back(), '.' );     // splits by the point (if any)
-	RenderGraph( gr, vs2[0] );
+	RenderGraph( gr, vs2[0], nodeHasPos );
 
 	bool noProcess(false);
 	if( argc > 2 )
@@ -88,7 +89,7 @@ int main( int argc, const char** argv )
 	if( noProcess )
 		return 0;
 	auto result = processGraph<graph_t,vertex_t>( gr );
-	RenderGraph2( gr, result.second, vs2[0]+"_color" );
+	RenderGraph2( gr, result.second, vs2[0]+"_color", nodeHasPos );
 
 	return result.first;
 }
