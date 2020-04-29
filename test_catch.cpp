@@ -22,6 +22,8 @@ using  graph_t = boost::adjacency_list<
 //-------------------------------------------------------------------------------------------
 TEST_CASE( "Conversions", "[tc]" )
 {
+	std::cout << "Running tests with catch " << CATCH_VERSION_MAJOR << '.' << CATCH_VERSION_MINOR << '.' << CATCH_VERSION_PATCH << '\n';
+
 	std::vector<size_t> v1{ 1,4,9,12 };
 	std::vector<priv::VertexPair<size_t>> v2{ {1,4},{4,9},{9,12},{12,1} };
 	auto res1 = priv::convertCycle2VPV( v1 );

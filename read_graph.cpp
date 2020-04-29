@@ -23,12 +23,12 @@ std::string prog_id = "read_graph";
 
 //-------------------------------------------------------------------------------------------
 /// Some typedefs for readability
-typedef boost::adjacency_list<
+using graph_t = boost::adjacency_list<
 	boost::vecS,
 	boost::vecS,
 	boost::undirectedS,
 	NodePos
-	> graph_t;
+	>;
 
 typedef boost::graph_traits<graph_t>::vertex_descriptor vertex_t;
 typedef boost::graph_traits<graph_t>::edge_descriptor   edge_t;
@@ -55,16 +55,16 @@ int main( int argc, const char** argv )
 		return 1;
 	}
 
-	graph_t g;
+	graph_t gr;
 	if( vs.back() == "dot" )
 	{
-		g = loadGraph_dot<graph_t>( argv[1] );
+		gr = loadGraph_dot<graph_t>( argv[1] );
 	}
 	else
 	{
 		if( vs.back() == "txt" )
 		{
-			g = loadGraph_txt<graph_t>( argv[1] );
+			gr = loadGraph_txt<graph_t>( argv[1] );
 		}
 		else
 		{
@@ -76,7 +76,7 @@ int main( int argc, const char** argv )
 
 	auto vs1 = splitString( argv[1], '/' );      // splits by '/', and keep the last one (filename)
 	auto vs2 = splitString( vs1.back(), '.' );     // splits by the point (if any)
-	RenderGraph( g, vs2[0] );
+	RenderGraph( gr, vs2[0] );
 
 	bool noProcess(false);
 	if( argc > 2 )
@@ -87,8 +87,8 @@ int main( int argc, const char** argv )
 	}
 	if( noProcess )
 		return 0;
-	auto result = processGraph<graph_t,vertex_t>( g );
-	RenderGraph2( g, result.second, vs2[0]+"_color" );
+	auto result = processGraph<graph_t,vertex_t>( gr );
+	RenderGraph2( gr, result.second, vs2[0]+"_color" );
 
 	return result.first;
 }

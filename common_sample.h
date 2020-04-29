@@ -5,15 +5,18 @@
 
 /**
 \file
-\brief This file is used only to build the provided samples
+\brief This file is used only to build the provided samples.
+Holds some helper functions to deal with loading, saving, string handling, etc.
 
 Home page: https://github.com/skramm/udgcd
 */
+
 #ifndef HG_COMMON_SAMPLE_H
 #define HG_COMMON_SAMPLE_H
 
 #include <boost/version.hpp>
 #include "boost/graph/graphviz.hpp"
+#include "boost/graph/graph_utility.hpp"
 #include <boost/graph/connected_components.hpp>
 
 
@@ -37,7 +40,8 @@ int g_idx = 0;
 /// Used to store a vertex position, if the input dot file specifies it
 struct NodePos
 {
-	float x,y;
+	float x=0.f;
+	float y=0.f;
 };
 
 std::ostream&
@@ -103,11 +107,66 @@ BuildDotFileName()
 		throw; \
 	}
 
+
+//-------------------------------------------------------------------
+/// Define a type alias \c VBundle
+template <
+    typename Graph,
+    typename Bundle =
+        typename boost::property_map<Graph, boost::vertex_bundle_t>::type
+	>
+using VBundle = typename boost::property_traits<Bundle>::value_type;
+
+//-------------------------------------------------------------------
+/// A type that checks if the graph uses the type \c NodePos as vertex property
+template <typename Graph>
+using HasVertexProp = std::is_same<NodePos, VBundle<Graph> >;
+
+//-------------------------------------------------------------------
+namespace detail {
+
+/// Print vertices in file \c f, for graphs having the \c NodePos as vertex property.
+/// See printVertices( std::ofstream& f, const Graph_t& gr )
+template <typename Graph_t>
+void printVertices( std::ofstream& f, const Graph_t& gr, std::true_type )
+{
+//	print_graph(g, std::cout << "Graph with VertexProp bundle: ");
+	for( auto p_vert = boost::vertices( gr ); p_vert.first != p_vert.second; p_vert.first++ )
+		f << *p_vert.first
+			<< " [pos=\""
+			<< gr[*p_vert.first].x
+			<< ','
+			<< gr[*p_vert.first].y
+			<< "!\"];\n";
+	f << "\n";
+}
+
+/// Print vertices in file \c f, for general type graphs (i.e. NOT having the \c NodePos as vertex property)
+/// See printVertices( std::ofstream& f, const Graph_t& gr )
+template <typename Graph_t>
+void printVertices( std::ofstream& f, const Graph_t& gr, std::false_type )
+{
+//	print_graph(g, std::cout << "Graph with other/missing properties: ");
+	for( auto p_vert = boost::vertices( gr ); p_vert.first != p_vert.second; p_vert.first++ )
+		f << *p_vert.first << ";\n";
+	f << "\n";
+}
+
+} // namespace detail
+
+/// Print vertices in file, dispatch to one of the two concrete function in namespace \ref detail, using tag dispatch
+template <typename Graph_t>
+void
+printVertices( std::ofstream& f, const Graph_t& gr )
+{
+    detail::printVertices( f, gr, HasVertexProp<Graph_t>{} );
+}
+
 //-------------------------------------------------------------------
 /// Generates a dot file from graph \c g and calls the renderer (dot/Graphviz) to produce a svg image of the graph
 template<typename graph_t>
 void
-RenderGraph( const graph_t& g, const std::string id_str )
+RenderGraph( const graph_t& gr, const std::string id_str )
 {
 /*	std::string id_str;
 	if( !name )
@@ -120,7 +179,7 @@ RenderGraph( const graph_t& g, const std::string id_str )
 		std::ofstream f ( fname );
 		if( !f.is_open() )
 			THROW_ERROR( "unable to open file" + fname );
-		boost::write_graphviz( f, g );
+		boost::write_graphviz( f, gr );
 	}
 //	CallDot( id_str );
 	g_idx++;
@@ -129,9 +188,9 @@ RenderGraph( const graph_t& g, const std::string id_str )
 /// Renders graph in a .dot file but with edges part of cycle with some random color
 template<typename graph_t,typename vertex_t>
 void
-RenderGraph2( const graph_t& g, const std::vector<std::vector<vertex_t>>& cycles, const std::string id_str )
+RenderGraph2( const graph_t& gr, const std::vector<std::vector<vertex_t>>& cycles, const std::string id_str )
 {
-	int nbColors = std::min(32, (int)cycles.size() );
+	int nbColors = std::min( 32, (int)cycles.size() );
 
 	int bi = (int)std::ceil( std::log(nbColors) / std::log(2) );
 	bi = std::max(2,bi);
@@ -162,11 +221,11 @@ RenderGraph2( const graph_t& g, const std::vector<std::vector<vertex_t>>& cycles
 	if( !f.is_open() )
 		THROW_ERROR( "unable to open file" + fname );
 	f << "graph G {\n";
-	for( auto p_it=boost::vertices(g); p_it.first != p_it.second; p_it.first++ )
-		f << *p_it.first << ";\n";
+
+	printVertices( f, gr );
 
 // First, output all the edges part of a cycle, with a given color
-//  and store them in a set, so that we can know they hav been drawned.
+//  and store them in a set, so that we can know they have been drawned.
 	std::set<udgcd::priv::VertexPair<vertex_t>> pairSet;
 	for( size_t i=0; i<v_VPV.size(); i++ )     // for each cycle
 	{
@@ -179,13 +238,11 @@ RenderGraph2( const graph_t& g, const std::vector<std::vector<vertex_t>>& cycles
 		}
 	}
 
-// Second, add all the edges that were not part of a cycle
-
-
-	for( auto p_it=boost::edges(g); p_it.first != p_it.second; p_it.first++ )
+// Second, add all the remaining edges that were not part of a cycle
+	for( auto p_it=boost::edges(gr); p_it.first != p_it.second; p_it.first++ )
 	{
-		auto idx1 = boost::source( *p_it.first, g );
-		auto idx2 = boost::target( *p_it.first, g );
+		auto idx1 = boost::source( *p_it.first, gr );
+		auto idx2 = boost::target( *p_it.first, gr );
 		udgcd::priv::VertexPair<vertex_t> p( idx1, idx2 );
 		if( pairSet.find(p) == pairSet.end() )             // if not found in previous
 			f << p.v1 << "--" << p.v2 << ";\n";            // set of pairs, then add it.
@@ -317,9 +374,11 @@ trimString( std::string in, char c = ' ' )
 [quote]
 build and link against the "boost_graph" and "boost_regex" libraries.
 [/quote]
+(See https://www.boost.org/doc/libs/1_72_0/libs/graph/doc/read_graphviz.html )
+
 Thus, as we wan't to keep this "link-free", we do not use it.<br>
-The counterpart is that we do not read the vertices/edges properties that can be given in a dot file.<br>
-See https://www.boost.org/doc/libs/1_72_0/libs/graph/doc/read_graphviz.html
+The counterpart is that we do not read the vertices/edges properties that can be given in a dot file,
+except the "pos" property.<br>
 
 \warning This is a minimal reader, don't expect any fancy features.
 
@@ -359,7 +418,6 @@ loadGraph_dot( const char* fname )
 
 	size_t nb_lines     = 0;
 	size_t nb_empty     = 0;
-//	size_t nb_comment   = 0;
 
 	std::map<size_t,NodePos> mapPos; /// holds the position of node, if given
 
@@ -432,7 +490,7 @@ std::cout << np;
 
 //					std::cout << "-max_vert_idx=" << max_vert_idx << "\n";
 				}
-				else
+				else                          // found a "--" in the line !
 				{
 					if( v_tok.size() == 2 )
 					{
@@ -461,9 +519,16 @@ std::cout << np;
 	}
 //	std::cout << "FINAL: max_vert_idx=" << max_vert_idx << "\n";
 
+// Final step: generate the graph and return it
    	graph_t gr;
 	for( size_t i=0; i<max_vert_idx; i++ )
-		boost::add_vertex( gr );
+	{
+		auto idx = boost::add_vertex( gr );
+		if( mapPos.count(idx) )
+			gr[idx] = mapPos[idx];
+		else
+			gr[idx] = NodePos();
+	}
 
 	using vertex_t = typename boost::graph_traits<graph_t>::vertex_descriptor;
 	for( const auto& p: v_edges )
@@ -472,11 +537,9 @@ std::cout << np;
 	std::cout<< " - file info:"
 		<< "\n  - nb lines=" << nb_lines
 		<< "\n  - nb empty=" << nb_empty
-//		<< "\n  - nb comment=" << nb_comment
 		<< '\n';
 
-//	std::cout << gr;
-//	exit(1);
+	boost::print_graph( gr, std::cout );
 	return gr;
 }
 
