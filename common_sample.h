@@ -5,8 +5,8 @@
 
 /**
 \file
-\brief This file is used only to build the provided samples.
-Holds some helper functions to deal with loading, saving, string handling, etc.
+\brief This file is used only to provide some additional code to build the provided samples.
+Holds some helper functions to deal with loading, saving, string handling, Dot file printing, etc.
 
 Home page: https://github.com/skramm/udgcd
 */
@@ -42,6 +42,7 @@ int g_idx = 0;
 /// This is used in detail::printVertices() and in loadGraph_dot()
 struct NodePos
 {
+	bool hasPosition = false;
 	float x=0.f;
 	float y=0.f;
 };
@@ -124,10 +125,12 @@ using VBundle = typename boost::property_traits<Bundle>::value_type;
 template <typename Graph>
 using HasVertexProp = std::is_same<NodePos, VBundle<Graph> >;
 
-//-------------------------------------------------------------------
+//%%%%%%%%%%%%%%%%%%%%%%%%
 /// Holds some "detail" code
 namespace detail {
+//%%%%%%%%%%%%%%%%%%%%%%%%
 
+//-------------------------------------------------------------------
 /// Print vertices in file \c f, for graphs having the \c NodePos as vertex property.
 /// See printVertices( std::ofstream& f, const Graph_t& gr )
 template <typename Graph_t>
@@ -160,17 +163,10 @@ void printVertices( std::ofstream& f, const Graph_t& gr, bool nodeHasPos, std::f
 	f << "\n";
 }
 
+//%%%%%%%%%%%%%%%%%%%%%%%%
 } // namespace detail
+//%%%%%%%%%%%%%%%%%%%%%%%%
 
-//-------------------------------------------------------------------
-/// Print vertices in file, dispatch to one of the two concrete functions in namespace \ref detail,
-/// using tag dispatch with \ref HasVertexProp
-template <typename Graph_t>
-void
-printVertices( std::ofstream& f, const Graph_t& gr, bool nodeHasPos )
-{
-    detail::printVertices( f, gr, nodeHasPos, HasVertexProp<Graph_t>{} );
-}
 
 //-------------------------------------------------------------------
 /// Functor class to write attributes of vertices in dot file.
@@ -192,7 +188,7 @@ class NodeWriter
 		/// but not all dot files have a position attribute on their vertices.
 		bool _nodeHasPos;
 		T    _x, _y;
-		graph_t _gr;
+		const graph_t& _gr;
 };
 
 //-------------------------------------------------------------------
@@ -204,9 +200,11 @@ make_node_writer( bool nodeHasPos, T x, T y, const graph_t& gr )
 	return NodeWriter<T,graph_t>( nodeHasPos, x, y, gr );
 }
 
-//-------------------------------------------------------------------
+//%%%%%%%%%%%%%%%%%%%%%%%%
 namespace detail {
+//%%%%%%%%%%%%%%%%%%%%%%%%
 
+//-------------------------------------------------------------------
 /// Call boost::write_graphviz for graphs having the \c NodePos vertex type
 template<typename Graph_t>
 void
@@ -227,22 +225,15 @@ callGraphiz( std::ostream& f, const Graph_t& gr, bool nodeHasPos, std::false_typ
 	boost::write_graphviz( f, gr );
 }
 
+//%%%%%%%%%%%%%%%%%%%%%%%%
 } // namespace detail
-
-//-------------------------------------------------------------------
-/// Calls detail::callGraphiz(), using tag dispatching on \ref HasVertexProp
-template<typename Graph_t>
-void
-call_graphiz( std::ostream& f, const Graph_t& gr, bool nodeHasPos )
-{
-	detail::callGraphiz( f, gr, nodeHasPos, HasVertexProp<Graph_t>{} );
-}
+//%%%%%%%%%%%%%%%%%%%%%%%%
 
 //-------------------------------------------------------------------
 /// Generates a dot file from graph \c g and calls the renderer (dot/Graphviz) to produce a svg image of the graph
-template<typename graph_t>
+template<typename Graph_t>
 void
-RenderGraph( const graph_t& gr, const std::string id_str, bool nodeHasPos )
+RenderGraph( const Graph_t& gr, const std::string id_str, bool nodeHasPos )
 {
 /*	std::string id_str;
 	if( !name )
@@ -256,14 +247,11 @@ RenderGraph( const graph_t& gr, const std::string id_str, bool nodeHasPos )
 		if( !f.is_open() )
 			THROW_ERROR( "unable to open file" + fname );
 
-		call_graphiz( f, gr, nodeHasPos );
-/*
-		boost::write_graphviz( f, gr
-#if 1
-			,make_node_writer( boost::get( &NodePos::x, gr ), gr )
-#endif
-		);
-*/
+// Calls detail::callGraphiz(), using tag dispatching on \ref HasVertexProp
+		detail::callGraphiz( f, gr, nodeHasPos, HasVertexProp<Graph_t>{} );
+//		call_graphiz( f, gr, nodeHasPos );
+
+
 	}
 //	CallDot( id_str );
 	g_idx++;
@@ -274,10 +262,12 @@ RenderGraph( const graph_t& gr, const std::string id_str, bool nodeHasPos )
 \not This could probably be done using the boost::write_graphviz() overload that takes as argument
 a dynamic property map.
 Will require diving into that.
+
+See https://graphviz.gitlab.io/_pages/doc/info/attrs.html for Dot details
 */
-template<typename graph_t,typename vertex_t>
+template<typename Graph_t,typename Vertex_t>
 void
-RenderGraph2( const graph_t& gr, const std::vector<std::vector<vertex_t>>& cycles, const std::string id_str, bool nodeHasPos )
+RenderGraph2( const Graph_t& gr, const std::vector<std::vector<Vertex_t>>& cycles, const std::string id_str, bool nodeHasPos )
 {
 	int nbColors = std::min( 32, (int)cycles.size() );
 
@@ -292,17 +282,19 @@ RenderGraph2( const graph_t& gr, const std::vector<std::vector<vertex_t>>& cycle
 		int g = 255 * ((i/bi)%bi) / (bi-1);
 		int b = std::max( 0, std::min(384-r-g,255) );
 		std::ostringstream oss;
-		oss << " [penwidth=\"2.0\";color=\"#" << std::setfill('0');
+//		oss << " [penwidth=\"2.0\";color=\"#" << std::setfill('0');
+		oss << "\"#" << std::setfill('0');
 		oss << std::hex
 			<< std::setw(2) << r
 			<< std::setw(2) << g
 			<< std::setw(2) << b
-			<< "\"];\n";
+//			<< "\"];\n";
+			<< '"';
 		color_set[i%nbColors] = oss.str();
 //		std::cout << "col "  << i << ": " << color_set[i%nbColors] << std::endl;
 	}
 
-	auto v_VPV = udgcd::priv::convertCycles2VVPV<vertex_t>( cycles );
+	auto v_VPV = udgcd::priv::convertCycles2VVPV<Vertex_t>( cycles );
 
 	std::string fname( "out/" + id_str + "_" + std::to_string(g_idx) + ".dot" );
 
@@ -311,18 +303,27 @@ RenderGraph2( const graph_t& gr, const std::vector<std::vector<vertex_t>>& cycle
 		THROW_ERROR( "unable to open file" + fname );
 	f << "graph G {\n";
 
-	printVertices( f, gr, nodeHasPos );
+// Print vertices in file, dispatch to one of the two concrete functions in namespace \ref detail, using tag dispatch with \ref HasVertexProp
+	detail::printVertices( f, gr, nodeHasPos, HasVertexProp<Graph_t>{} );
 
 // First, output all the edges part of a cycle, with a given color
 //  and store them in a set, so that we can know they have been drawned.
-	std::set<udgcd::priv::VertexPair<vertex_t>> pairSet;
+	std::set<udgcd::priv::VertexPair<Vertex_t>> pairSet;
 	for( size_t i=0; i<v_VPV.size(); i++ )     // for each cycle
 	{
 		for( const auto& pair: v_VPV[i] )    // for each pair
 		{
 			auto v1 = pair.v1;
 			auto v2 = pair.v2;
-			f << v1 << "--" << v2 << color_set[i%nbColors];
+			f << v1 << "--" << v2
+				<< " [penwidth=\"2.0\";color="
+				<< color_set[i%nbColors]
+				<< ";label="
+				<< i
+//				<< ";labelfontcolor="               // THIS DOES NOT WORK ?!?!?!!
+//				<< color_set[i%nbColors]
+				<< "]\n";
+
 			pairSet.insert( pair );
 		}
 	}
@@ -332,15 +333,13 @@ RenderGraph2( const graph_t& gr, const std::vector<std::vector<vertex_t>>& cycle
 	{
 		auto idx1 = boost::source( *p_it.first, gr );
 		auto idx2 = boost::target( *p_it.first, gr );
-		udgcd::priv::VertexPair<vertex_t> p( idx1, idx2 );
-		if( pairSet.find(p) == pairSet.end() )             // if not found in previous
-			f << p.v1 << "--" << p.v2 << ";\n";            // set of pairs, then add it.
+		udgcd::priv::VertexPair<Vertex_t> p( idx1, idx2 );
+		if( pairSet.find(p) == pairSet.end() )             // if not found in previous set
+			f << p.v1 << "--" << p.v2 << ";\n";            // of pairs, then add it, using default style.
 	}
 
 	f << "}\n";
-//	CallDot( id_str );
 	g_idx++;
-
 }
 
 
@@ -439,10 +438,10 @@ std::string
 trimString( std::string in, char c = ' ' )
 {
 	auto lamb = [c] ( std::string a, size_t& idx )    // lambda
-		{
-			while( a[idx] == c && idx < a.size() )
+	{
+		while( a[idx] == c && idx < a.size() )
 			idx++;
-		};
+	};
 
 	size_t idx1 = 0;
 	lamb( in, idx1 );
@@ -638,7 +637,7 @@ loadGraph_dot( const char* fname, bool& nodeHasPos )
 }
 
 //-------------------------------------------------------------------
-/// Load graph from custom simple format
+/// Load graph from custom simple text format
 template<typename graph_t>
 graph_t
 loadGraph_txt( const char* fname )
