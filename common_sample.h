@@ -42,17 +42,29 @@ int g_idx = 0;
 /// This is used in detail::printVertices() and in loadGraph_dot()
 struct NodePos
 {
-	bool hasPosition = false;
-	float x=0.f;
-	float y=0.f;
+	bool  hasLocation = false;
+	float x = 0.f;
+	float y = 0.f;
 };
 
 std::ostream&
 operator << ( std::ostream& f, NodePos np )
 {
-	f << "NodePos:" << np.x << "," << np.y << "\n";
+	f << "NodePos: ";
+	if( np.hasLocation )
+		f << np.x << "," << np.y;
+	else
+		f << "(undef)";
+	f << '\n';
 	return f;
 }
+
+/// This is the type that will be embedded in the graph's typedef, so
+/// we only have one member to fetch (dynamic properties code).
+struct NodeData
+{
+	NodePos pos;
+};
 
 //-------------------------------------------------------------------
 /// Prints some details on graph and returns nb of expected cycles
@@ -123,7 +135,8 @@ using VBundle = typename boost::property_traits<Bundle>::value_type;
 //-------------------------------------------------------------------
 /// A type that checks if the graph uses the type \c NodePos as vertex property
 template <typename Graph>
-using HasVertexProp = std::is_same<NodePos, VBundle<Graph> >;
+using HasVertexProp = std::is_same<NodeData, VBundle<Graph> >;
+//using HasVertexProp = std::is_same<NodePos, VBundle<Graph> >;
 
 //%%%%%%%%%%%%%%%%%%%%%%%%
 /// Holds some "detail" code
@@ -134,17 +147,18 @@ namespace detail {
 /// Print vertices in file \c f, for graphs having the \c NodePos as vertex property.
 /// See printVertices( std::ofstream& f, const Graph_t& gr )
 template <typename Graph_t>
-void printVertices( std::ofstream& f, const Graph_t& gr, bool nodeHasPos, std::true_type )
+void printVertices( std::ofstream& f, const Graph_t& gr, /* bool nodeHasPos, */ std::true_type )
 {
 //	print_graph(g, std::cout << "Graph with VertexProp bundle: ");
 	for( auto p_vert = boost::vertices( gr ); p_vert.first != p_vert.second; p_vert.first++ )
 	{
 		f << *p_vert.first;
-		if( nodeHasPos )
+		if( gr[*p_vert.first].pos.hasLocation )
+//		if( nodeHasPos )
 			f << " [pos=\""
-				<< gr[*p_vert.first].x
+				<< gr[*p_vert.first].pos.x
 				<< ','
-				<< gr[*p_vert.first].y
+				<< gr[*p_vert.first].pos.y
 				<< "!\"]";
 
 		f << ";\n";
@@ -155,7 +169,7 @@ void printVertices( std::ofstream& f, const Graph_t& gr, bool nodeHasPos, std::t
 /// Print vertices in file \c f, for general type graphs (i.e. NOT having the \c NodePos as vertex property)
 /// See printVertices( std::ofstream& f, const Graph_t& gr )
 template <typename Graph_t>
-void printVertices( std::ofstream& f, const Graph_t& gr, bool nodeHasPos, std::false_type )
+void printVertices( std::ofstream& f, const Graph_t& gr, /* bool nodeHasPos, */ std::false_type )
 {
 //	print_graph(g, std::cout << "Graph with other/missing properties: ");
 	for( auto p_vert = boost::vertices( gr ); p_vert.first != p_vert.second; p_vert.first++ )
@@ -174,20 +188,26 @@ template <typename T,typename graph_t>
 class NodeWriter
 {
 	public:
-		NodeWriter( bool nodeHasPos, T x, T y, const graph_t& gr )
-			: _nodeHasPos(nodeHasPos), _x(x), _y(y), _gr(gr)
+		NodeWriter( T data, const graph_t& gr )
+			: _data(data), _gr(gr)
+//		NodeWriter( bool nodeHasPos, T x, T y, const graph_t& gr )
+//			: _nodeHasPos(nodeHasPos), _x(x), _y(y), _gr(gr)
 		{}
 		template <class vertex_t>
 		void operator()( std::ostream& out, const vertex_t& vert ) const
 		{
-			if( _nodeHasPos )
-				out << " [pos=\"" << _x[vert] << "," << _y[vert]  << "!\"]";
+			if( _data.hasLocation[vert] )
+				out << " [pos=\"" << _data.x[vert] << "," << _data.y[vert]  << "!\"]";
+
+//			if( _nodeHasPos )
+//				out << " [pos=\"" << _x[vert] << "," << _y[vert]  << "!\"]";
 		}
 	private:
 		/// This member is needed because this class is automatically used for input .dot files
 		/// but not all dot files have a position attribute on their vertices.
-		bool _nodeHasPos;
-		T    _x, _y;
+//		bool _nodeHasPos;
+//		T    _x, _y;
+		T              _data;
 		const graph_t& _gr;
 };
 
@@ -195,9 +215,11 @@ class NodeWriter
 /// Helper function
 template <typename T, typename graph_t>
 NodeWriter<T,graph_t>
-make_node_writer( bool nodeHasPos, T x, T y, const graph_t& gr )
+make_node_writer( T data, const graph_t& gr )
+//make_node_writer( bool nodeHasPos, T x, T y, const graph_t& gr )
 {
-	return NodeWriter<T,graph_t>( nodeHasPos, x, y, gr );
+	return NodeWriter<T,graph_t>( data, gr );
+//	return NodeWriter<T,graph_t>( nodeHasPos, x, y, gr );
 }
 
 //%%%%%%%%%%%%%%%%%%%%%%%%
@@ -208,10 +230,11 @@ namespace detail {
 /// Call boost::write_graphviz for graphs having the \c NodePos vertex type
 template<typename Graph_t>
 void
-callGraphiz( std::ostream& f, const Graph_t& gr, bool nodeHasPos, std::true_type )
+callGraphiz( std::ostream& f, const Graph_t& gr,  /* bool nodeHasPos, */ std::true_type )
 {
 	boost::write_graphviz( f, gr,
-		make_node_writer( nodeHasPos, boost::get( &NodePos::x, gr ), boost::get( &NodePos::y, gr ), gr )
+		make_node_writer( boost::get( &NodeData::pos, gr ), gr )
+//		make_node_writer( nodeHasPos, boost::get( &NodePos::x, gr ), boost::get( &NodePos::y, gr ), gr )
 	);
 }
 
@@ -219,9 +242,9 @@ callGraphiz( std::ostream& f, const Graph_t& gr, bool nodeHasPos, std::true_type
 /// Call boost::write_graphviz for graphs NOT having the \c NodePos vertex type
 template<typename Graph_t>
 void
-callGraphiz( std::ostream& f, const Graph_t& gr, bool nodeHasPos, std::false_type )
+callGraphiz( std::ostream& f, const Graph_t& gr, /* bool nodeHasPos, */ std::false_type )
 {
-	assert( !nodeHasPos );       // if not, we fucked up something
+//	assert( !nodeHasPos );       // if not, we fucked up something
 	boost::write_graphviz( f, gr );
 }
 
@@ -233,7 +256,7 @@ callGraphiz( std::ostream& f, const Graph_t& gr, bool nodeHasPos, std::false_typ
 /// Generates a dot file from graph \c g and calls the renderer (dot/Graphviz) to produce a svg image of the graph
 template<typename Graph_t>
 void
-RenderGraph( const Graph_t& gr, const std::string id_str, bool nodeHasPos )
+RenderGraph( const Graph_t& gr, const std::string id_str /* , bool nodeHasPos  */ )
 {
 /*	std::string id_str;
 	if( !name )
@@ -248,7 +271,7 @@ RenderGraph( const Graph_t& gr, const std::string id_str, bool nodeHasPos )
 			THROW_ERROR( "unable to open file" + fname );
 
 // Calls detail::callGraphiz(), using tag dispatching on \ref HasVertexProp
-		detail::callGraphiz( f, gr, nodeHasPos, HasVertexProp<Graph_t>{} );
+		detail::callGraphiz( f, gr, /* nodeHasPos, */ HasVertexProp<Graph_t>{} );
 //		call_graphiz( f, gr, nodeHasPos );
 
 
@@ -267,7 +290,7 @@ See https://graphviz.gitlab.io/_pages/doc/info/attrs.html for Dot details
 */
 template<typename Graph_t,typename Vertex_t>
 void
-RenderGraph2( const Graph_t& gr, const std::vector<std::vector<Vertex_t>>& cycles, const std::string id_str, bool nodeHasPos )
+RenderGraph2( const Graph_t& gr, const std::vector<std::vector<Vertex_t>>& cycles, const std::string id_str ) //, bool nodeHasPos )
 {
 	int nbColors = std::min( 32, (int)cycles.size() );
 
@@ -304,7 +327,7 @@ RenderGraph2( const Graph_t& gr, const std::vector<std::vector<Vertex_t>>& cycle
 	f << "graph G {\n";
 
 // Print vertices in file, dispatch to one of the two concrete functions in namespace \ref detail, using tag dispatch with \ref HasVertexProp
-	detail::printVertices( f, gr, nodeHasPos, HasVertexProp<Graph_t>{} );
+	detail::printVertices( f, gr, /* nodeHasPos, */ HasVertexProp<Graph_t>{} );
 
 // First, output all the edges part of a cycle, with a given color
 //  and store them in a set, so that we can know they have been drawned.
@@ -543,23 +566,23 @@ loadGraph_dot( const char* fname, bool& nodeHasPos )
 					if( p1 != std::string::npos )
 					{
 						auto p2 = s2.find( "]" );
-						std::cout << "p1=" << p1 << " p2=" << p2 << "\n";
+//						std::cout << "p1=" << p1 << " p2=" << p2 << "\n";
 						if( p2 == std::string::npos || p2 == p1+1 )
 							throw "invalid line: " + s2;
 						auto sv = trimString( s2.substr( 0, p1-1 ) );
 						auto sa = trimString( s2.substr( p1+1, p2-p1-1 ) );
-						std::cout << "sv='" << sv << "' sa='" << sa << "'\n";
+//						std::cout << "sv='" << sv << "' sa='" << sa << "'\n";
 						auto v_att = splitString( sa, '=' );
 						if( v_att.size() != 2 )
 							throw "invalid attribute string, line=" + s2;
 						if( v_att[0] != "pos" )
 							throw "unknown attribute string, line=" + s2;
 						auto val = trimString( v_att[1], '"' );
-						std::cout << "val1='" << val << std::endl;
+//						std::cout << "val1='" << val << std::endl;
 
 						if( val.back() == '!' )                    // if pos has an exclamation
 							val = val.substr( 0, val.size()-1 );   // mark, remove it
-						std::cout << "val2='" << val << "'\n";
+//						std::cout << "val2='" << val << "'\n";
 						auto v_values = splitString( val, ',' );
 						if( v_values.size() != 2 )
 							throw "invalid attribute string, line=" + s2;
@@ -568,7 +591,8 @@ loadGraph_dot( const char* fname, bool& nodeHasPos )
 
 						np.x = std::stof( v_values[0] );
 						np.y = std::stof( v_values[1] );
-//std::cout << np;
+						np.hasLocation = true;
+std::cout << np;
 						s2 = sv;
 					}
 					auto idx = std::stoul(s2);
@@ -616,10 +640,10 @@ loadGraph_dot( const char* fname, bool& nodeHasPos )
 	for( size_t i=0; i<=max_vert_idx; i++ )
 	{
 		auto idx = boost::add_vertex( gr );
-		if( mapPos.count(idx) )
-			gr[idx] = mapPos[idx];
-		else
-			gr[idx] = NodePos();
+		if( mapPos.count(idx) )                   // if found in map,
+			gr[idx] = NodeData{ mapPos[idx] };    //  we store its position,
+		else                                      // else, not.
+			gr[idx] = NodeData{ NodePos() };
 	}
 
 	using vertex_t = typename boost::graph_traits<graph_t>::vertex_descriptor;
