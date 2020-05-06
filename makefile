@@ -115,7 +115,7 @@ out/stdout_graph_%.txt: samples/graph_%.txt $(BIN_DIR)/read_graph makefile
 out/%.svg : out/%.dot
 	@echo "generating $@ bn=$(basename $@)"
 	dot   -Tsvg -Nfontsize=24 $< >$(basename $@)_dot.svg
-	neato -Tsvg -Nfontsize=24 $< >$(basename $@)_neato.svg
+	neato -Tsvg -Nfontsize=24 -Elen=1.5 $< >$(basename $@)_neato.svg
 
 show: $(SRC_FILES)
 	@echo SRC_FILES=$(SRC_FILES)

@@ -807,7 +807,7 @@ namespace deprec {
 /// The index vector \c idx_vec is used to fetch the index in binary vector from the two vertices indexes
 /**
 This function builds the \b full vector, that is for all possible edges.
-See page \ref p_data_reprensentation.
+See page \ref p_data_representation.
 
 \todo 20200413: write down the reason why the function does not return the result, and passes it
 as reference. Must be a reason but can't remember each time!
@@ -2047,25 +2047,3 @@ findCycles( graph_t& g )
 
 #endif // HG_UDGCD_HPP
 
-/**
-\page p_sample_graphs Samples (in test)
-
-<table>
-<tr>
-<th>graph_0</th>
-<th>graph_1</th>
-<th>graph_2</th>
-</tr>
-<tr>
-<td>
-\dotfile graph_0_0.dot
-</td>
-<td>
-\dotfile graph_1_0.dot
-</td>
-<td>
-\dotfile graph_2_0.dot
-</td>
-</tr>
-</table>
-*/

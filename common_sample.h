@@ -234,8 +234,6 @@ callGraphiz( std::ostream& f, const Graph_t& gr, std::false_type )
 //%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-
-
 //-------------------------------------------------------------------
 /// Generates a dot file from graph \c g and calls the renderer (dot/Graphviz) to produce a svg image of the graph
 template<typename Graph_t>
