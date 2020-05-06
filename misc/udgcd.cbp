@@ -25,7 +25,6 @@
 		<Unit filename="../README.md" />
 		<Unit filename="../bug20200316.md" />
 		<Unit filename="../common_sample.h" />
-		<Unit filename="doxyfile" />
 		<Unit filename="../makefile" />
 		<Unit filename="../random_test.cpp" />
 		<Unit filename="../read_graph.cpp" />
@@ -39,10 +38,8 @@
 		<Unit filename="../udgcd.hpp" />
 		<Unit filename="../wrapper_m4ri.hpp" />
 		<Unit filename="../wrapper_m4ri_convert.hpp" />
-		<Extensions>
-			<envvars />
-			<code_completion />
-			<debugger />
-		</Extensions>
+		<Unit filename="doxyfile" />
+		<Unit filename="samples.h" />
+		<Extensions />
 	</Project>
 </CodeBlocks_project_file>

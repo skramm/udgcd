@@ -261,7 +261,7 @@ renderGraph( const Graph_t& gr, const std::string id_str )
 
 /// Renders graph in a .dot file but with edges part of cycles with some random color
 /**
-\not This could probably be done using the boost::write_graphviz() overload that takes as argument
+\note This could probably be done using the boost::write_graphviz() overload that takes as argument
 a dynamic property map.
 Will require diving into that.
 

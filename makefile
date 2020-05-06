@@ -66,8 +66,12 @@ SAMPLE_FILES = $(wildcard samples/*.txt)
 GEN_GSAMPLE_FILES = $(wildcard out/gen_graph_*.txt)
 GEN_GSAMPLES_OUTPUT = $(patsubst out/%.txt,out/stdout_%.txt,$(GEN_GSAMPLE_FILES))
 
-GEN_SAMPLE_FILES = $(wildcard samples/graph_*.txt)
-GEN_SAMPLES_OUTPUT = $(patsubst samples/graph_%.txt,out/stdout_graph_%.txt,$(GEN_SAMPLE_FILES))
+GEN_SAMPLE_TXT_FILES = $(wildcard samples/graph_*.txt)
+GEN_SAMPLE_DOT_FILES = $(wildcard samples/graph_*.dot)
+
+GEN_SAMPLES_OUTPUT = $(patsubst samples/graph_%.txt,out/stdout_graph_%.txt,$(GEN_SAMPLE_TXT_FILES))
+GEN_SAMPLES_OUTPUT += $(patsubst samples/graph_%.dot,out/stdout_graph_%.txt,$(GEN_SAMPLE_DOT_FILES))
+
 #GEN_SAMPLES_PLOT = $(patsubst samples/%.txt,out/sample_%.svg,$(GEN_SAMPLE_FILES))
 
 DOT_FILES=$(wildcard out/*.dot)
@@ -107,7 +111,14 @@ runsam: clearlogfile $(GEN_SAMPLES_OUTPUT) $(BIN_DIR)/read_graph
 clearlogfile: makefile
 	@echo "Running make target 'runsam', results:" > runsam.log
 
+# this one for .txt input files
 out/stdout_graph_%.txt: samples/graph_%.txt $(BIN_DIR)/read_graph makefile
+	@echo "processing file $<"
+	@-$(BIN_DIR)/read_graph $< > $@;\
+	STATUS=$$?; echo "file $<: exit with $$STATUS" >> runsam.log
+
+# this one for .dot input files
+out/stdout_graph_%.txt: samples/graph_%.dot $(BIN_DIR)/read_graph makefile
 	@echo "processing file $<"
 	@-$(BIN_DIR)/read_graph $< > $@;\
 	STATUS=$$?; echo "file $<: exit with $$STATUS" >> runsam.log
@@ -124,7 +135,8 @@ show: $(SRC_FILES)
 	@echo SAMPLE_FILES=$(SAMPLE_FILES)
 	@echo GEN_GSAMPLE_FILES=$(GEN_GSAMPLE_FILES)
 	@echo GEN_GSAMPLES_OUTPUT=$(GEN_GSAMPLES_OUTPUT)
-	@echo GEN_SAMPLE_FILES=$(GEN_SAMPLE_FILES)
+	@echo GEN_SAMPLE_TXT_FILES=$(GEN_SAMPLE_TXT_FILES)
+	@echo GEN_SAMPLE_DOT_FILES=$(GEN_SAMPLE_DOT_FILES)
 	@echo GEN_SAMPLES_OUTPUT=$(GEN_SAMPLES_OUTPUT)
 	@echo GEN_SAMPLES_PLOT =$(GEN_SAMPLES_PLOT)
 	@echo DOT_FILES =$(DOT_FILES)
