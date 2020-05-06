@@ -101,9 +101,9 @@ int main( int argc, const char** argv )
 	graph_t g = GenerateRandomGraph( nb_vertices, nb_egdes );
 
 	SaveGraph( g, std::to_string(current_time) );
-	RenderGraph( g, "gen_" + std::to_string(current_time) );
+	sample::renderGraph( g, "gen_" + std::to_string(current_time) );
 
-	auto result = processGraph<graph_t,vertex_t>( g );
+	auto result = sample::processGraph<graph_t,vertex_t>( g );
 	return result.first;
 }
 //-------------------------------------------------------------------

@@ -12,6 +12,7 @@ https://github.com/philsquared/Catch/
 #include "common_sample.h"
 
 using namespace udgcd;
+using namespace sample;
 
 using  graph_t = boost::adjacency_list<
 		boost::vecS,

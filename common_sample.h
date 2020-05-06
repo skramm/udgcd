@@ -8,6 +8,8 @@
 \brief This file is used only to provide some additional code to build the provided samples.
 Holds some helper functions to deal with loading, saving, string handling, Dot file printing, etc.
 
+Is not really part of the library.
+
 Home page: https://github.com/skramm/udgcd
 */
 
@@ -36,6 +38,11 @@ Home page: https://github.com/skramm/udgcd
 
 extern std::string prog_id; // allocated in samples files
 int g_idx = 0;
+
+//%%%%%%%%%%%%%%%%%%%%%%%%
+/// Holds some helper types and functions used in sample code
+namespace sample {
+//%%%%%%%%%%%%%%%%%%%%%%%%
 
 //-------------------------------------------------------------------
 /// Used to store a vertex position, if the input dot file specifies it
@@ -136,7 +143,35 @@ using VBundle = typename boost::property_traits<Bundle>::value_type;
 /// A type that checks if the graph uses the type \c NodePos as vertex property
 template <typename Graph>
 using HasVertexProp = std::is_same<NodeData, VBundle<Graph> >;
-//using HasVertexProp = std::is_same<NodePos, VBundle<Graph> >;
+
+
+//-------------------------------------------------------------------
+/// Functor class to write attributes of vertices in dot file. Related to \ref NodeData
+template <typename T>
+class NodeWriter
+{
+	public:
+		NodeWriter( T data ) : _data(data)
+		{}
+
+		template <class vertex_t>
+		void operator()( std::ostream& out, const vertex_t& vert ) const
+		{
+			if( _data[vert].hasLocation )
+				out << " [pos=\"" << _data[vert].x << "," << _data[vert].y  << "!\"]";
+		}
+	private:
+		T _data;
+};
+
+//-------------------------------------------------------------------
+/// Helper function
+template <typename T>
+NodeWriter<T>
+make_node_writer( T data )
+{
+	return NodeWriter<T>( data );
+}
 
 //%%%%%%%%%%%%%%%%%%%%%%%%
 /// Holds some "detail" code
@@ -176,43 +211,6 @@ void printVertices( std::ofstream& f, const Graph_t& gr, std::false_type )
 	f << "\n";
 }
 
-//%%%%%%%%%%%%%%%%%%%%%%%%
-} // namespace detail
-//%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-//-------------------------------------------------------------------
-/// Functor class to write attributes of vertices in dot file.
-template <typename T>
-class NodeWriter
-{
-	public:
-		NodeWriter( T data ) : _data(data)
-		{}
-
-		template <class vertex_t>
-		void operator()( std::ostream& out, const vertex_t& vert ) const
-		{
-			if( _data[vert].hasLocation )
-				out << " [pos=\"" << _data[vert].x << "," << _data[vert].y  << "!\"]";
-		}
-	private:
-		T _data;
-};
-
-//-------------------------------------------------------------------
-/// Helper function
-template <typename T>
-NodeWriter<T>
-make_node_writer( T data )
-{
-	return NodeWriter<T>( data );
-}
-
-//%%%%%%%%%%%%%%%%%%%%%%%%
-namespace detail {
-//%%%%%%%%%%%%%%%%%%%%%%%%
-
 //-------------------------------------------------------------------
 /// Call boost::write_graphviz for graphs having the \c NodePos vertex type
 template<typename Graph_t>
@@ -235,11 +233,14 @@ callGraphiz( std::ostream& f, const Graph_t& gr, std::false_type )
 } // namespace detail
 //%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+
 //-------------------------------------------------------------------
 /// Generates a dot file from graph \c g and calls the renderer (dot/Graphviz) to produce a svg image of the graph
 template<typename Graph_t>
 void
-RenderGraph( const Graph_t& gr, const std::string id_str )
+renderGraph( const Graph_t& gr, const std::string id_str )
 {
 /*	std::string id_str;
 	if( !name )
@@ -254,10 +255,7 @@ RenderGraph( const Graph_t& gr, const std::string id_str )
 			THROW_ERROR( "unable to open file" + fname );
 
 // Calls detail::callGraphiz(), using tag dispatching on \ref HasVertexProp
-		detail::callGraphiz( f, gr, /* nodeHasPos, */ HasVertexProp<Graph_t>{} );
-//		call_graphiz( f, gr, nodeHasPos );
-
-
+		detail::callGraphiz( f, gr, HasVertexProp<Graph_t>{} );
 	}
 //	CallDot( id_str );
 	g_idx++;
@@ -273,7 +271,7 @@ See https://graphviz.gitlab.io/_pages/doc/info/attrs.html for Dot details
 */
 template<typename Graph_t,typename Vertex_t>
 void
-RenderGraph2( const Graph_t& gr, const std::vector<std::vector<Vertex_t>>& cycles, const std::string id_str ) //, bool nodeHasPos )
+renderGraph2( const Graph_t& gr, const std::vector<std::vector<Vertex_t>>& cycles, const std::string id_str )
 {
 	int nbColors = std::min( 32, (int)cycles.size() );
 
@@ -355,7 +353,7 @@ RenderGraph2( const Graph_t& gr, const std::vector<std::vector<Vertex_t>>& cycle
 /// with names of vertices in a provided external vector \c v_names ("external properties")
 template<typename graph_t>
 void
-RenderGraph2( const graph_t& g, std::vector<std::string>& v_names )
+renderGraph2( const graph_t& g, std::vector<std::string>& v_names )
 {
 	std::string id_str = BuildDotFileName();
 	{
@@ -375,7 +373,7 @@ See http://stackoverflow.com/questions/34160290/
 */
 template<typename graph_t, typename vertex_t>
 void
-RenderGraph3( graph_t& g )
+renderGraph3( graph_t& g )
 {
 	boost::dynamic_properties dp;
 	dp.property( "color",   boost::get( &vertex_t::color_str, g ) );
@@ -469,10 +467,10 @@ trimString( std::string in, char c = ' ' )
 build and link against the "boost_graph" and "boost_regex" libraries.
 [/quote]
 (See https://www.boost.org/doc/libs/1_72_0/libs/graph/doc/read_graphviz.html )
-
+<br>
 Thus, as we wan't to keep this "link-free", we do not use it.<br>
 The counterpart is that we do not read the vertices/edges properties that can be given in a dot file,
-except the "pos" property.<br>
+\b except the "pos" property.<br>
 
 \warning This is a minimal reader, don't expect any fancy features.
 
@@ -758,5 +756,9 @@ processGraph( graph_t& g )
 	return std::make_pair(diff, cycles );
 }
 //-------------------------------------------------------------------
+
+//%%%%%%%%%%%%%%%%%%%%%%%%
+} // namespace sample
+//%%%%%%%%%%%%%%%%%%%%%%%%
 
 #endif // HG_COMMON_SAMPLE_H

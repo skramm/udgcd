@@ -53,7 +53,7 @@ int main(int, char*[])
 
 	add_edge(9, 4, g);
 
-	RenderGraph( g, prog_id );
+	sample::renderGraph( g, prog_id );
 
 	auto cycles = udgcd::findCycles<graph_t,vertex_t>( g );
 	udgcd::printPaths( std::cout, cycles );

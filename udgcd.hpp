@@ -50,7 +50,7 @@ See file README.md
 	#define PRINT_DIFF(a,b,c) ;
 #endif
 
-/// All the provided code is in this namespace
+/// All the libray code is in this namespace
 namespace udgcd {
 
 //-------------------------------------------------------------------------------------------
