@@ -24,39 +24,27 @@ These are sorted with the smallest vertex in first position, and such as the sec
 - [References](#s_ref)
 - [Notes](#s_notes)
 
-Home page: https://github.com/skramm/udgcd
 
-Author: Sebastien Kramm
-
+- Home page: https://github.com/skramm/udgcd
+- Author: Sebastien Kramm
+- Latest news:
+ - 2020-06-09: experimental code and preliminar release, source is pretty messy, but it it works fine
 
 ### Status
- <a name="s_stat"></a>
+<a name="s_stat"></a>
 
--UPDATE 2020-06-09: This is experimental code and a premiminar release, source is pretty messy, BUT:
- - it works fine
-
-- UPDATE 2020-03-16: implemented a binary matrix reduction step, but bug still left, see [here](bug20200316.md)
-- UPDATE 2020-03-10: bug discovered, investigating
-- UPDATE 2020-03-08: finally found some time, issue fixed, is merged into master, "official" 1.0 release planned in a few days, some cleaning todo
-- UPDATE 2017-10-15: the code is currently undergoing deep refactoring (see branch issue1), it is recommended **not to use it** until further notice.
-- UPDATE 2017-08-28: at present, output is redundant: in some case, can give more cycles than it actually should. See [here](#s_issues).
-After some investigating and coding, this issue is actually pretty bad, thus I would recommend *not to use* this code until I find some fix.
-- UPDATE 2017/04: now works with user bundled properties for the edges, [see here](#note_bp).
-- beta. Not extensively tested, but provides sample application code.
-- WARNING: not selled as being "optimal", a lot of things can probably being optimized.
-   Complexity has not been quantified but should be pretty bad, so I doubt it can be used for large graphs.
 
 - Works for graphs holding unconnected sub-graphs.
+- Works for non-planar graphs
 - Modern C++ design'ed (RAII).
 - Fairly generic, should be suited for pretty much all types of undirected graphs, as long as you can [order the vertices](#s_notes).
 - Build upon [example](http://www.boost.org/doc/libs/1_58_0/libs/graph/example/undirected_dfs.cpp) taken from BGL manual
 (also check [this page](http://www.boost.org/doc/libs/1_59_0/libs/graph/doc/undirected_dfs.html)).
-Got some help from [sehe](http://stackoverflow.com/a/43481372/193789).
 - Released under the Boost licence.
 - Intended audience: Any C++ app having a graph cycle detection issue and whose licence is compatible with the Boost licence.
 
 ### Usage:
- <a name="s_usage"></a>
+<a name="s_usage"></a>
 
  1. Add `#include "udgcd.hpp"` in your application (all-in-one file).
  1. Create your graph ([check this](#s_notes)).
@@ -75,7 +63,7 @@ Got some help from [sehe](http://stackoverflow.com/a/43481372/193789).
 See included samples.
 
 ### Building & installing & content:
- <a name="s_build"></a>
+<a name="s_build"></a>
 
 - header only, no build. Provided as a single file (the other files are useless for basic user).
 - To build & run the provided sample code, just use `make run`, no other dependency than BGL.
@@ -134,19 +122,22 @@ If this happens, it means that a cycle *has* been encountered.
 - The third steps does some post-processing: sort cycles by decreasing length, and do Gaussian Elimination to retain a Minimal Cycle Basis (MCB).
 
 ### References
- <a name="s_ref"></a>
+<a name="s_ref"></a>
 
 - BGL: http://www.boost.org/doc/libs/1_59_0/libs/graph/doc
 - https://en.wikipedia.org/wiki/Cycle_basis
 
 - J. D. Horton, <i>A polynomial-time algorithm to find a shortest cycle basis of a graph</i>, SIAM Journal of Computing 16, 1987, pp. 359–366.
+- K. Mehlhorn, D. Michail, <i>Implementing Minimum Cycle Basis Algorithms</i>, ACM Journal of Experimental Algorithmics, Vol. 11, 2006, pp. 1–14.
+- E. Amaldi, C. Iuliano, R. Rizzi, <i>Efficient Deterministic Algorithms for Finding a Minimum Cycle Basis in Undirected Graphs</i>, IPCO 2010, LNCS 6080, pp. 397–410.
 
 
-
-<a name="s_notes"></a>
 ### Notes
+<a name="s_notes"></a>
 
-- In the output vector, the paths are sorted, so you need to have the `<` operator defined for the vertices.
+- In the output vector, the paths can be sorted if the symbol UDGCD_NORMALIZE_CYCLES is defined.
+
+This requires the `<` operator defined for the vertices.
 Sorting is done such as:
  - The smallest element is in first position;
  - The element in second position is smaller than the last one.
