@@ -24,7 +24,7 @@ CFLAGS = -std=c++11 -Wall -O2 -Iinclude -Wno-unused-result
 # test_m4ri.cpp: wrapper_m4ri.hpp
 
 # remove if no need to compare the output ti some ground truth
-CFLAGS += -DUDGCD_NORMALIZE_CYCLES
+#CFLAGS += -DUDGCD_NORMALIZE_CYCLES
 
 ifeq "$(PRINT_STEPS)" "Y"
 	CFLAGS += -DUDGCD_PRINT_STEPS

@@ -24,9 +24,17 @@ These are sorted with the smallest vertex in first position, and such as the sec
 - [References](#s_ref)
 - [Notes](#s_notes)
 
+Home page: https://github.com/skramm/udgcd
+
+Author: Sebastien Kramm
+
 
 ### Status
  <a name="s_stat"></a>
+
+-UPDATE 2020-06-09: This is experimental code and a premiminar release, source is pretty messy, BUT:
+ - it works fine
+
 - UPDATE 2020-03-16: implemented a binary matrix reduction step, but bug still left, see [here](bug20200316.md)
 - UPDATE 2020-03-10: bug discovered, investigating
 - UPDATE 2020-03-08: finally found some time, issue fixed, is merged into master, "official" 1.0 release planned in a few days, some cleaning todo
@@ -37,6 +45,7 @@ After some investigating and coding, this issue is actually pretty bad, thus I w
 - beta. Not extensively tested, but provides sample application code.
 - WARNING: not selled as being "optimal", a lot of things can probably being optimized.
    Complexity has not been quantified but should be pretty bad, so I doubt it can be used for large graphs.
+
 - Works for graphs holding unconnected sub-graphs.
 - Modern C++ design'ed (RAII).
 - Fairly generic, should be suited for pretty much all types of undirected graphs, as long as you can [order the vertices](#s_notes).
@@ -70,7 +79,7 @@ See included samples.
 
 - header only, no build. Provided as a single file (the other files are useless for basic user).
 - To build & run the provided sample code, just use `make run`, no other dependency than BGL.
-(tested with boost 1.54, let me know if you discover any inconsistency with later releases.)
+(tested with boost 1.70, let me know if you discover any inconsistency with later releases.)
 
 ##### Installing
 Just fetch the file `udgcd.hpp` above and store it where you want. Or use the provided target of makefile (if you clone the whole repo):
@@ -88,13 +97,12 @@ Some additional apps are included, that are build by the makefile:
  - The provided makefile is not requested to use the library, as it is "header-only".
  It can be used to show the demos. It has the following targets (for a full list, please enter `make help`):
   - `make` (no targets) : builds the included demos apps
-  - `make run` : builds and runs all the included demos
+  - `make run` : builds and runs all the included demo programs
+  - `make runsam` : builds and runs all the included demo programs
   - `make doc` : builds the doxygen reference file (needs doxygen installed...)
 
 To run a single demo, run `bin/sample_X`.
 
- - If the symbol UDGCD_PRINT_STEPS is defined at build time, then different steps will be printed on `std::cout` (useful only for debugging purposes).
- For the provided samples, this can be done by passing option `PRINT_STEPS=Y` to make.
 
 If Graphviz/Dot is installed, the demo samples will render the generated graphs into svg images in the `obj` folder.
 
@@ -104,6 +112,8 @@ If Graphviz/Dot is installed, the demo samples will render the generated graphs 
 
  - At present, this code requires a static allocated variable (done automatically by compiler, as it is templated).
  Thus it is **not** thread safe, neither can it handle multiple graphs simultaneously.
+- Complexity has not been quantified, but should be for sure more than the one of some most recent papers (see References).
+
 
 ### How does it work ?
  <a name="s_inside"></a>
@@ -111,24 +121,17 @@ If Graphviz/Dot is installed, the demo samples will render the generated graphs 
  The algorithm involved here is pretty simple, but probably not very efficient, thus slow for large graphs.
 Three steps are involved: first we need to check if there **is** at least one cycle.
 Is this is true, we explore the graph to find it/them.
+It can be considered as a variant of the Horton Algorithm.
 
-- The first step is done by a Depth First Search (DFS), with  [boost::undirected_dfs()](http://www.boost.org/doc/libs/1_59_0/libs/graph/doc/undirected_dfs.html)
+- The first step is done by a Depth First Search (DFS), with  [boost::undirected_dfs()](http://www.boost.org/doc/libs/1_70_0/libs/graph/doc/undirected_dfs.html)
 with passing a visitor of class `CycleDetector`, inherited from
-[boost::dfs_visitor](http://www.boost.org/doc/libs/1_59_0/libs/graph/doc/dfs_visitor.html).
+[boost::dfs_visitor](http://www.boost.org/doc/libs/1_70_0/libs/graph/doc/dfs_visitor.html).
 This object holds a set of vertices that are part of an edge on which `back_edge()` is called.
 If this happens, it means that a cycle *has* been encountered.
 
 - The second step is done by exploring recursively the graph, by starting from each of the vertices that have been identified as part of a "back edge".
 
-- The third steps does some post-processing.
-
-**TODO 2020-03-09: this below needs to be updated** <br>
-At present, we have all the possibles paths and we need to filter-out many of them.
- The 4 steps are:
-  1. remove symmetrical paths (i.e. : 1-2-3 is the same as 1-3-2)
-  1. remove duplicate paths  (i.e. : 1-2-3 is the same as 2-3-1)
-  1. remove non-chordless cycles (see [WP page](https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FCycle_%28graph_theory%29%23Chordless_cycles))
-  1. remove redundant cycles, that is the ones that can be deduced from the others.
+- The third steps does some post-processing: sort cycles by decreasing length, and do Gaussian Elimination to retain a Minimal Cycle Basis (MCB).
 
 ### References
  <a name="s_ref"></a>
@@ -136,22 +139,12 @@ At present, we have all the possibles paths and we need to filter-out many of th
 - BGL: http://www.boost.org/doc/libs/1_59_0/libs/graph/doc
 - https://en.wikipedia.org/wiki/Cycle_basis
 
-
-#### Unsorted links on topic
-- http://www.geometrictools.com/Documentation/MinimalCycleBasis.pdf
-- http://math.stackexchange.com/questions/8140/
-- http://cstheory.stackexchange.com/questions/21154/
-- http://stackoverflow.com/questions/16782898/
-- http://stackoverflow.com/questions/1607124/
-- http://stackoverflow.com/questions/4023310/
-- http://stackoverflow.com/questions/16782898/
-- http://www.lamsade.dauphine.fr/~poc/IMG/pdf/Amaldi.pdf
-- https://people.mpi-inf.mpg.de/~mehlhorn/ftp/CycleBasisImpl.pdf
-- https://www.euro-online.org/gom2008/abstracts/gom08-amaldi.pdf
+- J. D. Horton, <i>A polynomial-time algorithm to find a shortest cycle basis of a graph</i>, SIAM Journal of Computing 16, 1987, pp. 359–366.
 
 
-  ### Notes
-  <a name="s_notes"></a>
+
+<a name="s_notes"></a>
+### Notes
 
 - In the output vector, the paths are sorted, so you need to have the `<` operator defined for the vertices.
 Sorting is done such as:
@@ -162,7 +155,7 @@ Sorting is done such as:
    `6-2-1-4`, it is released as `1-2-6-4` (and not `1-4-6-2`).
 
 <a name="note_bp"></a>
-  #### User properties & graph type
+#### User properties & graph type
 
 You can use whatever edge and vertices types, the coloring needed by the algorithm is handled by providing color maps as external properties.
 So if you have no special needs on vertices and edge properties, you can use something as trivial as this:

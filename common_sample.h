@@ -245,7 +245,7 @@ renderGraph( const Graph_t& gr, const std::string id_str )
 		id_str = BuildDotFileName();
 	else
 		id_str = *name;*/
-	std::cout << "id_str=" << id_str << '\n';
+//	std::cout << "id_str=" << id_str << '\n';
 	{
 		std::string fname( "out/" + id_str + "_" + std::to_string(g_idx) + ".dot" );
 		std::ofstream f ( fname );
@@ -728,7 +728,7 @@ processGraph( graph_t& g )
 
 	udgcd::UdgcdInfo info;
 	auto cycles = udgcd::findCycles<graph_t,vertex_t>( g, info );
-	udgcd::printPaths( std::cout, cycles, "final" );
+//	udgcd::printPaths( std::cout, cycles, "final" );
 	if( expected != cycles.size() )
 		std::cout << "ERROR: computed nb of cycles is not what expected (expected=" << expected << ")\n";
 

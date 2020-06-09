@@ -216,7 +216,6 @@ struct BinaryMatrix
 		assert( nbCols>0 );
 		_data.resize( nbLines );
 		std::for_each( _data.begin(), _data.end(), [nbCols](BinaryVec& bv){ bv.resize(nbCols); } ); // lambda
-//		std::cout << __FUNCTION__ << "(): nb cols=" << _data[0].size() << '\n';
 	}
 	BinaryMatrix( size_t nbLines )
 	{
@@ -486,8 +485,6 @@ explore(
 	int depth = 0
 )
 {
-//	PRINT_FUNCTION_2 << " depth=" << depth << " v1=" << v1 << "\n";
-
 	++depth;
 	static int max_depth = std::max( depth, max_depth );
 	assert( vv_paths.size()>0 );
@@ -652,7 +649,7 @@ cleanCycles( const std::vector<std::vector<T>>& v_cycles )
 		else
 			identical++;
 	}
-	std::cout << __FUNCTION__ << "(): nb of identical cycles removed=" << identical << "\n";
+//	std::cout << __FUNCTION__ << "(): nb of identical cycles removed=" << identical << "\n";
 	return out;
 }
 
@@ -1230,11 +1227,13 @@ convertBC2VC(
 		std::cout << i++ << ":" << vp.first << "-" << vp.second << "\n";
 #endif
 
+#ifdef UDGCD_DO_CHECKING
 	if( false == checkVertexPairSet( v_pvertex ) )
 	{
 		std::cout << "Fatal error: invalid set of pairs\n";
 		std::exit(1);
 	}
+#endif
 
 // step 2: extract vertices from map
 	return convertVPV2Cycle( v_pvertex );
@@ -1591,7 +1590,7 @@ template<typename vertex_t, typename graph_t>
 std::vector<std::vector<vertex_t>>
 removeRedundant2( std::vector<std::vector<vertex_t>>& v_in, const graph_t& gr )
 {
-	std::cout << __FUNCTION__ << "() START : " << v_in.size() << " cycles\n";
+	PRINT_FUNCTION;
 
 	assert( !v_in.empty() );
 	if( v_in.size() < 2 )
@@ -1661,14 +1660,13 @@ arg is not const, because it gets sorted here.
 template<typename vertex_t, typename graph_t>
 std::vector<std::vector<vertex_t>>
 removeRedundant(
-	std::vector<std::vector<vertex_t>>& v_in,
-	const graph_t& gr
+	std::vector<std::vector<vertex_t>>& v_in,  ///< input set of cycles
+	const graph_t&                      gr     ///< graph
 )
 {
 	PRINT_FUNCTION;
-	std::cout << __FUNCTION__ << "() START : " << v_in.size() << " cycles\n";
-	priv::printStatus( std::cout, v_in, __LINE__ );
-// IMPORTANT: the code below assumes we have at least 3 cycles, so lets exit right away if not !
+
+// the code below assumes we have at least 3 cycles, so lets exit right away if not !
 	if( v_in.size() < 3 )
 		return v_in;
 
@@ -1679,7 +1677,7 @@ removeRedundant(
 	binMat_in.getInfo().print( std::cout );//, "removeRedundant(): input binary matrix" );
 	BinaryMatrix* p_binmat_in = &binMat_in;
 
-	p_binmat_in->printMat( std::cout, "binMat_in" );
+//	p_binmat_in->printMat( std::cout, "binMat_in" );
 
 	BinaryMatrix* p_binmat = nullptr;
 
@@ -1711,7 +1709,7 @@ removeRedundant(
 		p_binmat = &binMat_out_1;
 #endif
 
-	p_binmat->printMat( std::cout, "binMat_out" );
+//	p_binmat->printMat( std::cout, "binMat_out" );
 
 #ifdef UDGCD_NORMALIZE_CYCLES
 	auto out = convertBinary2Vertex( *p_binmat, incidMap );
@@ -1725,7 +1723,7 @@ removeRedundant(
 //-------------------------------------------------------------------------------------------
 /// Recursive function, will iterate in graph and return true if cycle is correct. Called by isACycle()
 /**
-End condition
+End condition:
  - we found the initial node as \c next
  - we cannot find in all the linked nodes the next node (the one that is after \c idx_curr in \c cycle)
 */
@@ -1979,12 +1977,12 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 	std::cout << "-Nb initial cycles: " << info.nbRawCycles << '\n';
 
 //////////////////////////////////////
-// step 3 (post process): cleanout the cycles by removing steps that are not part of the cycle
+// step 3 (post process): cleanout the cycles by removing steps that are not part of the cycle and sort
 //////////////////////////////////////
 
-// post process 0: cleanout the cycles by removing steps that are not part of the cycle
+
 	auto v_cycles0 = priv::cleanCycles( v_cycles );
-	priv::printStatus( std::cout, v_cycles0, __LINE__ );
+//	priv::printStatus( std::cout, v_cycles0, __LINE__ );
 
 	info.setTimeStamp();
 	info.nbCleanedCycles = v_cycles0.size();
@@ -2002,8 +2000,7 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 			return a.size()<b.size();
 		}
 	);
-	priv::printStatus( std::cout, *p_cycles, __LINE__ );
-
+//	priv::printStatus( std::cout, *p_cycles, __LINE__ );
 
 
 //////////////////////////////////////
@@ -2024,7 +2021,7 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 //		exit(1);
 	}
 #endif
-	priv::printStatus( std::cout, *p_cycles, __LINE__ );
+//	priv::printStatus( std::cout, *p_cycles, __LINE__ );
 
 
 	info.setTimeStamp();
