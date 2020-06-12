@@ -154,7 +154,7 @@ struct BinaryMatInfo
 			<< "\n-nbLines ="  << nbLines
 			<< "\n-nbCols ="   << nbCols
 			<< "\n-nbOnes ="   << nbOnes
-			<< "\n-nb0Lines =" << nb0Lines
+//			<< "\n-nb0Lines =" << nb0Lines
 			<< "\n-nb0Cols ="  << nb0Cols
 			<< '\n';
     }
@@ -1484,7 +1484,6 @@ buildTrueIncidMap( const graph_t& gr )
 		if( std::find( out.begin(), out.end(), vp ) == out.end() )
 			out.push_back( vp );
 	}
-	std::cout << __FUNCTION__ << "() map size=" << out.size() << "\n";
 	return out;
 }
 //-------------------------------------------------------------------------------------------
@@ -1957,7 +1956,7 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 	if( !cycleDetector.cycleDetected() )             // if no detection,
 		return std::vector<std::vector<vertex_t>>(); //  return empty vector, no cycles found
 
-	std::cout << "cycleDetector: nbSourceVertices=" << cycleDetector.v_source_vertex.size() << '\n';
+//	std::cout << "cycleDetector: nbSourceVertices=" << cycleDetector.v_source_vertex.size() << '\n';
 	std::vector<std::vector<vertex_t>> v_cycles;     // else, get the cycles.
 
 //////////////////////////////////////

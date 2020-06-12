@@ -704,6 +704,23 @@ loadGraph_txt( const char* fname )
 	return g;
 }
 //-------------------------------------------------------------------
+template<typename vertex_t>
+std::vector<size_t>
+buildSizeHistogram( const std::vector<std::vector<vertex_t>>& cycles )
+{
+	std::vector<size_t> histo;
+	for( const auto& c: cycles )
+	{
+		auto siz = c.size();
+		if( histo.size() < siz-2 )
+			histo.resize( siz-2 );
+		histo.at( siz-3 )++;
+	}
+
+	return histo;
+}
+
+//-------------------------------------------------------------------
 /// Process the graph \c g to find cycles
 /// This function is called by the two apps: random_test.cpp and read_graph.cpp
 /**
@@ -746,9 +763,14 @@ processGraph( graph_t& g )
 	{
 		std::cout << "Found: " << check.second << " non chordless cycles\n";
 	}
-
+//	info.
 	info.print( std::cout );
 //	info.printCSV( std::cerr );
+
+	std::cout << "Histogram of cycle sizes:\n";
+	auto histog = buildSizeHistogram( cycles );
+	for( size_t i=0; i<histog.size(); i++ )
+		std::cout << i+3 << ":" << histog[i] << "\n";
 
 	auto diff = (int)cycles.size() - (int)expected;
 	return std::make_pair(diff, cycles );

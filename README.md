@@ -36,14 +36,14 @@ These are sorted with the smallest vertex in first position, and such as the sec
 
 - Works for graphs holding unconnected sub-graphs.
 - Works for non-planar graphs
-- Modern C++ design'ed (RAII).
+- Modern C++ design (RAII).
 - Fairly generic, should be suited for pretty much all types of undirected graphs, as long as you can [order the vertices](#s_notes).
 - Build upon [example](http://www.boost.org/doc/libs/1_58_0/libs/graph/example/undirected_dfs.cpp) taken from BGL manual
 (also check [this page](http://www.boost.org/doc/libs/1_59_0/libs/graph/doc/undirected_dfs.html)).
 - Released under the Boost licence.
 - Intended audience: Any C++ app having a graph cycle detection issue and whose licence is compatible with the Boost licence.
 
-### Usage:
+### Usage in yout own code:
 <a name="s_usage"></a>
 
  1. Add `#include "udgcd.hpp"` in your application (all-in-one file).
@@ -57,10 +57,13 @@ These are sorted with the smallest vertex in first position, and such as the sec
    `udgcd::printPaths( std::cout, cycles, "cycles" );`
  - Done !
 
-(1) FYI, the type of the returned value is actually
-`std::vector<std::vector<my_vertex_t>>` but with C+11, you don't really need that information.
+(1) The type of the returned value is actually `std::vector<std::vector<my_vertex_t>>`
 
-See included samples.
+See included sample programs.
+
+
+To check without writing any code, you can also try the program `read_graph.cpp`
+
 
 ### Building & installing & content:
 <a name="s_build"></a>
@@ -86,7 +89,7 @@ Some additional apps are included, that are build by the makefile:
  It can be used to show the demos. It has the following targets (for a full list, please enter `make help`):
   - `make` (no targets) : builds the included demos apps
   - `make run` : builds and runs all the included demo programs
-  - `make runsam` : builds and runs all the included demo programs
+  - `make runsam` : builds and runs the `read_graph.cpp` program and runs it on all provided data samples
   - `make doc` : builds the doxygen reference file (needs doxygen installed...)
 
 To run a single demo, run `bin/sample_X`.

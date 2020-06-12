@@ -62,7 +62,7 @@ SaveGraph( graph_t g, std::string id )
 }
 //-------------------------------------------------------------------
 graph_t
-GenerateRandomGraph( size_t nb_vertices, size_t nb_egdes )
+generateRandomGraph( size_t nb_vertices, size_t nb_egdes )
 {
 	graph_t g;
 
@@ -78,7 +78,11 @@ GenerateRandomGraph( size_t nb_vertices, size_t nb_egdes )
 			auto p = boost::edge( v1, v2, g );  // returns a pair<edge_descriptor, bool>
 			if( !p.second )                     // add edge only if not already present
 				boost::add_edge( v1, v2, g );
+			else
+				nb_egdes++;
 		}
+		else
+			nb_egdes++;
 	}
 	return g;
 }
@@ -95,15 +99,22 @@ int main( int argc, const char** argv )
 	if( argc > 2 )
 		nb_egdes = std::atoi( argv[2] );
 
+	auto max_nb_edges = nb_vertices * (nb_vertices-1) / 2 ;
+	if( nb_egdes> max_nb_edges )
+	{
+		std::cerr << "Unable, requested nb of edges (" << nb_egdes << ") is above max value (" << max_nb_edges << "), exiting.\n";
+		return 1;
+	}
 	auto current_time = time(0);
 	std::srand( current_time );
 
-	graph_t g = GenerateRandomGraph( nb_vertices, nb_egdes );
+	graph_t g = generateRandomGraph( nb_vertices, nb_egdes );
 
 	SaveGraph( g, std::to_string(current_time) );
 	sample::renderGraph( g, "gen_" + std::to_string(current_time) );
 
 	auto result = sample::processGraph<graph_t,vertex_t>( g );
+
 	return result.first;
 }
 //-------------------------------------------------------------------
