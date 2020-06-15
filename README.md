@@ -25,25 +25,27 @@ These are sorted with the smallest vertex in first position, and such as the sec
 - [Notes](#s_notes)
 
 
+### Status
+<a name="s_stat"></a>
+
 - Home page: https://github.com/skramm/udgcd
 - Author: Sebastien Kramm
 - Latest news:
  - 2020-06-09: experimental code and preliminar release, source is pretty messy, but it it works fine
+- Released under the Boost licence.
 
-### Status
-<a name="s_stat"></a>
+### Features
 
-
+- single-file, header only.
 - Works for graphs holding unconnected sub-graphs.
 - Works for non-planar graphs
 - Modern C++ design (RAII).
 - Fairly generic, should be suited for pretty much all types of undirected graphs, as long as you can [order the vertices](#s_notes).
 - Build upon [example](http://www.boost.org/doc/libs/1_58_0/libs/graph/example/undirected_dfs.cpp) taken from BGL manual
 (also check [this page](http://www.boost.org/doc/libs/1_59_0/libs/graph/doc/undirected_dfs.html)).
-- Released under the Boost licence.
 - Intended audience: Any C++ app having a graph cycle detection issue and whose licence is compatible with the Boost licence.
 
-### Usage in yout own code:
+### Usage in your own code:
 <a name="s_usage"></a>
 
  1. Add `#include "udgcd.hpp"` in your application (all-in-one file).
@@ -72,7 +74,7 @@ To check without writing any code, you can also try the program `read_graph.cpp`
 - To build & run the provided sample code, just use `make run`, no other dependency than BGL.
 (tested with boost 1.70, let me know if you discover any inconsistency with later releases.)
 
-##### Installing
+#### Installing
 Just fetch the file `udgcd.hpp` above and store it where you want. Or use the provided target of makefile (if you clone the whole repo):
 `make install` (might require `sudo`).
 This will copy the file in `/usr/local/include/`
@@ -84,7 +86,7 @@ Some additional apps are included, that are build by the makefile:
  - `random_test.cpp`: generates a random graph and computes its cycles.
  - `sample_?.cpp`: c++ apps that build a graph and computes its cycles.
 
-##### Build options:
+#### Build options:
  - The provided makefile is not requested to use the library, as it is "header-only".
  It can be used to show the demos. It has the following targets (for a full list, please enter `make help`):
   - `make` (no targets) : builds the included demos apps
@@ -92,17 +94,17 @@ Some additional apps are included, that are build by the makefile:
   - `make runsam` : builds and runs the `read_graph.cpp` program and runs it on all provided data samples
   - `make doc` : builds the doxygen reference file (needs doxygen installed...)
 
-To run a single demo, run `bin/sample_X`.
+To run a single demo, run `build/bin/sample_X`.
 
-
-If Graphviz/Dot is installed, the demo samples will render the generated graphs into svg images in the `obj` folder.
+The program `read_graph.cpp` (build an run by `make runsam`) will generate a dot file that can be rendered as an image with Graphviz.
+So if Graphviz/Dot is installed, you can try `make svg`: this will call Graphivz on all the dot files in the `out` folder.
 
 
 ### Issues:
  <a name="s_issues"></a>
 
- - At present, this code requires a static allocated variable (done automatically by compiler, as it is templated).
- Thus it is **not** thread safe, neither can it handle multiple graphs simultaneously.
+- At present, this code requires a static allocated variable (done automatically by compiler, as it is templated).
+Thus it is **not** thread safe, neither can it handle multiple graphs simultaneously.
 - Complexity has not been quantified, but should be for sure more than the one of some most recent papers (see References).
 
 
@@ -129,7 +131,6 @@ If this happens, it means that a cycle *has* been encountered.
 
 - BGL: http://www.boost.org/doc/libs/1_59_0/libs/graph/doc
 - https://en.wikipedia.org/wiki/Cycle_basis
-
 - J. D. Horton, <i>A polynomial-time algorithm to find a shortest cycle basis of a graph</i>, SIAM Journal of Computing 16, 1987, pp. 359–366.
 - K. Mehlhorn, D. Michail, <i>Implementing Minimum Cycle Basis Algorithms</i>, ACM Journal of Experimental Algorithmics, Vol. 11, 2006, pp. 1–14.
 - E. Amaldi, C. Iuliano, R. Rizzi, <i>Efficient Deterministic Algorithms for Finding a Minimum Cycle Basis in Undirected Graphs</i>, IPCO 2010, LNCS 6080, pp. 397–410.
@@ -138,14 +139,14 @@ If this happens, it means that a cycle *has* been encountered.
 ### Notes
 <a name="s_notes"></a>
 
-- In the output vector, the paths can be sorted if the symbol UDGCD_NORMALIZE_CYCLES is defined.
-
+#### Output normalizing
+In the output vector, the paths can be sorted if the symbol UDGCD_NORMALIZE_CYCLES is defined.
 This requires the `<` operator defined for the vertices.
 Sorting is done such as:
- - The smallest element is in first position;
- - The element in second position is smaller than the last one.
+- The smallest element is in first position;
+- The element in second position is smaller than the last one.
 
- As an example, say you have a raw cycle expressed as
+As an example, say you have a raw cycle expressed as
    `6-2-1-4`, it is released as `1-2-6-4` (and not `1-4-6-2`).
 
 <a name="note_bp"></a>

@@ -763,7 +763,7 @@ processGraph( graph_t& g )
 	{
 		std::cout << "Found: " << check.second << " non chordless cycles\n";
 	}
-//	info.
+
 	info.print( std::cout );
 //	info.printCSV( std::cerr );
 
