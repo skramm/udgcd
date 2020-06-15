@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="udgcd" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Release">
+				<Option output="build/bin/udgld" prefix_auto="1" extension_auto="1" />
+				<Option object_output="build/obj/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+		</Compiler>
+		<Unit filename="../README.md" />
+		<Unit filename="../bug20200316.md" />
+		<Unit filename="../common_sample.h" />
+		<Unit filename="../makefile" />
+		<Unit filename="../random_test.cpp" />
+		<Unit filename="../read_graph.cpp" />
+		<Unit filename="../sample_1.cpp" />
+		<Unit filename="../sample_2.cpp" />
+		<Unit filename="../sample_3.cpp" />
+		<Unit filename="../sample_4.cpp" />
+		<Unit filename="../test_catch.cpp" />
+		<Unit filename="../test_m4ri.cpp" />
+		<Unit filename="../test_m4ri_2.cpp" />
+		<Unit filename="../udgcd.hpp" />
+		<Unit filename="../wrapper_m4ri.hpp" />
+		<Unit filename="../wrapper_m4ri_convert.hpp" />
+		<Unit filename="doxyfile" />
+		<Unit filename="samples.h" />
+		<Extensions />
+	</Project>
+</CodeBlocks_project_file>

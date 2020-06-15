@@ -113,34 +113,34 @@ int main()
 
 	AssignRandomColors( g );
 	AssignNodeNames( g, names );
-	RenderGraph( g, prog_id );
+	sample::renderGraph( g, prog_id );
 
 	//std::vector<std::vector<vertex_t>> cycles = udgcd::findCycles<graph_t,vertex_t>( g );      // no cycles at first
 	auto cycles = udgcd::findCycles<graph_t,vertex_t>( g );      // no cycles at first
-	udgcd::PrintPaths( std::cout, cycles, "final-0" );
+	udgcd::printPaths( std::cout, cycles, "final-0" );
 
 	add_edge( 1, 6, g );                                 // cycle !
 	cycles = udgcd::findCycles<graph_t,vertex_t>( g );
 
-//	RenderGraph3<graph_t,myVertex_t>( g );
-	RenderGraph( g, "s1" );
+//	renderGraph3<graph_t,myVertex_t>( g );
+	sample::renderGraph( g, "s1" );
 
-	udgcd::PrintPaths( std::cout, cycles, "final-1" );
+	udgcd::printPaths( std::cout, cycles, "final-1" );
 
 	add_edge( 13, 14, g );                              // another cycle !
-	RenderGraph( g, prog_id );
+	sample::renderGraph( g, prog_id );
 	cycles = udgcd::findCycles<graph_t,vertex_t>( g );
-	udgcd::PrintPaths( std::cout, cycles, "final-2" );
+	udgcd::printPaths( std::cout, cycles, "final-2" );
 
 	add_edge( 15, 8, g );                               // another cycle !
-	RenderGraph( g, prog_id );
+	sample::renderGraph( g, prog_id );
 	cycles = udgcd::findCycles<graph_t,vertex_t>( g );
-	udgcd::PrintPaths( std::cout, cycles, "final-3" );
+	udgcd::printPaths( std::cout, cycles, "final-3" );
 
 	add_edge( 15, 8, g );                               // add a second arc between same vertices, does not add a path
-	RenderGraph( g, prog_id );
+	sample::renderGraph( g, prog_id );
 	cycles = udgcd::findCycles<graph_t,vertex_t>( g );
-	udgcd::PrintPaths( std::cout, cycles, "final-4" );
+	udgcd::printPaths( std::cout, cycles, "final-4" );
 
 	return 0;
 }

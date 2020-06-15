@@ -27,21 +27,21 @@ std::string prog_id = "s3";
 
 
 //-------------------------------------------------------------------------------------------
-/// Some typedefs for readability... ;-)
-
+/// An example of type for vertices (see sample_3.cpp)
 struct vertex_data {
     std::string whatever;
     int othervalue;
 };
 
-typedef boost::adjacency_list<
+///
+using graph_t = boost::adjacency_list<
 	boost::vecS,
 	boost::vecS,
 	boost::undirectedS,
 	vertex_data
-	> graph_t;
+	>;
 
-	typedef boost::graph_traits<graph_t>::vertex_descriptor vertex_t;
+typedef boost::graph_traits<graph_t>::vertex_descriptor vertex_t;
 
 
 //-------------------------------------------------------------------
@@ -56,18 +56,18 @@ void g1()
 	add_edge(3, 1, g);
 	add_edge(2, 3, g);
 
-	RenderGraph( g, prog_id );
+	sample::renderGraph( g, prog_id );
 	{
 		std::vector<std::vector<vertex_t>> cycles = udgcd::findCycles<graph_t,vertex_t>( g );
-		udgcd::PrintPaths( std::cout, cycles );
+		udgcd::printPaths( std::cout, cycles );
 	}
 	add_edge( 2, 4, g);
 	add_edge( 3, 4, g);
 
-	RenderGraph( g, prog_id );
+	sample::renderGraph( g, prog_id );
 	{
 		std::vector<std::vector<vertex_t>> cycles = udgcd::findCycles<graph_t,vertex_t>( g );
-		udgcd::PrintPaths( std::cout, cycles );
+		udgcd::printPaths( std::cout, cycles );
 	}
 }
 
@@ -101,26 +101,26 @@ void g2()
 */
 
 	{
-        RenderGraph( g, "s3g2" );
-//        RenderGraph2( g, v_nodeName );
+        sample::renderGraph( g, "s3g2" );
+//        renderGraph2( g, v_nodeName );
         std::vector<std::vector<vertex_t>> cycles = udgcd::findCycles<graph_t,vertex_t>( g );
-        udgcd::PrintPaths( std::cout, cycles );
+        udgcd::printPaths( std::cout, cycles );
 	}
 
 /*	clear_vertex( 3, g );
 	add_edge( 2, 4, g );
 	{
-    	RenderGraph( g );
+    	renderGraph( g );
         std::vector<std::vector<vertex_t>> cycles = udgcd::findCycles<graph_t,vertex_t>( g );
-        udgcd::PrintPaths( std::cout, cycles );
+        udgcd::printPaths( std::cout, cycles );
 	}
 
 	clear_vertex( 2, g );
 	add_edge( 1, 4, g );
 	{
-    	RenderGraph( g );
+    	renderGraph( g );
         std::vector<std::vector<vertex_t>> cycles = udgcd::findCycles<graph_t,vertex_t>( g );
-        udgcd::PrintPaths( std::cout, cycles );
+        udgcd::printPaths( std::cout, cycles );
 	}
 */
 

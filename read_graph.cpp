@@ -5,7 +5,7 @@
 
 /**
 \file read_graph.cpp
-\brief read a graph in simple text format, searches for cycles, and make sure these are correct
+\brief Read a graph in a file, searches for cycles, and make sure these are correct.
 
 Also generates a .dot file that can be graphically rendered with Graphviz
 */
@@ -19,33 +19,59 @@ std::string prog_id = "read_graph";
 #include "common_sample.h"
 
 
-
-//-------------------------------------------------------------------------------------------
-/// Some typedefs for readability
-typedef boost::adjacency_list<
-	boost::vecS,
-	boost::vecS,
-	boost::undirectedS
-	> graph_t;
-
-typedef boost::graph_traits<graph_t>::vertex_descriptor vertex_t;
-typedef boost::graph_traits<graph_t>::edge_descriptor   edge_t;
-
 //-------------------------------------------------------------------
 /// see read_graph.cpp
 int main( int argc, const char** argv )
 {
 	SHOW_INFO;
+
+	using graph_t = boost::adjacency_list<
+	boost::vecS,
+	boost::vecS,
+	boost::undirectedS,
+	sample::NodeData
+	>;
+
+	using vertex_t = boost::graph_traits<graph_t>::vertex_descriptor;
+
+#ifdef UDGCD_USE_M4RI
+	std::cout << "Build using libM4ri\n";
+#endif
+
 	if( argc < 2 )
 	{
 		std::cout << "missing input filename, exit.\n";
 		return 1;
 	}
-	graph_t g = LoadGraph<graph_t>( argv[1] );
+	auto vs = sample::splitString( argv[1], '.' );
+	if( vs.size() < 2 )
+	{
+		std::cerr << "Error, input file '" <<  argv[1] << "' has no extension\n";
+		return 1;
+	}
 
-	auto vs1 = split_string( argv[1], '/' );      // splits by '/', and keep the last one (filename)
-	auto vs2 = split_string( vs1.back(), '.' );     // splits by the point (if any)
-	RenderGraph( g, vs2[0] );
+	graph_t gr;
+	if( vs.back() == "dot" )
+	{
+		gr = sample::loadGraph_dot<graph_t>( argv[1] );
+	}
+	else
+	{
+		if( vs.back() == "txt" )
+		{
+			gr = sample::loadGraph_txt<graph_t>( argv[1] );
+		}
+		else
+		{
+			std::cerr << "Error, input file '" <<  argv[1] << "' extension invalid\n";
+			return 1;
+		}
+	}
+
+
+	auto vs1 = sample::splitString( argv[1], '/' );      // splits by '/', and keep the last one (filename)
+	auto vs2 = sample::splitString( vs1.back(), '.' );     // splits by the point (if any)
+	sample::renderGraph( gr, vs2[0] );
 
 	bool noProcess(false);
 	if( argc > 2 )
@@ -56,7 +82,9 @@ int main( int argc, const char** argv )
 	}
 	if( noProcess )
 		return 0;
-	return Process( g );
+	auto result = sample::processGraph<graph_t,vertex_t>( gr );
+	sample::renderGraph2( gr, result.second, vs2[0]+"_color" );
+	return result.first;
 }
 
 //-------------------------------------------------------------------

@@ -18,11 +18,13 @@ COLOR_OFF="\e[0m"
 #--------------------------------
 # general compiler flags
 # -Wno-unused-result is to avoid the warning on call to std::system() when calling dot (see void CallDot() )
-CFLAGS = -std=c++0x -Wall -O2 -Iinclude -Wno-unused-result
-#CFLAGS = -g -std=c++0x -Wall -O2 -Iinclude -Wno-unused-result
+CFLAGS = -std=c++11 -Wall -O2 -Iinclude -Wno-unused-result
 
-# TEMP
-CFLAGS += -DUDGCD_REDUCE_MATRIX
+
+# test_m4ri.cpp: wrapper_m4ri.hpp
+
+# remove if no need to compare the output ti some ground truth
+#CFLAGS += -DUDGCD_NORMALIZE_CYCLES
 
 ifeq "$(PRINT_STEPS)" "Y"
 	CFLAGS += -DUDGCD_PRINT_STEPS
@@ -32,15 +34,29 @@ ifeq "$(DEVMODE)" "Y"
 	CFLAGS += -DUDGCD_DEV_MODE
 endif
 
+ifeq "$(DEBUG)" "Y"
+	CFLAGS += -g
+	LDFLAGS += -g
+else
+	LDFLAGS += -s
+endif
+
+ifeq "$(M4RI)" "Y"
+	CFLAGS += -DUDGCD_USE_M4RI
+	LDFLAGS +=-lm4ri
+endif
+
 SHELL=/bin/bash
 
 
 # files and folders
 SRC_DIR=.
 APP=udgcd.hpp
-HEADERS=$(wildcard $(SRC_DIR)/*.h*)
-BIN_DIR=bin
-OBJ_DIR=obj
+#HEADERS=$(wildcard $(SRC_DIR)/*.h*)
+HEADER=udgcd.hpp
+HEADERS = $(wildcard *.h*)
+BIN_DIR=build/bin
+OBJ_DIR=build/obj
 
 SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)
 OBJ_FILES = $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRC_FILES))
@@ -50,8 +66,12 @@ SAMPLE_FILES = $(wildcard samples/*.txt)
 GEN_GSAMPLE_FILES = $(wildcard out/gen_graph_*.txt)
 GEN_GSAMPLES_OUTPUT = $(patsubst out/%.txt,out/stdout_%.txt,$(GEN_GSAMPLE_FILES))
 
-GEN_SAMPLE_FILES = $(wildcard samples/graph_*.txt)
-GEN_SAMPLES_OUTPUT = $(patsubst samples/graph_%.txt,out/stdout_graph_%.txt,$(GEN_SAMPLE_FILES))
+GEN_SAMPLE_TXT_FILES = $(wildcard samples/graph_*.txt)
+GEN_SAMPLE_DOT_FILES = $(wildcard samples/graph_*.dot)
+
+GEN_SAMPLES_OUTPUT = $(patsubst samples/graph_%.txt,out/stdout_graph_%.txt,$(GEN_SAMPLE_TXT_FILES))
+GEN_SAMPLES_OUTPUT += $(patsubst samples/graph_%.dot,out/stdout_graph_%.txt,$(GEN_SAMPLE_DOT_FILES))
+
 #GEN_SAMPLES_PLOT = $(patsubst samples/%.txt,out/sample_%.svg,$(GEN_SAMPLE_FILES))
 
 DOT_FILES=$(wildcard out/*.dot)
@@ -80,23 +100,33 @@ run: all
 	$(addsuffix ;,$(EXEC_FILES))
 
 # runs on all generated samples
-rungen: $(GEN_GSAMPLES_OUTPUT) bin/read_graph
+rungen: $(GEN_GSAMPLES_OUTPUT) $(BIN_DIR)/read_graph
 	@echo "target $@ done"
 
 # runs cycle detection process on all provided samples
-runsam: $(GEN_SAMPLES_OUTPUT) bin/read_graph | clearlogfile
+runsam: clearlogfile $(GEN_SAMPLES_OUTPUT) $(BIN_DIR)/read_graph
 	@echo "target $@ done"
 
 
-clearlogfile:
+clearlogfile: makefile
 	@echo "Running make target 'runsam', results:" > runsam.log
 
-out/stdout_graph_%.txt: samples/graph_%.txt bin/read_graph
-	-bin/read_graph $< > $@;\
+# this one for .txt input files
+out/stdout_graph_%.txt: samples/graph_%.txt $(BIN_DIR)/read_graph makefile
+	@echo "processing file $<"
+	@-$(BIN_DIR)/read_graph $< > $@;\
+	STATUS=$$?; echo "file $<: exit with $$STATUS" >> runsam.log
+
+# this one for .dot input files
+out/stdout_graph_%.txt: samples/graph_%.dot $(BIN_DIR)/read_graph makefile
+	@echo "processing file $<"
+	@-$(BIN_DIR)/read_graph $< > $@;\
 	STATUS=$$?; echo "file $<: exit with $$STATUS" >> runsam.log
 
 out/%.svg : out/%.dot
-	dot -Tsvg -Nfontsize=24 $< >$@
+	@echo "generating $@ bn=$(basename $@)"
+	dot   -Tsvg -Nfontsize=24 $< >$(basename $@)_dot.svg
+	neato -Tsvg -Nfontsize=24 -Elen=1.5 $< >$(basename $@)_neato.svg
 
 show: $(SRC_FILES)
 	@echo SRC_FILES=$(SRC_FILES)
@@ -105,7 +135,8 @@ show: $(SRC_FILES)
 	@echo SAMPLE_FILES=$(SAMPLE_FILES)
 	@echo GEN_GSAMPLE_FILES=$(GEN_GSAMPLE_FILES)
 	@echo GEN_GSAMPLES_OUTPUT=$(GEN_GSAMPLES_OUTPUT)
-	@echo GEN_SAMPLE_FILES=$(GEN_SAMPLE_FILES)
+	@echo GEN_SAMPLE_TXT_FILES=$(GEN_SAMPLE_TXT_FILES)
+	@echo GEN_SAMPLE_DOT_FILES=$(GEN_SAMPLE_DOT_FILES)
 	@echo GEN_SAMPLES_OUTPUT=$(GEN_SAMPLES_OUTPUT)
 	@echo GEN_SAMPLES_PLOT =$(GEN_SAMPLES_PLOT)
 	@echo DOT_FILES =$(DOT_FILES)
@@ -113,8 +144,8 @@ show: $(SRC_FILES)
 
 
 doc:
-	doxygen doxyfile 1>$(OBJ_DIR)/doxygen_stdout.txt 2>$(OBJ_DIR)/doxygen_stderr.txt
-	xdg-open html/index.html
+	doxygen misc/doxyfile 1>build/doxygen.stdout 2>build/doxygen.stderr
+	xdg-open build/html/index.html
 
 clean:
 	@-rm $(OBJ_DIR)/*
@@ -127,8 +158,8 @@ cleanall: clean cleandoc cleanout
 	@-rm $(EXEC_FILES)
 
 cleandoc:
-	@-rm -r html/*
-	@-rmdir html
+	@-rm -r build/html/*
+#	@-rmdir html
 
 svg: $(SVG_FILES)
 	@echo "target $@ done"
@@ -142,22 +173,24 @@ install:
 	-cp $(APP) /usr/local/include/$(APP)
 
 # generic compile rule
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(HEADERS)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(HEADERS) wrapper_m4ri.hpp
 	@echo $(COLOR_2) " - Compiling app file $<." $(COLOR_OFF)
-	$(L)$(CXX) -o $@ -c $< $(CFLAGS)
+	$(CXX) -o $@ -c $< $(CFLAGS)
 
 # linking
 # -s option: strip symbol (don't add if debugging)
 $(BIN_DIR)/%: $(OBJ_DIR)/%.o
 	@echo $(COLOR_1) " - Link demo $@." $(COLOR_OFF)
-	$(L)$(CXX) -o $@ -s $<  $(LDFLAGS)
+	$(CXX) -o $@ $<  $(LDFLAGS)
 #	$(L)$(CXX) -o $@ $<  $(LDFLAGS)
 
-bin/test_catch: obj/test_catch.o
-	$(CXX) -o bin/test_catch obj/test_catch.o -s
-	@echo "done target $@"
+#$(BIN_DIR)/test_catch: $(OBJ_DIR)/test_catch.o
+#	$(CXX) -o bin/test_catch $(OBJ_DIR)/test_catch.o -s
+#	@echo "done target $@"
 
 # -s option: also shows successful test results
-test: bin/test_catch
-	bin/test_catch -s
+test: $(BIN_DIR)/test_catch
+	$(BIN_DIR)/test_catch
 
+bug: $(BIN_DIR)/read_graph
+	$(BIN_DIR)/read_graph samples2/graph_1583824532.txt>stdout
