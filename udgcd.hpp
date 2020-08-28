@@ -618,13 +618,13 @@ findTrueCycle( const std::vector<T>& cycle )
 	return out;
 }
 //-------------------------------------------------------------------------------------------
-/// Removes for each cycle the parts that are not part of the cycle.
+/// Removes for each cycle the vertices that are not part of the cycle.
 /**
 Example:
 - in: 1-2-3-4-5-3
 - out: 3-4-5
 
-\todo We make a preallocation of the output vector, using the size of the input vector.
+\todo We make a preallocation (with reserve() ) of the output vector, using the size of the input vector.
 However, the output vector has a size usually less than 10 times less the size of the input vector.
 Thus there might be some memory saving to do here.
 
@@ -640,14 +640,14 @@ cleanCycles( const std::vector<std::vector<T>>& v_cycles )
 	std::vector<std::vector<T>> out;
 	out.reserve( v_cycles.size() );
 
-	size_t identical = 0;
+//	size_t identical = 0;
 	for( const auto& cycle: v_cycles )
 	{
 		auto newcy = findTrueCycle( cycle );
 		if( std::find( std::begin(out), std::end(out), newcy ) == std::end(out) )     // add to output vector only if not already present
 			out.push_back( newcy );
-		else
-			identical++;
+//		else
+//			identical++;
 	}
 //	std::cout << __FUNCTION__ << "(): nb of identical cycles removed=" << identical << "\n";
 	return out;
@@ -1976,7 +1976,7 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 	std::cout << "-Nb initial cycles: " << info.nbRawCycles << '\n';
 
 //////////////////////////////////////
-// step 3 (post process): cleanout the cycles by removing steps that are not part of the cycle and sort
+// step 3 (post process): cleanout the cycles by removing the vertices that are not part of the cycle and sort
 //////////////////////////////////////
 
 

@@ -192,5 +192,3 @@ $(BIN_DIR)/%: $(OBJ_DIR)/%.o
 test: $(BIN_DIR)/test_catch
 	$(BIN_DIR)/test_catch
 
-bug: $(BIN_DIR)/read_graph
-	$(BIN_DIR)/read_graph samples2/graph_1583824532.txt>stdout
