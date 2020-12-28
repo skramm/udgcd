@@ -81,7 +81,7 @@ Some additional apps are included, that are build by the makefile:
   - `make` (no targets) : builds the included demos apps
   - `make run` : builds and runs all the included demo programs
   - `make runsam` : builds and runs the `read_graph.cpp` program and runs it on all provided data samples, in folder `samples/`
-  - `make doc` : builds the doxygen reference file (needs doxygen installed...)
+  - `make doc` : builds the doxygen reference file (needs doxygen installed). Useful if you want to dive into the code...
 
 To run a single demo, run `build/bin/sample_X`.
 

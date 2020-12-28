@@ -33,8 +33,6 @@
 		<Unit filename="../sample_3.cpp" />
 		<Unit filename="../sample_4.cpp" />
 		<Unit filename="../test_catch.cpp" />
-		<Unit filename="../test_m4ri.cpp" />
-		<Unit filename="../test_m4ri_2.cpp" />
 		<Unit filename="../udgcd.hpp" />
 		<Unit filename="../wrapper_m4ri.hpp" />
 		<Unit filename="../wrapper_m4ri_convert.hpp" />

@@ -22,6 +22,7 @@ See file README.md
 #include <vector>
 #include <chrono>
 #include <iomanip>
+#include <iostream>
 
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/undirected_dfs.hpp>
@@ -42,15 +43,15 @@ See file README.md
 
 #ifdef UDGCD_DEV_MODE
 	#include <iostream>
-	#define COUT if(1) std::cout << std::setw(4) << __LINE__ << ": "
+	#define UDGCD_COUT if(1) std::cout << std::setw(4) << __LINE__ << ": "
 	#define UDGCD_PRINT_STEPS
-	#define PRINT_DIFF( step, v_after, v_before ) std::cout << step << ": REMOVAL OF " << v_before.size() - v_after.size() << " cycles\n"
+//	#define PRINT_DIFF( step, v_after, v_before ) std::cout << step << ": REMOVAL OF " << v_before.size() - v_after.size() << " cycles\n"
 #else
-	#define COUT if(0) std::cout
-	#define PRINT_DIFF(a,b,c) ;
+	#define UDGCD_COUT if(0) std::cout
+//	#define PRINT_DIFF(a,b,c) ;
 #endif
 
-/// All the libray code is in this namespace
+/// All the library code is in this namespace
 namespace udgcd {
 
 //-------------------------------------------------------------------------------------------
@@ -498,7 +499,7 @@ explore(
 		vertex_t v2a = boost::source( *oei.first, gr );
 		vertex_t v2b = boost::target( *oei.first, gr );
 #ifdef UDGCD_DEV_MODE
-//		COUT << ++iter << '/' << nbedges << " - v1=" << v1 << ": connected edges v2a=" << v2a << " v2b=" << v2b << "\n";
+//		UDGCD_COUT << ++iter << '/' << nbedges << " - v1=" << v1 << ": connected edges v2a=" << v2a << " v2b=" << v2b << "\n";
 #endif
 		if( v2b == v1 && v2a == src_path[0] ) // we just found the edge that we started on, so no need to finish the current iteration, just move on.
 			continue;
@@ -514,14 +515,14 @@ explore(
 			if( std::find( newv.cbegin(), newv.cend(), v2b ) != newv.cend() )
 			{
 				newv.push_back( v2b );
-//				COUT << "*** FOUND CYCLE: "; PrintVector( std::cout, newv );
+//				UDGCD_COUT << "*** FOUND CYCLE: "; PrintVector( std::cout, newv );
 				v_cycles.push_back( newv );
 				return true;
 			}
 			else
 			{
 				newv.push_back( v2b );         // else add'em and continue
-//				COUT << "  -adding vector ";  for( const auto& vv:newv )	COUT << vv << "-"; COUT << "\n";
+//				UDGCD_COUT << "  -adding vector ";  for( const auto& vv:newv )	UDGCD_COUT << vv << "-"; UDGCD_COUT << "\n";
 				vv_paths.push_back( newv );
 				b = explore( v2b, gr, vv_paths, v_cycles, depth );
 			}
@@ -614,7 +615,7 @@ findTrueCycle( const std::vector<T>& cycle )
 		putSmallestElemFirst( out );                // and put smallest first: 1-2-3-4
 	}
 
-//	COUT << "out: "; PrintVector( std::cout, out );
+//	UDGCD_COUT << "out: "; PrintVector( std::cout, out );
 	return out;
 }
 //-------------------------------------------------------------------------------------------
@@ -926,7 +927,7 @@ buildReverseBinaryMap( size_t nb_vertices )
 	PRINT_FUNCTION;
 
 	size_t nb_combinations = nb_vertices*(nb_vertices-1)/2;
-	COUT << "nb_vertices=" << nb_vertices << " nb_combinations=" << nb_combinations << '\n';
+	UDGCD_COUT << "nb_vertices=" << nb_vertices << " nb_combinations=" << nb_combinations << '\n';
 	RevBinMap<T> out( nb_combinations );
 	size_t v1 = 0;
 	size_t v2 = 1;
@@ -1111,7 +1112,7 @@ convertVPV2Cycle( const std::vector<VertexPair<vertex_t>>& v_pvertex )
 	do
 	{
 		++iter;
-//		COUT << "\n* iter " << iter << " curr_idx=" << curr_idx << " curr_v=" << curr_v << '\n';
+//		UDGCD_COUT << "\n* iter " << iter << " curr_idx=" << curr_idx << " curr_v=" << curr_v << '\n';
 		bool stop = false;
 		for( size_t i=1; i<v_pvertex.size(); i++ )       // search for next one
 		{
@@ -1267,18 +1268,18 @@ gaussianElim( BinaryMatrix& m_in, size_t& nbIter )
 	do
 	{
 		++nbIter;
-		COUT << "\n* start iter " << nbIter << ", current col=" << col
+		UDGCD_COUT << "\n* start iter " << nbIter << ", current col=" << col
 			<< " #tagged lines = " << std::count( tag.begin(),tag.end(), true ) << "\n";
 
 		for( size_t row=0; row<nb_rows; row++ )                // search for first row with a 1 in current column
 		{
-//			COUT << "considering line " << row << "\n";
+//			UDGCD_COUT << "considering line " << row << "\n";
 			if( tag[row] == false && m_in.line(row)[col] == 1 )    // AND not tagged
 			{
-				COUT << "row: " << row << ": found 1 in col " << col << "\n"; // found pivot
+				UDGCD_COUT << "row: " << row << ": found 1 in col " << col << "\n"; // found pivot
 //				printBitVector( std::cout, m_out.line(row) );
 				m_out.addLine( m_in.line(row) );
-				COUT << "Adding line " << row << " to OUTMAT at line " << m_out.nbLines()-1 << '\n';
+				UDGCD_COUT << "Adding line " << row << " to OUTMAT at line " << m_out.nbLines()-1 << '\n';
 
 //				printBitVector( std::cout, m_in.line(row) );
 //				printBitVector( std::cout, m_out.line(m_out.nbLines()-1) );
@@ -1292,20 +1293,20 @@ gaussianElim( BinaryMatrix& m_in, size_t& nbIter )
 								m_in.line(i) = m_in.line(i) ^ m_in.line(row);
 					}
 				}
-				COUT << "BREAK loop\n";
+				UDGCD_COUT << "BREAK loop\n";
 				break;
 			}
 		}
-		COUT << "switch to next col\n";
+		UDGCD_COUT << "switch to next col\n";
 		col++;
 		if( col == nb_cols )
 		{
-			COUT << "All columns done, end\n";
+			UDGCD_COUT << "All columns done, end\n";
 			done = true;
 		}
 		if( std::find(tag.begin(),tag.end(), false ) == tag.end() )
 		{
-			COUT << "All lines tagged, end\n";
+			UDGCD_COUT << "All lines tagged, end\n";
 			done = true;
 		}
 	}
@@ -1336,7 +1337,7 @@ convertBinary2Vertex_v2
 	v_out.reserve( binmat.nbCols() ); // to avoid unnecessary memory reallocations and copies
 
 	auto rev_map = buildReverseBinaryMap<size_t>( nbVertices );
-	COUT << "revmap size=" << rev_map.size() << '\n';
+	UDGCD_COUT << "revmap size=" << rev_map.size() << '\n';
 
 	for( auto bcycle: binmat )
 		if( bcycle.count() )
@@ -1683,7 +1684,7 @@ removeRedundant(
 #ifndef UDGCD_USE_M4RI
 	size_t nbIter1 = 0;
 	auto binMat_out = gaussianElim( *p_binmat_in, nbIter1 );
-	COUT << "gaussianElim: nbIter=" << nbIter1 << '\n';
+	UDGCD_COUT << "gaussianElim: nbIter=" << nbIter1 << '\n';
 	p_binmat = &binMat_out;
 #else
 	MatM4ri m4rmiA1 = convertToM4ri( *p_binmat_in );
@@ -1964,7 +1965,7 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 //////////////////////////////////////
 	for( const auto& vi: cycleDetector.v_source_vertex )
 	{
-		COUT << "\n * Start exploring from source vertex " << vi << "\n";
+		UDGCD_COUT << "\n * Start exploring from source vertex " << vi << "\n";
 		std::vector<std::vector<vertex_t>> v_paths;
 		std::vector<vertex_t> newv(1, vi ); // start by one of the filed source vertex
 		v_paths.push_back( newv );
