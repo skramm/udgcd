@@ -9,7 +9,7 @@ https://github.com/philsquared/Catch/
 #include "catch.hpp"
 
 #include "udgcd.hpp"
-#include "common_sample.h"
+#include "demo/common_sample.h"
 
 using namespace udgcd;
 using namespace sample;

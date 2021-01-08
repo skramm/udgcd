@@ -50,7 +50,7 @@ SHELL=/bin/bash
 
 
 # files and folders
-SRC_DIR=.
+SRC_DIR=demo
 APP=udgcd.hpp
 #HEADERS=$(wildcard $(SRC_DIR)/*.h*)
 HEADER=udgcd.hpp
@@ -187,6 +187,10 @@ $(BIN_DIR)/%: $(OBJ_DIR)/%.o
 #$(BIN_DIR)/test_catch: $(OBJ_DIR)/test_catch.o
 #	$(CXX) -o bin/test_catch $(OBJ_DIR)/test_catch.o -s
 #	@echo "done target $@"
+
+$(BIN_DIR)/test_catch:
+	$(CXX) -o $(BIN_DIR)/test_catch test_catch.cpp -s
+	@echo "done target $@"
 
 # -s option: also shows successful test results
 test: $(BIN_DIR)/test_catch
