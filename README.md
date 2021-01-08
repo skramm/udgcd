@@ -48,7 +48,7 @@ These are sorted with the smallest vertex in first position, and such as the sec
    `udgcd::printPaths( std::cout, cycles, "cycles" );`
  - Done !
 
-(1) The type of the returned value is actually `std::vector<std::vector<my_vertex_t>>`
+(1) The type of the returned value is actually `std::vector<std::vector<my_vertex_type>>`
 
 See included sample programs.
 
