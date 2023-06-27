@@ -811,6 +811,7 @@ See page \ref p_data_representation.
 as reference. Must be a reason but can't remember each time!
 */
 template<typename vertex_t>
+inline
 void
 buildFullBinaryVector(
 	const std::vector<vertex_t>& cycle,    ///< input cycle
