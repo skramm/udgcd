@@ -22,15 +22,16 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
+		<Unit filename="../.github/workflows/c-cpp.yml" />
 		<Unit filename="../README.md" />
-		<Unit filename="../common_sample.h" />
+		<Unit filename="../demo/common_sample.h" />
+		<Unit filename="../demo/random_test.cpp" />
+		<Unit filename="../demo/read_graph.cpp" />
+		<Unit filename="../demo/sample_1.cpp" />
+		<Unit filename="../demo/sample_2.cpp" />
+		<Unit filename="../demo/sample_3.cpp" />
+		<Unit filename="../demo/sample_4.cpp" />
 		<Unit filename="../makefile" />
-		<Unit filename="../random_test.cpp" />
-		<Unit filename="../read_graph.cpp" />
-		<Unit filename="../sample_1.cpp" />
-		<Unit filename="../sample_2.cpp" />
-		<Unit filename="../sample_3.cpp" />
-		<Unit filename="../sample_4.cpp" />
 		<Unit filename="../test_catch.cpp" />
 		<Unit filename="../udgcd.hpp" />
 		<Unit filename="../wrapper_m4ri.hpp" />
