@@ -11,7 +11,7 @@
 
 #include <iostream>
 #include <algorithm>
-#include "udgcd.hpp"
+#include "../udgcd.hpp"
 
 std::string prog_id = "s3";
 #include "common_sample.h"

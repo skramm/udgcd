@@ -27,7 +27,7 @@ Home page: https://github.com/skramm/udgcd
 //#define UDGCD_PRINT_STEPS
 //#define UDGCD_DEV_MODE
 
-#include "udgcd.hpp"
+#include "../udgcd.hpp"
 
 #include <string>
 #include <numeric>

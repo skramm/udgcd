@@ -10,7 +10,7 @@
 */
 
 #include <iostream>
-#include "udgcd.hpp"
+#include "../udgcd.hpp"
 
 std::string prog_id = "s2";
 #include "common_sample.h"

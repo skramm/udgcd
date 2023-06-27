@@ -149,6 +149,8 @@ doc:
 
 clean:
 	@-rm $(OBJ_DIR)/*
+	@-rm $(BIN_DIR)/*
+	@-rm build/doxygen.*
 	@-rm *.layout
 
 cleanout:
