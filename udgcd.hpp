@@ -236,8 +236,8 @@ struct BinaryMatrix
 
 	auto begin() -> decltype(_data.begin()) { return _data.begin(); }
 	auto end()   -> decltype(_data.end())   { return _data.end();   }
-	const auto begin() const -> decltype(_data.begin()) { return _data.begin(); }
-	const auto end()   const -> decltype(_data.end())   { return _data.end();   }
+	auto begin() const -> decltype(_data.begin()) { return _data.begin(); }
+	auto end()   const -> decltype(_data.end())   { return _data.end();   }
 
 	void addLine( const BinaryVec& bvec )
 	{

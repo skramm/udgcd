@@ -109,19 +109,19 @@ runsam: clearlogfile $(GEN_SAMPLES_OUTPUT) $(BIN_DIR)/read_graph
 
 
 clearlogfile: makefile
-	@echo "Running make target 'runsam', results:" > runsam.log
+	@echo "Running make target 'runsam', results:" > build/runsam.log
 
 # this one for .txt input files
 out/stdout_graph_%.txt: samples/graph_%.txt $(BIN_DIR)/read_graph makefile
 	@echo "processing file $<"
 	@-$(BIN_DIR)/read_graph $< > $@;\
-	STATUS=$$?; echo "file $<: exit with $$STATUS" >> runsam.log
+	STATUS=$$?; echo "file $<: exit with $$STATUS" >> build/runsam.log
 
 # this one for .dot input files
 out/stdout_graph_%.txt: samples/graph_%.dot $(BIN_DIR)/read_graph makefile
 	@echo "processing file $<"
 	@-$(BIN_DIR)/read_graph $< > $@;\
-	STATUS=$$?; echo "file $<: exit with $$STATUS" >> runsam.log
+	STATUS=$$?; echo "file $<: exit with $$STATUS" >> build/runsam.log
 
 out/%.svg : out/%.dot
 	@echo "generating $@ bn=$(basename $@)"
