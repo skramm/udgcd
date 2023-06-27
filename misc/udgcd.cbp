@@ -23,6 +23,7 @@
 			<Add option="-Wall" />
 		</Compiler>
 		<Unit filename="../.github/workflows/c-cpp.yml" />
+		<Unit filename="../.github/workflows/msvc.yml" />
 		<Unit filename="../README.md" />
 		<Unit filename="../demo/common_sample.h" />
 		<Unit filename="../demo/random_test.cpp" />
