@@ -1350,6 +1350,7 @@ convertBinary2Vertex_v2
 
 //-------------------------------------------------------------------------------------------
 /// Returns the same matrix but with empty cols removed
+inline
 BinaryMatrix
 reduceMatrix( const BinaryMatrix& m_in, const std::vector<size_t>& nonEmptyCols )
 {
@@ -1413,6 +1414,7 @@ buildIncidenceVector( const std::vector<vertex_t>& cycle, const RevBinMap<vertex
 }
 
 //-------------------------------------------------------------------------------------------
+inline
 int
 dotProduct( const BinaryVec& v1, const BinaryVec& v2 )
 {
