@@ -1,8 +1,10 @@
 # basic testing with Microsoft compiler
 # uses this: https://github.com/TheMrMilchmann/setup-msvc-dev
 
-# tryng this
+# trying this
 # https://github.com/marketplace/actions/engineerd-configurator
+# but unclear how to mode the headers to a location wherre MSVC will find them
+
 name: CI-testing-msvc
 
 on:
@@ -12,7 +14,7 @@ on:
     branches: [ "master" ]
 
 
-jobs:t
+jobs:
   job3:
     runs-on: windows-latest
     steps:
