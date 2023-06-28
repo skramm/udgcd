@@ -9,7 +9,9 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+#    runs-on: ubuntu-latest
+    runs-on: debian-latest
+    container: skramm/debian_boost
 
     steps:
     - uses: actions/checkout@v3
