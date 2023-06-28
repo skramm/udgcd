@@ -9,8 +9,7 @@ on:
 jobs:
   build:
 
-#    runs-on: ubuntu-latest
-    runs-on: debian-latest
+    runs-on: ubuntu-latest
     container: skramm/debian_boost
 
     steps:
