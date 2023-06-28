@@ -15,9 +15,15 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: install tools
-      run: apt-get update; apt-get -y install build-essential libboost-all-dev
-    - name: check version
-      run: gcc --version; clang --version; cat /usr/include/boost/version.hpp | grep BOOST_LIB_VERSION
+      run: apt-get update; apt-get -y install clang build-essential libboost-all-dev
+
+    - name: check version gcc
+      run: gcc --version
+    - name: check version clang
+      run: clang --version;
+    - name: check boost version
+      run: cat /usr/include/boost/version.hpp | grep BOOST_LIB_VERSION
+
     - name: make1
       run: make
     - name: clean
