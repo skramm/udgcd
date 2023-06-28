@@ -15,7 +15,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: install tools
-      run: sudo apt-get update; sudo apt-get -y install libboost-all-dev
+      run: apt-get update; apt-get -y install build-essential libboost-all-dev
     - name: check version
       run: gcc --version; clang --version; cat /usr/include/boost/version.hpp | grep BOOST_LIB_VERSION
     - name: make1
