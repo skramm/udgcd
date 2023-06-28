@@ -1,6 +1,8 @@
 # basic testing with Microsoft compiler
 # uses this: https://github.com/TheMrMilchmann/setup-msvc-dev
 
+# tryng this
+# https://github.com/marketplace/actions/engineerd-configurator
 name: CI-testing-msvc
 
 on:
@@ -9,7 +11,8 @@ on:
   pull_request:
     branches: [ "master" ]
 
-jobs:
+
+jobs:t
   job3:
     runs-on: windows-latest
     steps:
@@ -18,6 +21,12 @@ jobs:
         uses: TheMrMilchmann/setup-msvc-dev@v2.0.0
         with:
           arch: x64
+      - name: engineerd/configurator
+        uses: engineerd/configurator@v0.0.10
+          with:
+            name: boost::graph-1.82
+            url: https://github.com/boostorg/graph/archive/refs/tags/boost-1.82.0.zip
+            pathInArchive: graph-boost-1.82.0.zip/include/boost
       - name: run msvc
         run: cl /EHsc demo/sample_1.cpp
 

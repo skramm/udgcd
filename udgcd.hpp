@@ -861,6 +861,7 @@ See page \ref p_data_representation.
 
 \todo Maybe we can remove the first value, as it is always 0.
 */
+inline
 std::vector<size_t>
 buildFullBinaryIndex( size_t nbVertices )
 {
