@@ -10,12 +10,13 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-    container: skramm/debian_boost
+    container: skramm/debian_boost_clang
 
     steps:
     - uses: actions/checkout@v3
-    - name: install tools
-      run: apt-get update; apt-get -y install clang build-essential libboost-all-dev
+#    - name: install tools
+#      run: apt-get update; apt-get -y install clang build-essential libboost-all-dev
+#      run: apt-get update; apt-get -y install clang build-essential
 
     - name: check version gcc
       run: gcc --version
@@ -25,8 +26,8 @@ jobs:
       run: cat /usr/include/boost/version.hpp | grep BOOST_LIB_VERSION
 
     - name: make1
-      run: make
+      run: make -j4
     - name: clean
       run: make clean
     - name: make2
-      run: make CXX=clang++
+      run: make CXX=clang++ -j4

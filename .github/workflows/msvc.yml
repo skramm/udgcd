@@ -23,12 +23,9 @@ jobs:
         uses: TheMrMilchmann/setup-msvc-dev@v2.0.0
         with:
           arch: x64
-      - name: engineerd/configurator
-        uses: engineerd/configurator@v0.0.10
-          with:
-            name: boost::graph-1.82
-            url: https://github.com/boostorg/graph/archive/refs/tags/boost-1.82.0.zip
-            pathInArchive: graph-boost-1.82.0.zip/include/boost
+      - name: get boost
+        run: wget https://github.com/boostorg/graph/archive/refs/tags/boost-1.82.0.zip
+
       - name: run msvc
         run: cl /EHsc demo/sample_1.cpp
 
