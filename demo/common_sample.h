@@ -203,7 +203,8 @@ void printVertices( std::ofstream& f, const Graph_t& gr, std::true_type )
 /// Print vertices in file \c f, for general type graphs (i.e. NOT having the \c NodePos as vertex property)
 /// See printVertices( std::ofstream& f, const Graph_t& gr )
 template <typename Graph_t>
-void printVertices( std::ofstream& f, const Graph_t& gr, std::false_type )
+void
+printVertices( std::ofstream& f, const Graph_t& gr, std::false_type )
 {
 //	print_graph(g, std::cout << "Graph with other/missing properties: ");
 	for( auto p_vert = boost::vertices( gr ); p_vert.first != p_vert.second; p_vert.first++ )
