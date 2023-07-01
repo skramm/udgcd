@@ -136,6 +136,7 @@ edge:    0  0  0  0  1  1  1  2  2  3
 --------------------------------------
 vector:  0  0  0  0  0  1  1  0  0  1
 \endverbatim
+Each edge part of the path has a '1' at the corresponding potential edge. In this case, edges 1-3, 1-4 and 3-4.
 */
 typedef boost::dynamic_bitset<> BinaryVec;
 

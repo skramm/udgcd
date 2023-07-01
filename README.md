@@ -155,11 +155,11 @@ As an example, say you have a raw cycle expressed as
 You can use whatever edge and vertices types, the coloring needed by the algorithm is handled by providing color maps as external properties.
 So if you have no special needs on vertices and edge properties, you can use something as trivial as this:
 ```C++
-    typedef boost::adjacency_list<
+    using graph_t = boost::adjacency_list<
 	   boost::vecS,
 	   boost::vecS,
 	   boost::undirectedS
-	> graph_t;
+	>;
 ```
 But you can also have some user properties, defines as bundled properties. For example:
 ```C++
@@ -177,11 +177,11 @@ struct my_Edge
 ```
 Then your graph type definition will become:
 ```C++
-	typedef boost::adjacency_list<
+	using graph_t = boost::adjacency_list<
 		boost::vecS,                 // edge container
 		boost::vecS,                 // vertex container
 		boost::undirectedS,          // type of graph
 		my_Vertex,                   // vertex type
 		my_Edge
-		> graph_t;
+		>;
 ```
