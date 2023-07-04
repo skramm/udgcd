@@ -85,6 +85,8 @@ help:
 	@echo "Available targets:"
 	@echo " -run: runs once all the produced binaries"
 	@echo " -runsam: runs cycle detection process on all provided samples"
+	@echo " -svg: build svg renderings of all the samples produced by target 'runsam', with cycles as colored edges (see folder 'out')"
+
 	@echo " -clean: erase obj files"
 	@echo " -cleanout: erase produced output"
 	@echo " -cleandoc: erase produced (doxygen-build) documentation"

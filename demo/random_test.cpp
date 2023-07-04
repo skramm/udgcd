@@ -22,14 +22,14 @@ std::string prog_id = "random";
 
 //-------------------------------------------------------------------------------------------
 /// Some typedefs for readability... ;-)
-typedef boost::adjacency_list<
+using graph_t = boost::adjacency_list<
 	boost::vecS,
 	boost::vecS,
 	boost::undirectedS
-	> graph_t;
+	>;
 
-typedef boost::graph_traits<graph_t>::vertex_descriptor vertex_t;
-typedef boost::graph_traits<graph_t>::edge_descriptor   edge_t;
+using vertex_t = boost::graph_traits<graph_t>::vertex_descriptor;
+using edge_t   = boost::graph_traits<graph_t>::edge_descriptor;
 
 //-------------------------------------------------------------------
 /// Saves graph \c g in a text file, in folder \c out
