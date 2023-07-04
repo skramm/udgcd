@@ -22,10 +22,10 @@ jobs:
       - run: cd
       - run: dir
       - name: get boost
-        run: curl https://github.com/boostorg/graph/archive/refs/tags/boost-1.82.0.zip
+        run: curl https://github.com/boostorg/graph/archive/refs/tags/boost-1.82.0.zip -O -J -L
       - run: dir
       - name: unzip boost
-        run: unzip boost-1.82.0.zip
+        run: unzip graph-boost-1.82.0.zip
       - name: run msvc
         run: cl /EHsc demo/sample_1.cpp
 
