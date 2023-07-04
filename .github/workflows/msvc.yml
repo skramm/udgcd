@@ -1,6 +1,9 @@
 # basic testing with Microsoft compiler
 # uses this: https://github.com/TheMrMilchmann/setup-msvc-dev
 
+# see here for MSVC CL.EXE options: (link ok on 2023-07-04)
+# https://learn.microsoft.com/en-us/cpp/build/reference/compiler-options?view=msvc-170
+
 name: CI-testing-msvc
 
 on:
@@ -27,5 +30,5 @@ jobs:
       - name: unzip boost
         run: unzip graph-boost-1.82.0.zip
       - name: run msvc
-        run: cl /EHsc demo/sample_1.cpp
+        run: cl /EHsc /I graph-boost-1.82.0\include demo\sample_1.cpp
 
