@@ -19,8 +19,11 @@ jobs:
         uses: TheMrMilchmann/setup-msvc-dev@v2.0.0
         with:
           arch: x64
+      - run: cd
+      - run: dir
       - name: get boost
-        run: cd; curl https://github.com/boostorg/graph/archive/refs/tags/boost-1.82.0.zip
+        run: curl https://github.com/boostorg/graph/archive/refs/tags/boost-1.82.0.zip
+      - run: dir
       - name: unzip boost
         run: unzip boost-1.82.0.zip
       - name: run msvc
