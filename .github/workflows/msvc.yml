@@ -1,10 +1,6 @@
 # basic testing with Microsoft compiler
 # uses this: https://github.com/TheMrMilchmann/setup-msvc-dev
 
-# trying this
-# https://github.com/marketplace/actions/engineerd-configurator
-# but unclear how to mode the headers to a location wherre MSVC will find them
-
 name: CI-testing-msvc
 
 on:
@@ -24,8 +20,9 @@ jobs:
         with:
           arch: x64
       - name: get boost
-        run: wget https://github.com/boostorg/graph/archive/refs/tags/boost-1.82.0.zip
-
+        run: cd; curl https://github.com/boostorg/graph/archive/refs/tags/boost-1.82.0.zip
+      - name: unzip boost
+        run: unzip boost-1.82.0.zip
       - name: run msvc
         run: cl /EHsc demo/sample_1.cpp
 
