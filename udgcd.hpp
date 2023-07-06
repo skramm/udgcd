@@ -630,6 +630,9 @@ Example:
 However, the output vector has a size usually less than 10 times less the size of the input vector.
 Thus there might be some memory saving to do here.
 
+\todo Most of the time spend here is probably in the find() function. An improvement can probably be done by
+storing the cycles in a tree, as they are normalized.
+
 \sa findTrueCycle()
 */
 template<typename T>
@@ -642,16 +645,12 @@ cleanCycles( const std::vector<std::vector<T>>& v_cycles )
 	std::vector<std::vector<T>> out;
 	out.reserve( v_cycles.size() );
 
-//	size_t identical = 0;
 	for( const auto& cycle: v_cycles )
 	{
 		auto newcy = findTrueCycle( cycle );
 		if( std::find( std::begin(out), std::end(out), newcy ) == std::end(out) )     // add to output vector only if not already present
 			out.push_back( newcy );
-//		else
-//			identical++;
 	}
-//	std::cout << __FUNCTION__ << "(): nb of identical cycles removed=" << identical << "\n";
 	return out;
 }
 
@@ -1830,50 +1829,58 @@ checkCycles( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& gr )
 /// (nb of cycles at each step and timing information)
 struct UdgcdInfo
 {
-	size_t nbRawCycles = 0;
+	size_t nbRawCycles     = 0;
 	size_t nbCleanedCycles = 0;
 	size_t nbNonChordlessCycles = 0;
-	size_t nbFinalCycles = 0;
+	size_t nbFinalCycles  = 0;
+	size_t nbSourceVertex = 0;
 
-	size_t step = 0;
-	constexpr static int nbSteps = 6;
-	std::array<std::chrono::time_point<std::chrono::high_resolution_clock>,nbSteps> tp;
+	std::vector<
+		std::pair<
+			std::string,
+			std::chrono::time_point<std::chrono::high_resolution_clock>
+		>
+	> timePoints;
 
-	void startTiming()
-	{
-		step = 0;
-		for( auto& e: tp )
-			e = std::chrono::high_resolution_clock::now();
-	}
-    void setTimeStamp()
+    void setTimeStamp( const char* stepName=0 )
     {
-		step++;
-		assert( step < nbSteps );
-		tp[step] = std::chrono::high_resolution_clock::now();
+		std::string s;
+		if( stepName )
+			s = stepName;
+		timePoints.push_back( std::make_pair( s, std::chrono::high_resolution_clock::now() ) );
     }
 
 	void print( std::ostream& f ) const
 	{
 		f << "UdgcdInfo:"
 			<< "\n - nbRawCycles=" << nbRawCycles
+			<< "\n - nbSourceVertex=" << nbSourceVertex
 			<< "\n - nbCleanedCycles=" << nbCleanedCycles
 			<< "\n - nbNonChordlessCycles=" << nbNonChordlessCycles
 			<< "\n - nbFinalCycles=" << nbFinalCycles
-			<< "\n";
+			<< " - Duration per step:\n";
+			for( size_t i=0; i<timePoints.size()-1; i++ )
+			{
+				auto dur = timePoints[i+1].second - timePoints[i].second;
+				f <<  "step " << i+1 << " ("
+				<< timePoints[i].first << "): "
+				<< std::chrono::duration_cast<std::chrono::milliseconds>(dur).count() << " ms\n";
+			}
 	}
 
 	void printCSV( std::ostream& f ) const
 	{
+		auto siz = timePoints.size();
 		char sep=';';
 		f << nbRawCycles << sep
 			<< nbCleanedCycles << sep
 			<< nbNonChordlessCycles << sep
 			<< nbFinalCycles << sep;
-		for( size_t i=0; i<nbSteps-1; i++ )
+		for( size_t i=0; i<siz-1; i++ )
 		{
-			auto d = tp[i+1] - tp[i];
+			auto d = timePoints[i+1].second - timePoints[i].second;
 			f << std::chrono::duration_cast<std::chrono::milliseconds>(d).count();
-			if( i != nbSteps-2 )
+			if( i != siz-2 )
 				f << sep;
 		}
 		f << "\n";
@@ -1919,7 +1926,6 @@ struct CycleDetector : public boost::dfs_visitor<>
 		static std::vector<vertex_t> v_source_vertex;
 };
 
-
 /// static var instanciation
 template<class T>
 std::vector<T> CycleDetector<T>::v_source_vertex;
@@ -1935,8 +1941,6 @@ std::vector<std::vector<vertex_t>>
 findCycles( graph_t& gr, UdgcdInfo& info )
 {
 	PRINT_FUNCTION;
-
-	info.startTiming();
 
 	if( boost::num_vertices(gr) < 3 || boost::num_edges(gr) < 3 )
 		return std::vector<std::vector<vertex_t>>();
@@ -1955,47 +1959,46 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 //////////////////////////////////////
 // step 1: do a DFS
 //////////////////////////////////////
+	info.setTimeStamp( "DFS" );
 	boost::undirected_dfs( gr, cycleDetector, vcmap, ecmap, 0 );
-
-	info.setTimeStamp();
 
 	if( !cycleDetector.cycleDetected() )             // if no detection,
 		return std::vector<std::vector<vertex_t>>(); //  return empty vector, no cycles found
 
 //	std::cout << "cycleDetector: nbSourceVertices=" << cycleDetector.v_source_vertex.size() << '\n';
 	std::vector<std::vector<vertex_t>> v_cycles;     // else, get the cycles.
+	info.nbSourceVertex = cycleDetector.v_source_vertex.size();
 
 //////////////////////////////////////
 // step 2: search paths only starting from vertices that were registered as source vertex
 //////////////////////////////////////
+	info.setTimeStamp( "explore" );
 	for( const auto& vi: cycleDetector.v_source_vertex )
 	{
 		UDGCD_COUT << "\n * Start exploring from source vertex " << vi << "\n";
 		std::vector<std::vector<vertex_t>> v_paths;
 		std::vector<vertex_t> newv(1, vi ); // start by one of the filed source vertex
 		v_paths.push_back( newv );
-		priv::explore( vi, gr, v_paths, v_cycles );    // call of recursive function
+		priv::explore( vi, gr, v_paths, v_cycles );    // call of recursive function on each
 	}
 
-	info.setTimeStamp();
 	info.nbRawCycles = v_cycles.size();
-	std::cout << "-Nb initial cycles: " << info.nbRawCycles << '\n';
+//	std::cout << "-Nb initial cycles: " << info.nbRawCycles << '\n';
 
 //////////////////////////////////////
 // step 3 (post process): cleanout the cycles by removing the vertices that are not part of the cycle and sort
 //////////////////////////////////////
 
-
+	info.setTimeStamp( "clean cycles" );
 	auto v_cycles0 = priv::cleanCycles( v_cycles );
 //	priv::printStatus( std::cout, v_cycles0, __LINE__ );
 
-	info.setTimeStamp();
 	info.nbCleanedCycles = v_cycles0.size();
-	std::cout << "-Nb cleaned cycles: " << info.nbCleanedCycles << '\n';
-
-	std::vector<std::vector<vertex_t>>* p_cycles = &v_cycles0;
+//	std::cout << "-Nb cleaned cycles: " << info.nbCleanedCycles << '\n';
 
 // SORTING
+	info.setTimeStamp( "sorting" );
+	std::vector<std::vector<vertex_t>>* p_cycles = &v_cycles0;
 	std::sort(
 		std::begin(*p_cycles),
 		std::end(*p_cycles),
@@ -2012,6 +2015,7 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 // step 4 (post process): remove redundant cycles using Gaussian Elimination
 //////////////////////////////////////
 
+	info.setTimeStamp( "remove redundant" );
 #if 0
 	auto v_cycles2 = priv::removeRedundant3( *p_cycles, gr );
 #else
@@ -2027,7 +2031,6 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 	}
 #endif
 //	priv::printStatus( std::cout, *p_cycles, __LINE__ );
-
 
 	info.setTimeStamp();
 	info.nbFinalCycles = p_cycles->size();
