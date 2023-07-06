@@ -25,7 +25,7 @@ jobs:
       - run: cd
       - run: dir
       - name: get boost
-        run: curl https://github.com/boostorg/graph/archive/refs/tags/boost-1.82.0.zip -O -J -L
+        run: curl https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.zip -O -J -L
       - run: dir
       - name: unzip boost
         run: unzip graph-boost-1.82.0.zip
