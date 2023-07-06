@@ -1,5 +1,5 @@
 # makefile for building samples for udgcd
-# author: S. Kramm, 2015
+# author: S. Kramm, 2015-2023
 # see https://github.com/skramm/udgcd
 # Linux only, probably.
 

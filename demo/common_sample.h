@@ -740,8 +740,6 @@ template<typename graph_t,typename vertex_t>
 std::pair<int,std::vector<std::vector<vertex_t>>>
 processGraph( graph_t& g )
 {
-//	using vertex_t = boost::graph_traits<graph_t>::vertex_descriptor;
-
 	auto expected = printGraphInfo( g );
 
 	udgcd::UdgcdInfo info;

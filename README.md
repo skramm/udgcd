@@ -23,6 +23,7 @@ These are sorted with the smallest vertex in first position, and such as the sec
 - beta, may produce a result, no guarantee at all (this is a stalled project)
 - Author: Sebastien Kramm
 - Latest news:
+  - 2023-07-03: was reported to [build on Windows using VisualStudio](https://github.com/skramm/udgcd/issues/4#issuecomment-1611426339)
   - 2020-06-09: experimental code and preliminar release, source is pretty messy, but it works fine, give it a try (instructions below).
 - Released under the Boost licence.
 
@@ -113,7 +114,7 @@ Thus it is **not** thread safe, neither can it handle multiple graphs simultaneo
 The algorithm involved here is pretty simple, but probably not very efficient, thus slow for large graphs.
 Three steps are involved: first we need to check if there **is** at least one cycle.
 Is this is true, we explore the graph to find it/them.
-It can be considered as a variant of the Horton Algorithm.
+It can be considered as a variant of the [Horton Algorithm](https://epubs.siam.org/doi/10.1137/0216026).
 
 - The first step is done by a Depth First Search (DFS), with  [boost::undirected_dfs()](http://www.boost.org/doc/libs/1_70_0/libs/graph/doc/undirected_dfs.html)
 with passing a visitor of class `CycleDetector`, inherited from
@@ -122,6 +123,7 @@ This object holds a set of vertices that are part of an edge on which `back_edge
 If this happens, it means that a cycle *has* been encountered.
 
 - The second step is done by exploring recursively the graph, by starting from each of the vertices that have been identified as part of a "back edge".
+This step is the most time-consuming.
 
 - The third steps does some post-processing:
 sort cycles by decreasing length, and do Gaussian Elimination to retain a Minimal Cycle Basis (MCB).
