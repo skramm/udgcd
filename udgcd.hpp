@@ -1834,22 +1834,20 @@ struct UdgcdInfo
 	size_t nbNonChordlessCycles = 0;
 	size_t nbFinalCycles  = 0;
 	size_t nbSourceVertex = 0;
-	size_t step = 0;
 
-	constexpr static int nbSteps = 6;
-	std::array<std::chrono::time_point<std::chrono::high_resolution_clock>,nbSteps> timePoints;
+	std::vector<
+		std::pair<
+			std::string,
+			std::chrono::time_point<std::chrono::high_resolution_clock>
+		>
+	> timePoints;
 
-	void startTiming()
-	{
-		step = 0;
-		for( auto& e: timePoints )
-			e = std::chrono::high_resolution_clock::now();
-	}
-    void setTimeStamp()
+    void setTimeStamp( const char* stepName=0 )
     {
-		step++;
-		assert( step < nbSteps );
-		timePoints[step] = std::chrono::high_resolution_clock::now();
+		std::string s;
+		if( stepName )
+			s = stepName;
+		timePoints.push_back( std::make_pair( s, std::chrono::high_resolution_clock::now() ) );
     }
 
 	void print( std::ostream& f ) const
@@ -1861,26 +1859,28 @@ struct UdgcdInfo
 			<< "\n - nbNonChordlessCycles=" << nbNonChordlessCycles
 			<< "\n - nbFinalCycles=" << nbFinalCycles
 			<< " - Duration per step:\n";
-			for( size_t i=1; i<timePoints.size(); i++ )
+			for( size_t i=0; i<timePoints.size()-1; i++ )
 			{
-				auto dur = timePoints[i]-timePoints[i-1];
-				f <<  "step " << i << ": " << std::chrono::duration_cast<std::chrono::milliseconds>(dur).count() << " ms\n";
+				auto dur = timePoints[i+1].second - timePoints[i].second;
+				f <<  "step " << i+1 << " ("
+				<< timePoints[i].first << "): "
+				<< std::chrono::duration_cast<std::chrono::milliseconds>(dur).count() << " ms\n";
 			}
-
 	}
 
 	void printCSV( std::ostream& f ) const
 	{
+		auto siz = timePoints.size();
 		char sep=';';
 		f << nbRawCycles << sep
 			<< nbCleanedCycles << sep
 			<< nbNonChordlessCycles << sep
 			<< nbFinalCycles << sep;
-		for( size_t i=0; i<nbSteps-1; i++ )
+		for( size_t i=0; i<siz-1; i++ )
 		{
-			auto d = timePoints[i+1] - timePoints[i];
+			auto d = timePoints[i+1].second - timePoints[i].second;
 			f << std::chrono::duration_cast<std::chrono::milliseconds>(d).count();
-			if( i != nbSteps-2 )
+			if( i != siz-2 )
 				f << sep;
 		}
 		f << "\n";
@@ -1926,7 +1926,6 @@ struct CycleDetector : public boost::dfs_visitor<>
 		static std::vector<vertex_t> v_source_vertex;
 };
 
-
 /// static var instanciation
 template<class T>
 std::vector<T> CycleDetector<T>::v_source_vertex;
@@ -1942,8 +1941,6 @@ std::vector<std::vector<vertex_t>>
 findCycles( graph_t& gr, UdgcdInfo& info )
 {
 	PRINT_FUNCTION;
-
-	info.startTiming();
 
 	if( boost::num_vertices(gr) < 3 || boost::num_edges(gr) < 3 )
 		return std::vector<std::vector<vertex_t>>();
@@ -1962,9 +1959,8 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 //////////////////////////////////////
 // step 1: do a DFS
 //////////////////////////////////////
+	info.setTimeStamp( "DFS" );
 	boost::undirected_dfs( gr, cycleDetector, vcmap, ecmap, 0 );
-
-	info.setTimeStamp();
 
 	if( !cycleDetector.cycleDetected() )             // if no detection,
 		return std::vector<std::vector<vertex_t>>(); //  return empty vector, no cycles found
@@ -1976,6 +1972,7 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 //////////////////////////////////////
 // step 2: search paths only starting from vertices that were registered as source vertex
 //////////////////////////////////////
+	info.setTimeStamp( "explore" );
 	for( const auto& vi: cycleDetector.v_source_vertex )
 	{
 		UDGCD_COUT << "\n * Start exploring from source vertex " << vi << "\n";
@@ -1992,7 +1989,7 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 // step 3 (post process): cleanout the cycles by removing the vertices that are not part of the cycle and sort
 //////////////////////////////////////
 
-	info.setTimeStamp();
+	info.setTimeStamp( "clean cycles" );
 	auto v_cycles0 = priv::cleanCycles( v_cycles );
 //	priv::printStatus( std::cout, v_cycles0, __LINE__ );
 
@@ -2000,7 +1997,7 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 //	std::cout << "-Nb cleaned cycles: " << info.nbCleanedCycles << '\n';
 
 // SORTING
-	info.setTimeStamp();
+	info.setTimeStamp( "sorting" );
 	std::vector<std::vector<vertex_t>>* p_cycles = &v_cycles0;
 	std::sort(
 		std::begin(*p_cycles),
@@ -2018,7 +2015,7 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 // step 4 (post process): remove redundant cycles using Gaussian Elimination
 //////////////////////////////////////
 
-	info.setTimeStamp();
+	info.setTimeStamp( "remove redundant" );
 #if 0
 	auto v_cycles2 = priv::removeRedundant3( *p_cycles, gr );
 #else
