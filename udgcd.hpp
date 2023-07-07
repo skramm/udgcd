@@ -484,11 +484,12 @@ explore(
 	const graph_t&  gr,
 	std::vector<std::vector<vertex_t>>& vv_paths,
 	std::vector<std::vector<vertex_t>>& v_cycles, ///< this is where we store the paths that have cycles
-	int depth = 0
+	int depth,
+	int& maxDepth
 )
 {
 	++depth;
-	static int max_depth = std::max( depth, max_depth );
+	maxDepth = std::max( depth, maxDepth );
 	assert( vv_paths.size()>0 );
 
 	std::vector<vertex_t> src_path = vv_paths.back();
@@ -525,7 +526,7 @@ explore(
 				newv.push_back( v2b );         // else add'em and continue
 //				UDGCD_COUT << "  -adding vector ";  for( const auto& vv:newv )	UDGCD_COUT << vv << "-"; UDGCD_COUT << "\n";
 				vv_paths.push_back( newv );
-				b = explore( v2b, gr, vv_paths, v_cycles, depth );
+				b = explore( v2b, gr, vv_paths, v_cycles, depth, maxDepth );
 			}
 		}
 		if( b )
@@ -1834,6 +1835,7 @@ struct UdgcdInfo
 	size_t nbNonChordlessCycles = 0;
 	size_t nbFinalCycles  = 0;
 	size_t nbSourceVertex = 0;
+	int maxDepth = 0;
 
 	std::vector<
 		std::pair<
@@ -1858,7 +1860,8 @@ struct UdgcdInfo
 			<< "\n - nbCleanedCycles=" << nbCleanedCycles
 			<< "\n - nbNonChordlessCycles=" << nbNonChordlessCycles
 			<< "\n - nbFinalCycles=" << nbFinalCycles
-			<< " - Duration per step:\n";
+			<< "\n - maxDepth=" << maxDepth
+			<< "\n - Duration per step:\n";
 			for( size_t i=0; i<timePoints.size()-1; i++ )
 			{
 				auto dur = timePoints[i+1].second - timePoints[i].second;
@@ -1979,7 +1982,7 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 		std::vector<std::vector<vertex_t>> v_paths;
 		std::vector<vertex_t> newv(1, vi ); // start by one of the filed source vertex
 		v_paths.push_back( newv );
-		priv::explore( vi, gr, v_paths, v_cycles );    // call of recursive function on each
+		priv::explore( vi, gr, v_paths, v_cycles, 0, info.maxDepth );    // call of recursive function on each
 	}
 
 	info.nbRawCycles = v_cycles.size();
