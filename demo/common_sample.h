@@ -750,7 +750,7 @@ processGraph( graph_t& g )
 
 //	std::cout << "diff=" << (int)expected - (int)cycles.size() << "\n";
 
-	udgcd::priv::printStatus( std::cout, cycles, __LINE__ );
+//	udgcd::priv::printStatus( std::cout, cycles, __LINE__ );
 
 	auto check = udgcd::priv::checkCycles( cycles, g );
 	if( check.first != 0 )

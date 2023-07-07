@@ -638,9 +638,10 @@ storing the cycles in a tree, as they are normalized.
 */
 template<typename T>
 std::vector<std::vector<T>>
-cleanCycles( const std::vector<std::vector<T>>& v_cycles )
+stripCycles( const std::vector<std::vector<T>>& v_cycles )
 {
 	PRINT_FUNCTION;
+	std::cout << __FUNCTION__ << "(): size=" << v_cycles.size() << "\n";
 	assert( v_cycles.size() );
 
 	std::vector<std::vector<T>> out;
@@ -1993,7 +1994,7 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 //////////////////////////////////////
 
 	info.setTimeStamp( "clean cycles" );
-	auto v_cycles0 = priv::cleanCycles( v_cycles );
+	auto v_cycles0 = priv::stripCycles( v_cycles );
 //	priv::printStatus( std::cout, v_cycles0, __LINE__ );
 
 	info.nbCleanedCycles = v_cycles0.size();

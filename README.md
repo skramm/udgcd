@@ -99,6 +99,23 @@ This will generate a random graph with 15 nodes and 25 vertices, and will check 
 The program `read_graph.cpp` (build an run by `make runsam`) will generate a dot file that can be rendered as an image with Graphviz.
 So if Graphviz/Dot is installed, you can try `make svg`: this will call Graphivz on all the dot files in the `out` folder.
 
+Some datafiles are included in the [samples folder](https://github.com/skramm/udgcd/tree/master/samples).
+For example, this:
+```
+$ build/bin/read_graph samples/graph_0.txt
+```
+will produce these two dot files in the `out` folder:
+```
+graph_0_0.dot
+graph_0_color_1.dot
+```
+The first one is the raw graph, the second holds the cycles expressed as additional edges.
+They can be rendered graphically with `$ make svg`, that will produce theses two files:
+
+![alt](misc/img/graph_0_0_neato.svg)
+![alt](misc/img/graph_0_color_1_neato.svg)
+
+
 
 ### Issues:
  <a name="s_issues"></a>
@@ -133,7 +150,8 @@ sort cycles by decreasing length, and do Gaussian Elimination to retain a Minima
 
 - BGL: http://www.boost.org/doc/libs/1_59_0/libs/graph/doc
 - https://en.wikipedia.org/wiki/Cycle_basis
-- J. D. Horton, <i>A polynomial-time algorithm to find a shortest cycle basis of a graph</i>, SIAM Journal of Computing 16, 1987, pp. 359–366.
+- J. D. Horton, <i>A polynomial-time algorithm to find a shortest cycle basis of a graph</i>, SIAM Journal of Computing 16, 1987, pp. 359–366
+[link](https://epubs.siam.org/doi/10.1137/0216026).
 - K. Mehlhorn, D. Michail, <i>Implementing Minimum Cycle Basis Algorithms</i>, ACM Journal of Experimental Algorithmics, Vol. 11, 2006, pp. 1–14.
 - E. Amaldi, C. Iuliano, R. Rizzi, <i>Efficient Deterministic Algorithms for Finding a Minimum Cycle Basis in Undirected Graphs</i>, IPCO 2010, LNCS 6080, pp. 397–410.
 
