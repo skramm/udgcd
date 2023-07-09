@@ -1711,8 +1711,8 @@ removeRedundant(
 	mzd_echelonize_pluq(  m4rmiA1._data, 1 );
 	mzd_echelonize_pluq(  m4rmiA0._data, 0 );
 
-	convertFromM4ri( m4rmiA0 ).printMat( std::cout, "A0" );
-	convertFromM4ri( m4rmiA1 ).printMat( std::cout, "A1" );
+//	convertFromM4ri( m4rmiA0 ).printMat( std::cout, "A0" );
+//	convertFromM4ri( m4rmiA1 ).printMat( std::cout, "A1" );
 
 	auto binMat_out_0 = convertFromM4ri( m4rmiA0 );
 	auto binMat_out_1 = convertFromM4ri( m4rmiA1 );

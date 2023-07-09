@@ -1,6 +1,6 @@
 /**
 \file wrapper_m4ri.hpp
-\brief C++ wrapper, see https://bitbucket.org/malb/m4ri/
+\brief C++ wrapper for udgcd, see https://bitbucket.org/malb/m4ri/
 */
 
 #ifndef HG_WRAPPER_M4RI_HPP

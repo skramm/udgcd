@@ -1,6 +1,8 @@
 /**
 \file wrapper_m4ri_convert.hpp
 \brief C++ wrapper, see https://bitbucket.org/malb/m4ri/
+
+This one requires knowledge of udgcd, while the other wrapper file (wrapper_m4ri.hpp) does not
 */
 #ifndef HG_WRAPPER_M4RI_CONVERT_HPP
 #define HG_WRAPPER_M4RI_CONVERT_HPP
@@ -8,7 +10,6 @@
 
 //#include <m4ri/m4ri.h>
 //#include "udgcd.hpp"
-
 
 MatM4ri
 convertToM4ri( const udgcd::priv::BinaryMatrix& mat_in )
