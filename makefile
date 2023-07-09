@@ -75,7 +75,7 @@ GEN_SAMPLES_OUTPUT += $(patsubst samples/graph_%.dot,out/stdout_graph_%.txt,$(GE
 #GEN_SAMPLES_PLOT = $(patsubst samples/%.txt,out/sample_%.svg,$(GEN_SAMPLE_FILES))
 
 DOT_FILES=$(wildcard out/*.dot)
-SVG_FILES=$(patsubst out/%.dot,out/%.svg,$(DOT_FILES))
+SVG_FILES=$(patsubst out/%.dot,out/svg/%.svg,$(DOT_FILES))
 
 # default target
 all: $(EXEC_FILES)
@@ -125,10 +125,11 @@ out/stdout_graph_%.txt: samples/graph_%.dot $(BIN_DIR)/read_graph makefile
 	@-$(BIN_DIR)/read_graph $< > $@;\
 	STATUS=$$?; echo "file $<: exit with $$STATUS" >> build/runsam.log
 
-out/%.svg : out/%.dot
-	@echo "generating $@ bn=$(basename $@)"
-	dot   -Tsvg -Nfontsize=24 $< >$(basename $@)_dot.svg
-	neato -Tsvg -Nfontsize=24 -Elen=1.5 $< >$(basename $@)_neato.svg
+out/svg/%.svg : out/%.dot
+	mkdir -p out/svg
+	echo "generating $@"
+	dot   -Tsvg -Nfontsize=24 $< >out/svg/$(notdir $(basename $@))_dot.svg
+	neato -Tsvg -Nfontsize=24 -Elen=1.5 $< >out/svg/$(notdir $(basename $@))_neato.svg
 
 show: $(SRC_FILES)
 	@echo SRC_FILES=$(SRC_FILES)
@@ -157,6 +158,8 @@ clean:
 
 cleanout:
 	@-rm out/*
+	@-rm out/svg/*
+
 
 cleanall: clean cleandoc cleanout
 	@-rm $(EXEC_FILES)

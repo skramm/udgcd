@@ -136,10 +136,10 @@ It can be considered as a variant of the [Horton Algorithm](https://epubs.siam.o
 - The first step is done by a Depth First Search (DFS), with  [boost::undirected_dfs()](http://www.boost.org/doc/libs/1_70_0/libs/graph/doc/undirected_dfs.html)
 with passing a visitor of class `CycleDetector`, inherited from
 [boost::dfs_visitor](http://www.boost.org/doc/libs/1_70_0/libs/graph/doc/dfs_visitor.html).
-This object holds a set of vertices that are part of an edge on which `back_edge()` is called.
+This object holds a set of vertices that are part of an edge on which `back_edge()` is called (called here "source vertices").
 If this happens, it means that a cycle *has* been encountered.
 
-- The second step is done by exploring recursively the graph, by starting from each of the vertices that have been identified as part of a "back edge".
+- The second step is done by exploring recursively the graph, by starting from each of the sourece vertices.
 This step is the most time-consuming.
 
 - The third steps does some post-processing:

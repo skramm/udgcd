@@ -632,7 +632,7 @@ However, the output vector has a size usually less than 10 times less the size o
 Thus there might be some memory saving to do here.
 
 \todo Most of the time spend here is probably in the find() function. An improvement can probably be done by
-storing the cycles in a tree, as they are normalized.
+storing the cycles in a tree, as they are normalized (or are they?)
 
 \sa findTrueCycle()
 */
@@ -641,15 +641,25 @@ std::vector<std::vector<T>>
 stripCycles( const std::vector<std::vector<T>>& v_cycles )
 {
 	PRINT_FUNCTION;
-	std::cout << __FUNCTION__ << "(): size=" << v_cycles.size() << "\n";
+//	std::cout << __FUNCTION__ << "(): size=" << v_cycles.size() << "\n";
 	assert( v_cycles.size() );
 
 	std::vector<std::vector<T>> out;
 	out.reserve( v_cycles.size() );
 
+#ifdef UDGCD_DEV_MODE
+	int i=0;
+#endif
+
 	for( const auto& cycle: v_cycles )
 	{
 		auto newcy = findTrueCycle( cycle );
+#ifdef UDGCD_DEV_MODE
+		std::cout << i++ << "-BEFORE: ";
+		printVector( std::cout, cycle );
+		std::cout << i << "-AFTER:  ";
+		printVector( std::cout, newcy );
+#endif
 		if( std::find( std::begin(out), std::end(out), newcy ) == std::end(out) )     // add to output vector only if not already present
 			out.push_back( newcy );
 	}
@@ -1831,8 +1841,8 @@ checkCycles( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& gr )
 /// (nb of cycles at each step and timing information)
 struct UdgcdInfo
 {
-	size_t nbRawCycles     = 0;
-	size_t nbCleanedCycles = 0;
+	size_t nbRawCycles      = 0;
+	size_t nbStrippedCycles = 0;
 	size_t nbNonChordlessCycles = 0;
 	size_t nbFinalCycles  = 0;
 	size_t nbSourceVertex = 0;
@@ -1856,12 +1866,12 @@ struct UdgcdInfo
 	void print( std::ostream& f ) const
 	{
 		f << "UdgcdInfo:"
-			<< "\n - nbRawCycles=" << nbRawCycles
-			<< "\n - nbSourceVertex=" << nbSourceVertex
-			<< "\n - nbCleanedCycles=" << nbCleanedCycles
+			<< "\n - nbRawCycles="      << nbRawCycles
+			<< "\n - nbSourceVertex="   << nbSourceVertex
+			<< "\n - nbStrippedCycles=" << nbStrippedCycles
 			<< "\n - nbNonChordlessCycles=" << nbNonChordlessCycles
 			<< "\n - nbFinalCycles=" << nbFinalCycles
-			<< "\n - maxDepth=" << maxDepth
+			<< "\n - maxDepth="      << maxDepth
 			<< "\n - Duration per step:\n";
 			for( size_t i=0; i<timePoints.size()-1; i++ )
 			{
@@ -1877,7 +1887,7 @@ struct UdgcdInfo
 		auto siz = timePoints.size();
 		char sep=';';
 		f << nbRawCycles << sep
-			<< nbCleanedCycles << sep
+			<< nbStrippedCycles << sep
 			<< nbNonChordlessCycles << sep
 			<< nbFinalCycles << sep;
 		for( size_t i=0; i<siz-1; i++ )
@@ -1995,10 +2005,7 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 
 	info.setTimeStamp( "clean cycles" );
 	auto v_cycles0 = priv::stripCycles( v_cycles );
-//	priv::printStatus( std::cout, v_cycles0, __LINE__ );
-
-	info.nbCleanedCycles = v_cycles0.size();
-//	std::cout << "-Nb cleaned cycles: " << info.nbCleanedCycles << '\n';
+	info.nbStrippedCycles = v_cycles0.size();
 
 // SORTING
 	info.setTimeStamp( "sorting" );
