@@ -195,7 +195,7 @@ $(BIN_DIR)/%: $(OBJ_DIR)/%.o
 #	$(CXX) -o bin/test_catch $(OBJ_DIR)/test_catch.o -s
 #	@echo "done target $@"
 
-$(BIN_DIR)/test_catch:
+$(BIN_DIR)/test_catch: udgcd.hpp test_catch.cpp
 	$(CXX) -o $(BIN_DIR)/test_catch test_catch.cpp -s
 	@echo "done target $@"
 

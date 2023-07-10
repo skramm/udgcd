@@ -609,7 +609,7 @@ findTrueCycle( const std::vector<T>& cycle )
 			}
 		}
 	}
-	putSmallestElemFirst( out );   // if we have 4-3-2-1, then transform into 1-4-3-2
+	putSmallestElemFirst( out );   // if we have 4-3-2-1, then transform into 1-4-3-2 (rotate)
 
 	if( out.back() < out[1] )                     // if we have 1-4-3-2, then
 	{
@@ -619,6 +619,91 @@ findTrueCycle( const std::vector<T>& cycle )
 
 //	UDGCD_COUT << "out: "; PrintVector( std::cout, out );
 	return out;
+}
+//-------------------------------------------------------------------------------------------
+template<typename tree_t>
+void
+printTree( std::ostream& out, size_t i, const tree_t&  tree )
+{
+	out << "Tree " << i << " first node=???\n";
+	write_graphviz( out, tree );
+}
+
+template<typename tree_t>
+void
+printTrees( const std::vector<tree_t>&  vtrees )
+{
+	size_t i = 0;
+	for( const auto& tree: vtrees )
+		printTree( std::cout, i++, tree );
+}
+//-------------------------------------------------------------------------------------------
+template<typename T, typename tree_t>
+void
+addCycleToTree(
+	std::vector<tree_t>&  vtrees,
+	const std::vector<T>& cycle
+)
+{
+	auto firstNode = cycle.front();
+	auto& tree = vtrees[firstNode];
+
+	for( T i=0; i<cycle.size()-1; i++ )
+		boost::add_edge( cycle[i], cycle[i+1], tree );
+}
+//-------------------------------------------------------------------------------------------
+/// Recursive function, start from \c node
+/**
+\verbatim
+      |
+      4
+    / | \
+   2  3   5
+ / |
+0  1
+\endverbatim
+
+*/
+template<typename T, typename tree_t>
+bool
+searchAndAddCycleInTree(
+	tree_t&               tree,
+	const T&              idx,
+	const std::vector<T>& cycle
+)
+{
+	for( auto oei = boost::out_edges( idx, tree ); oei.first != oei.second; ++oei.first )
+	{
+
+	}
+}
+
+//-------------------------------------------------------------------------------------------
+/// Select the right tree, create it if needed, then search the tree for the cycle \c cycle,
+/// and add it if not present
+/**
+If not present, add it to the tree
+*/
+template<typename T, typename tree_t>
+bool
+addCycleToTrees(
+	const std::vector<T>&  cycle,
+	std::vector<tree_t>&   vtrees
+)
+{
+// if tree starting with initial node equal to first one in path does not exist, then build it
+	auto firstNode = cycle.front();
+	assert( firstNode < vtrees.size() );
+	if( boost::num_vertices( vtrees[firstNode]) == 0 )
+	{
+		addCycleToTree( vtrees, cycle );
+		return false;
+	}
+	else
+	{
+		return searchAndAddCycleInTree( vtrees[firstNode], firstNode, cycle );
+	}
+
 }
 //-------------------------------------------------------------------------------------------
 /// Removes for each cycle the vertices that are not part of the cycle.
@@ -636,14 +721,18 @@ storing the cycles in a tree, as they are normalized (or are they?)
 
 \sa findTrueCycle()
 */
-template<typename T>
+template<typename T, typename graph_t>
 std::vector<std::vector<T>>
-stripCycles( const std::vector<std::vector<T>>& v_cycles )
+stripCycles(
+	const std::vector<std::vector<T>>& v_cycles,
+	const graph_t& gr
+)
 {
 	PRINT_FUNCTION;
 //	std::cout << __FUNCTION__ << "(): size=" << v_cycles.size() << "\n";
 	assert( v_cycles.size() );
 
+	auto nbv = boost::num_vertices(gr);
 	std::vector<std::vector<T>> out;
 	out.reserve( v_cycles.size() );
 
@@ -651,17 +740,30 @@ stripCycles( const std::vector<std::vector<T>>& v_cycles )
 	int i=0;
 #endif
 
+	using tree_t = boost::adjacency_list<
+			boost::vecS,
+			boost::vecS,
+			boost::directedS
+		>;
+	std::vector<tree_t> vtrees(nbv);
+
+
 	for( const auto& cycle: v_cycles )
 	{
 		auto newcy = findTrueCycle( cycle );
+		assert( newcy.size()>2 );
 #ifdef UDGCD_DEV_MODE
 		std::cout << i++ << "-BEFORE: ";
 		printVector( std::cout, cycle );
 		std::cout << i << "-AFTER:  ";
 		printVector( std::cout, newcy );
 #endif
-		if( std::find( std::begin(out), std::end(out), newcy ) == std::end(out) )     // add to output vector only if not already present
+		if( !addCycleToTrees( newcy, vtrees ) )
 			out.push_back( newcy );
+		printTrees( vtrees );
+/*		if( std::find( std::begin(out), std::end(out), newcy ) == std::end(out) )     // add to output vector only if not already present
+			out.push_back( newcy );
+*/
 	}
 	return out;
 }
@@ -2004,7 +2106,7 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 //////////////////////////////////////
 
 	info.setTimeStamp( "clean cycles" );
-	auto v_cycles0 = priv::stripCycles( v_cycles );
+	auto v_cycles0 = priv::stripCycles( v_cycles, gr );
 	info.nbStrippedCycles = v_cycles0.size();
 
 // SORTING
