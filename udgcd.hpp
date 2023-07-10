@@ -28,6 +28,9 @@ See file README.md
 #include <boost/graph/undirected_dfs.hpp>
 #include <boost/dynamic_bitset.hpp>       // needed ! Allows bitwise operations on dynamic size boolean vectors
 
+/// TEMP
+#include <boost/graph/graph_utility.hpp>
+
 #ifdef UDGCD_USE_M4RI
 	#include "wrapper_m4ri.hpp"
 #endif
@@ -637,7 +640,13 @@ printTrees( const std::vector<tree_t>&  vtrees )
 	for( const auto& tree: vtrees )
 		printTree( std::cout, i++, tree );
 }
+	struct TreeVertex
+	{
+		size_t idx;
+	};
+
 //-------------------------------------------------------------------------------------------
+/// Assumes the initial node is already set
 template<typename T, typename tree_t>
 void
 addCycleToTree(
@@ -645,6 +654,7 @@ addCycleToTree(
 	const std::vector<T>& cycle
 )
 {
+	PRINT_FUNCTION;
 	auto firstNode = cycle.front();
 	auto& tree = vtrees[firstNode];
 
@@ -654,10 +664,11 @@ addCycleToTree(
 	for( T i=0; i<cycle.size()-1; i++ )
 	{
 		vertex_t v = boost::add_vertex(tree);
-		tree[v].vertexIdx = cycle[i+1];
+		tree[v].idx = cycle[i+1];
 		boost::add_edge( u, v, tree );
 		v = u;
 	}
+	boost::print_graph( tree, boost::get(&TreeVertex::idx, tree), std::cout );
 }
 //-------------------------------------------------------------------------------------------
 /// Recursive function, start from \c node
@@ -673,7 +684,7 @@ Say we have the following tree, starting from vertex 4:
 
 - If we query this function with the cycle 4-2-1 or 4-3, i will return true
 - If we query this function with the cycle 4-3-1, it will add this path and return false.
-The tree will then become
+The tree will then become:
 \verbatim
       4
     / | \
@@ -713,11 +724,16 @@ addCycleToTrees(
 	std::vector<tree_t>&   vtrees
 )
 {
+	PRINT_FUNCTION;
 // if tree starting with initial node equal to first one in path does not exist, then build it
 	auto firstNode = cycle.front();
 	assert( firstNode < vtrees.size() );
-	if( boost::num_vertices( vtrees[firstNode]) == 0 )
+	auto& tree = vtrees[firstNode];
+	if( boost::num_vertices( tree ) == 0 )
 	{
+
+		auto v = boost::add_vertex( tree );
+		tree[v].idx = firstNode;
 		addCycleToTree( vtrees, cycle );
 		return false;
 	}
@@ -765,10 +781,6 @@ stripCycles(
 /**
 Required, because in a tree, we can have several nodes with the same cycle index.
 */
-	struct TreeVertex
-	{
-		size_t vertexIdx;
-	};
 
 	using tree_t = boost::adjacency_list<
 			boost::vecS,
@@ -777,7 +789,6 @@ Required, because in a tree, we can have several nodes with the same cycle index
 			TreeVertex
 		>;
 	std::vector<tree_t> vtrees(nbv);
-
 
 	for( const auto& cycle: v_cycles )
 	{
@@ -791,7 +802,7 @@ Required, because in a tree, we can have several nodes with the same cycle index
 #endif
 		if( !addCycleToTrees( newcy, vtrees ) )
 			out.push_back( newcy );
-		printTrees( vtrees );
+//		printTrees( vtrees );
 /*		if( std::find( std::begin(out), std::end(out), newcy ) == std::end(out) )     // add to output vector only if not already present
 			out.push_back( newcy );
 */

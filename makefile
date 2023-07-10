@@ -196,7 +196,7 @@ $(BIN_DIR)/%: $(OBJ_DIR)/%.o
 #	@echo "done target $@"
 
 $(BIN_DIR)/test_catch: udgcd.hpp test_catch.cpp
-	$(CXX) -o $(BIN_DIR)/test_catch test_catch.cpp -s
+	$(CXX) -o $(BIN_DIR)/test_catch test_catch.cpp -s $(CFLAGS)
 	@echo "done target $@"
 
 # -s option: also shows successful test results

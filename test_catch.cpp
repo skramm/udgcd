@@ -8,6 +8,7 @@ https://github.com/philsquared/Catch/
 #define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
 #include "catch.hpp"
 
+#define UDGCD_LOG_FUNC
 #include "udgcd.hpp"
 #include "demo/common_sample.h"
 
@@ -595,7 +596,7 @@ TEST_CASE( "tree stripping", "[tree-strip]" )
 		{1,2,3,1},
 		{1,2,3,0}
 	};
-//	priv::stripCycles( vcy, gr );
+	priv::stripCycles( vcy, gr );
 
 
 
