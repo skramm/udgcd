@@ -654,13 +654,24 @@ addCycleToTree(
 //-------------------------------------------------------------------------------------------
 /// Recursive function, start from \c node
 /**
+Say we have the following tree, starting from vertex 4:
 \verbatim
-      |
       4
     / | \
    2  3   5
- / |
-0  1
+ / |      | \
+0  1      1  3
+\endverbatim
+
+- If we query this function with the cycle 4-2-1 or 4-3, i will return true
+- If we query this function with the cycle 4-3-1, it will add this path and return false.
+The tree will then become
+\verbatim
+      4
+    / | \
+   2  3   5
+ / |  |   | \
+0  1  1   1  3
 \endverbatim
 
 */
@@ -672,9 +683,12 @@ searchAndAddCycleInTree(
 	const std::vector<T>& cycle
 )
 {
+	std::cout << __FUNCTION__ << "(): current=" << idx << "\ncycle=";
+	printVector( std::cout, cycle );
+
 	for( auto oei = boost::out_edges( idx, tree ); oei.first != oei.second; ++oei.first )
 	{
-
+		auto target = boost::target( *oei.first, tree );
 	}
 }
 
@@ -739,11 +753,20 @@ stripCycles(
 #ifdef UDGCD_DEV_MODE
 	int i=0;
 #endif
+/// Holds index of the cycle, used in the tree
+/**
+Required, because in a tree, we can have several nodes with the same cycle index.
+*/
+	struct TreeVertex
+	{
+		size_t vertexIdx;
+	};
 
 	using tree_t = boost::adjacency_list<
 			boost::vecS,
 			boost::vecS,
-			boost::directedS
+			boost::directedS,
+			TreeVertex
 		>;
 	std::vector<tree_t> vtrees(nbv);
 

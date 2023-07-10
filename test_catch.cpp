@@ -595,7 +595,7 @@ TEST_CASE( "tree stripping", "[tree-strip]" )
 		{1,2,3,1},
 		{1,2,3,0}
 	};
-	priv::stripCycles( vcy, gr );
+//	priv::stripCycles( vcy, gr );
 
 
 
