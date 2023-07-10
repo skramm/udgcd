@@ -648,8 +648,16 @@ addCycleToTree(
 	auto firstNode = cycle.front();
 	auto& tree = vtrees[firstNode];
 
+	using vertex_t = typename boost::graph_traits<tree_t>::vertex_descriptor ;
+
+	vertex_t u = firstNode; // ???
 	for( T i=0; i<cycle.size()-1; i++ )
-		boost::add_edge( cycle[i], cycle[i+1], tree );
+	{
+		vertex_t v = boost::add_vertex(tree);
+		tree[v].vertexIdx = cycle[i+1];
+		boost::add_edge( u, v, tree );
+		v = u;
+	}
 }
 //-------------------------------------------------------------------------------------------
 /// Recursive function, start from \c node
