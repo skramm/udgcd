@@ -60,8 +60,11 @@ namespace udgcd {
 //-------------------------------------------------------------------------------------------
 template<typename T>
 void
-printVector( std::ostream& f, const std::vector<T>& vec )
+printVector( std::ostream& f, const std::vector<T>& vec, const char* msg=nullptr )
 {
+	f << "#=" << vec.size() << ": ";
+	if( msg )
+		f << "(" << msg << ") ";
 	for( const auto& elem : vec )
 		f << elem << "-";
 	f << "\n";
@@ -620,10 +623,16 @@ findTrueCycle( const std::vector<T>& cycle )
 		putSmallestElemFirst( out );                // and put smallest first: 1-2-3-4
 	}
 
-//	UDGCD_COUT << "out: "; PrintVector( std::cout, out );
+	UDGCD_COUT << "out: "; printVector( std::cout, out );
 	return out;
 }
 //-------------------------------------------------------------------------------------------
+/// A tree node, that holds the idx of the node in the main graph
+struct TreeVertex
+{
+	size_t idx;
+};
+
 template<typename tree_t>
 void
 printTree( std::ostream& out, size_t i, const tree_t&  tree )
@@ -636,34 +645,38 @@ template<typename tree_t>
 void
 printTrees( const std::vector<tree_t>&  vtrees )
 {
+	PRINT_FUNCTION;
 	size_t i = 0;
 	for( const auto& tree: vtrees )
-		printTree( std::cout, i++, tree );
-}
-	struct TreeVertex
 	{
-		size_t idx;
-	};
+		std::cout << "tree " << i++ << ":\n";
+		boost::print_graph( tree, boost::get(&TreeVertex::idx, tree), std::cout );
+	}
+
+}
 
 //-------------------------------------------------------------------------------------------
 /// Assumes the initial node is already set
 template<typename T, typename tree_t>
 void
 addCycleToTree(
-	std::vector<tree_t>&  vtrees,
-	const std::vector<T>& cycle
+	tree_t&               tree,
+	const std::vector<T>& cycle,
+	typename boost::graph_traits<tree_t>::vertex_descriptor topNode
 )
 {
 	PRINT_FUNCTION;
-	auto firstNode = cycle.front();
-	auto& tree = vtrees[firstNode];
+	std::cout << "current tree idx=" << tree[topNode].idx << "\n";
+	printVector(std::cout, cycle, "cycle to add" );
+//	auto firstNode = cycle.front();
+//	auto& tree = vtrees[firstNode];
 
-	using vertex_t = typename boost::graph_traits<tree_t>::vertex_descriptor ;
+//	using vertex_t = typename boost::graph_traits<tree_t>::vertex_descriptor ;
 
-	vertex_t u = firstNode; // ???
+	auto u = topNode;
 	for( T i=0; i<cycle.size()-1; i++ )
 	{
-		vertex_t v = boost::add_vertex(tree);
+		auto v = boost::add_vertex(tree);
 		tree[v].idx = cycle[i+1];
 		boost::add_edge( u, v, tree );
 		v = u;
@@ -732,9 +745,10 @@ addCycleToTrees(
 	if( boost::num_vertices( tree ) == 0 )
 	{
 
-		auto v = boost::add_vertex( tree );
-		tree[v].idx = firstNode;
-		addCycleToTree( vtrees, cycle );
+		auto topNode = boost::add_vertex( tree );
+		tree[topNode].idx = firstNode;
+		std::cout << "create first node, topNode=" << topNode << " idx=" << firstNode << "\n";
+		addCycleToTree( tree, cycle, topNode );
 		return false;
 	}
 	else
@@ -802,7 +816,7 @@ Required, because in a tree, we can have several nodes with the same cycle index
 #endif
 		if( !addCycleToTrees( newcy, vtrees ) )
 			out.push_back( newcy );
-//		printTrees( vtrees );
+		printTrees( vtrees );
 /*		if( std::find( std::begin(out), std::end(out), newcy ) == std::end(out) )     // add to output vector only if not already present
 			out.push_back( newcy );
 */
