@@ -595,9 +595,10 @@ TEST_CASE( "tree stripping", "[tree-strip]" )
 	std::vector<std::vector<size_t>> vcy = {
 		{1,2,3,1},
 		{1,2,3,0,1},
-		{0,3,4,1,0},
-		{0,3,4,0},
-		{0,3,4,0},
+		{4,3,5,4},
+		{4,3,5,4}
+//		{0,3,4,0},
+//		{0,3,4,0},
 	};
 	priv::stripCycles( vcy, gr );
 

@@ -48,9 +48,12 @@ See file README.md
 	#include <iostream>
 	#define UDGCD_COUT if(1) std::cout << std::setw(4) << __LINE__ << ": "
 	#define UDGCD_PRINT_STEPS
+	#define UDGCD_ASSERT_2(a,b,c) if(!(a)) std::cout << "ASSERT FAILURE, line " << __LINE__ << ", b=" << b << " c=" << c << '\n'
+
 //	#define PRINT_DIFF( step, v_after, v_before ) std::cout << step << ": REMOVAL OF " << v_before.size() - v_after.size() << " cycles\n"
 #else
 	#define UDGCD_COUT if(0) std::cout
+	#define UDGCD_ASSERT_2(a,b,c) assert(a)
 //	#define PRINT_DIFF(a,b,c) ;
 #endif
 
@@ -635,10 +638,11 @@ struct TreeVertex
 
 template<typename tree_t>
 void
-printTree( std::ostream& out, size_t i, const tree_t&  tree )
+printTree( std::ostream& out, const tree_t& tree )
 {
-	out << "Tree " << i << " first node=???\n";
-	write_graphviz( out, tree );
+	std::cout << " #v=" << boost::num_vertices(tree) << ":\n";
+	boost::print_graph( tree, boost::get(&TreeVertex::idx, tree), std::cout );
+
 }
 
 template<typename tree_t>
@@ -649,8 +653,9 @@ printTrees( const std::vector<tree_t>&  vtrees )
 	size_t i = 0;
 	for( const auto& tree: vtrees )
 	{
-		std::cout << "tree " << i++ << ":\n";
-		boost::print_graph( tree, boost::get(&TreeVertex::idx, tree), std::cout );
+		std::cout << "tree " << i++;
+		printTree( std::cout, tree );
+//		boost::print_graph( tree, boost::get(&TreeVertex::idx, tree), std::cout );
 	}
 
 }
@@ -679,13 +684,18 @@ addCycleToTree(
 		auto v = boost::add_vertex(tree);
 		tree[v].idx = cycle[i+1];
 		boost::add_edge( u, v, tree );
-		v = u;
+		u = v;
 	}
 	boost::print_graph( tree, boost::get(&TreeVertex::idx, tree), std::cout );
 }
 //-------------------------------------------------------------------------------------------
 /// Recursive function, start from \c node
 /**
+
+\return:
+- false if cycle is not in the tree (but it has been added)
+- true if cycle is already in the tree
+
 Say we have the following tree, starting from vertex 4:
 \verbatim
       4
@@ -697,6 +707,7 @@ Say we have the following tree, starting from vertex 4:
 
 - If we query this function with the cycle 4-2-1 or 4-3, i will return true
 - If we query this function with the cycle 4-3-1, it will add this path and return false.
+
 The tree will then become:
 \verbatim
       4
@@ -711,49 +722,102 @@ template<typename T, typename tree_t>
 bool
 searchAndAddCycleInTree(
 	tree_t&               tree,
-	const T&              idx,
-	const std::vector<T>& cycle
+	typename boost::graph_traits<tree_t>::vertex_descriptor currVertex,
+	const std::vector<T>& cycle,
+	size_t                cyIdx  ///< current index in the cycle (this is a recursive function, so we need to know where we are)
 )
 {
-	std::cout << __FUNCTION__ << "(): current=" << idx << "\ncycle=";
+	UDGCD_COUT << __FUNCTION__ << "(): current=" << currVertex << " idx=" << tree[currVertex].idx <<  "\ncycle=";
 	printVector( std::cout, cycle );
+	UDGCD_COUT << "out degree=" << boost::out_degree( currVertex, tree ) << '\n';
 
-	for( auto oei = boost::out_edges( idx, tree ); oei.first != oei.second; ++oei.first )
+//	if( boost::out_degree( currVertex, tree ) == 0 )
+
+		// if no output edges, then add the next nodes and return false
+/*	if( boost::out_degree( currVertex, tree ) == 0 ) // if no output edges, then add the next nodes and return false
+	{
+		UDGCD_COUT << "adding cycle to tree:\n";
+		for( size_t i=0; i<cycle.size()-1; i++ )
+		{
+			auto node= cycle[i+1];
+			UDGCD_COUT << "i=" << i << " node="<< node << '\n';
+
+			auto newV = boost::add_vertex( tree );
+			tree[newV].idx = node;
+			boost::add_edge( currVertex, newV, tree );
+			currVertex = newV;
+		}
+		return false;
+	}
+*/
+/*
+We iterate on each leaf and check if the cycle element is there
+*/
+	bool found = false;
+	for( auto oei = boost::out_edges( currVertex, tree ); oei.first != oei.second; ++oei.first )
 	{
 		auto target = boost::target( *oei.first, tree );
+		UDGCD_COUT << "target=" << target << " idx=" << tree[target].idx << '\n';
+		if( tree[target].idx == cycle[cyIdx+1] )  // correspondance at this level
+		{
+			found = true;
+			auto r = searchAndAddCycleInTree( tree, target, cycle, cyIdx+1 ); // explore further on
+			if( r )
+				return true;
+		}
 	}
+	if( !found ) // add remaining elements of cycle in the tree
+	{
+		UDGCD_COUT << "not found, adding remaining elements of cycle\n";
+		for( size_t i=cyIdx+1; i<cycle.size(); i++ )
+		{
+			UDGCD_COUT << "i=" << i << " adding elem " << cycle[i] << " edge: from " << tree[currVertex].idx << "\n";
+			auto newV = boost::add_vertex( tree );
+			tree[newV].idx = cycle[i];
+			boost::add_edge( currVertex, newV, tree );
+			currVertex = newV;
+		}
+	}
+
+	UDGCD_COUT << "return:" << found << "\n";
+	return found;
 }
 
 //-------------------------------------------------------------------------------------------
-/// Select the right tree, create it if needed, then search the tree for the cycle \c cycle,
+/// Selects the right tree, create it if needed, then search the tree for the cycle \c cycle,
 /// and add it if not present
 /**
-If not present, add it to the tree
+- If not present, add it to the tree and return false
+- If present, return true
 */
 template<typename T, typename tree_t>
 bool
 addCycleToTrees(
-	const std::vector<T>&  cycle,
-	std::vector<tree_t>&   vtrees
+	const std::vector<T>& cycle,
+	std::vector<tree_t>&  vtrees
 )
 {
 	PRINT_FUNCTION;
 // if tree starting with initial node equal to first one in path does not exist, then build it
 	auto firstNode = cycle.front();
-	assert( firstNode < vtrees.size() );
+	UDGCD_COUT << "* firstNode=" << firstNode << " vtrees.size()=" << vtrees.size()  << "\n";
+	UDGCD_ASSERT_2( firstNode < vtrees.size(), firstNode, vtrees.size() );
 	auto& tree = vtrees[firstNode];
+	printTree( std::cout, tree );
+	UDGCD_COUT << "nb vertices=" << boost::num_vertices( tree ) << "\n";
 	if( boost::num_vertices( tree ) == 0 )
 	{
 
 		auto topNode = boost::add_vertex( tree );
 		tree[topNode].idx = firstNode;
-		std::cout << "create first node, topNode=" << topNode << " idx=" << firstNode << "\n";
+		UDGCD_COUT << "create first node, topNode=" << topNode << " idx=" << firstNode << "\n";
 		addCycleToTree( tree, cycle, topNode );
 		return false;
 	}
 	else
 	{
-		return searchAndAddCycleInTree( vtrees[firstNode], firstNode, cycle );
+
+		return searchAndAddCycleInTree( vtrees[firstNode], 0, cycle, 0 );
 	}
 
 }
@@ -809,9 +873,9 @@ Required, because in a tree, we can have several nodes with the same cycle index
 		auto newcy = findTrueCycle( cycle );
 		assert( newcy.size()>2 );
 #ifdef UDGCD_DEV_MODE
-		std::cout << i++ << "-BEFORE: ";
+		UDGCD_COUT << i++ << "-BEFORE: ";
 		printVector( std::cout, cycle );
-		std::cout << i << "-AFTER:  ";
+		UDGCD_COUT << i << "-AFTER:  ";
 		printVector( std::cout, newcy );
 #endif
 		if( !addCycleToTrees( newcy, vtrees ) )
@@ -830,7 +894,7 @@ Required, because in a tree, we can have several nodes with the same cycle index
 http://www.boost.org/doc/libs/1_59_0/libs/graph/doc/IncidenceGraph.html#sec:out-edges
 
 \todo Replace the calling to this function (that needs to iterate at every call)
-by a static binary vector, givening the result instantly from an index value.
+by a static binary vector, giving the result instantly from an index value.
 */
 template<typename vertex_t, typename graph_t>
 bool
