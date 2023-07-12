@@ -27,6 +27,7 @@ See file README.md
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/undirected_dfs.hpp>
 #include <boost/dynamic_bitset.hpp>       // needed ! Allows bitwise operations on dynamic size boolean vectors
+#include <boost/graph/graphviz.hpp>
 
 /// TEMP
 #include <boost/graph/graph_utility.hpp>
@@ -636,13 +637,43 @@ struct TreeVertex
 	size_t idx;
 };
 
+// from: https://www.boost.org/doc/libs/1_82_0/libs/graph/doc/write-graphviz.html
+template <class Name>
+class label_writer
+{
+public:
+	label_writer(Name _name) : name(_name) {}
+
+	template <class VertexOrEdge>
+	void operator()(std::ostream& out, const VertexOrEdge& v) const
+	{
+		out << "[label=\"" << name[v] << "\"]";
+	}
+private:
+	Name name;
+};
+
+
+/*template <class Name>
+label_writer<Name>
+make_idx_writer(Name n);
+*/
+
 template<typename tree_t>
 void
-printTree( std::ostream& out, const tree_t& tree )
+printTree( std::ostream& out, const tree_t& tree, std::string name )
 {
-	std::cout << " #v=" << boost::num_vertices(tree) << ":\n";
+	std::cout << name << " #v=" << boost::num_vertices(tree) << ":\n";
 	boost::print_graph( tree, boost::get(&TreeVertex::idx, tree), std::cout );
-
+	std::ofstream f( "out/" + name + ".dot" );
+	assert( f.is_open() );
+	boost::write_graphviz(
+		f,
+		tree,
+		make_label_writer(
+			boost::get( &TreeVertex::idx, tree )
+		)
+	);
 }
 
 template<typename tree_t>
@@ -653,8 +684,9 @@ printTrees( const std::vector<tree_t>&  vtrees )
 	size_t i = 0;
 	for( const auto& tree: vtrees )
 	{
-		std::cout << "tree " << i++;
-		printTree( std::cout, tree );
+		std::ostringstream oss;
+		oss << "tree_" << i++;
+		printTree( std::cout, tree, oss.str() );
 //		boost::print_graph( tree, boost::get(&TreeVertex::idx, tree), std::cout );
 	}
 
@@ -803,7 +835,7 @@ addCycleToTrees(
 	UDGCD_COUT << "* firstNode=" << firstNode << " vtrees.size()=" << vtrees.size()  << "\n";
 	UDGCD_ASSERT_2( firstNode < vtrees.size(), firstNode, vtrees.size() );
 	auto& tree = vtrees[firstNode];
-	printTree( std::cout, tree );
+	printTree( std::cout, tree, "initial tree" );
 	UDGCD_COUT << "nb vertices=" << boost::num_vertices( tree ) << "\n";
 	if( boost::num_vertices( tree ) == 0 )
 	{
