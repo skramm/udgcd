@@ -32,9 +32,16 @@ Home page: https://github.com/skramm/udgcd
 #include <string>
 #include <numeric>
 
+#ifdef UDGCD_USE_M4RI
+	#define HAS_M4RI "YES\n"
+#else
+	#define HAS_M4RI "NO\n"
+#endif
+
 #define SHOW_INFO \
 	std::cout << "-START: " << __FILE__ \
-		<< "\n-built with Boost " << BOOST_LIB_VERSION << '\n'
+		<< "\n-built with Boost " << BOOST_LIB_VERSION \
+		<< "\n-build option: USE_M4RI: " << HAS_M4RI << "\n";
 
 extern std::string prog_id; // allocated in samples files
 int g_idx = 0;
