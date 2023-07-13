@@ -807,7 +807,6 @@ addCycleToTrees(
 	UDGCD_COUT << "nb vertices=" << boost::num_vertices( tree ) << "\n";
 	if( boost::num_vertices( tree ) == 0 )
 	{
-
 		auto topNode = boost::add_vertex( tree );
 		tree[topNode].idx = firstNode;
 		UDGCD_COUT << "create first node, topNode=" << topNode << " idx=" << firstNode << "\n";
