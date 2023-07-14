@@ -55,6 +55,8 @@ APP=udgcd.hpp
 #HEADERS=$(wildcard $(SRC_DIR)/*.h*)
 HEADER=udgcd.hpp
 HEADERS = $(wildcard *.h*)
+HEADERS += $(wildcard demo/*.h*)
+
 BIN_DIR=build/bin
 OBJ_DIR=build/obj
 
