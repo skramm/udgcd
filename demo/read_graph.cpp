@@ -34,16 +34,12 @@ int main( int argc, const char** argv )
 
 	using vertex_t = boost::graph_traits<graph_t>::vertex_descriptor;
 
-#ifdef UDGCD_USE_M4RI
-	std::cout << "Build using libM4ri\n";
-#endif
-
 	if( argc < 2 )
 	{
 		std::cout << "missing input filename, exit.\n";
 		return 1;
 	}
-	auto vs = sample::splitString( argv[1], '.' );
+	auto vs = sample::splitString( argv[argc-1], '.' );
 	if( vs.size() < 2 )
 	{
 		std::cerr << "Error, input file '" <<  argv[1] << "' has no extension\n";
@@ -74,11 +70,17 @@ int main( int argc, const char** argv )
 	sample::renderGraph( gr, vs2[0] );
 
 	bool noProcess(false);
+	bool verbose(false);
 	if( argc > 2 )
 	{
-		std::string a( argv[2] );
-		if( a == "-n" )
-			noProcess = true;
+		for( int i=1;i<argc-1;i++ )
+		{
+			std::string a( argv[i] );
+			if( a == "-n" )
+				noProcess = true;
+			if( a == "-v" )
+				verbose = true;
+		}
 	}
 	if( noProcess )
 		return 0;

@@ -632,6 +632,9 @@ findTrueCycle( const std::vector<T>& cycle )
 }
 //-------------------------------------------------------------------------------------------
 /// A tree node, that holds the idx of the node in the main graph
+/**
+Required, because in a tree, we can have several nodes with the same cycle index.
+*/
 struct TreeVertex
 {
 	size_t idx;
@@ -673,9 +676,12 @@ printTree( std::ostream& out, const tree_t& tree, std::string name )
 
 template<typename tree_t>
 void
-printTrees( const std::vector<tree_t>&  vtrees )
+printTrees( const std::vector<tree_t>&  vtrees, const char* msg=nullptr )
 {
 	PRINT_FUNCTION;
+	std::cout << "Trees: ";
+	if( msg )
+		std::cout << msg << "\n";
 	size_t i = 0;
 	for( const auto& tree: vtrees )
 	{
@@ -698,7 +704,7 @@ addCycleToTree(
 )
 {
 	PRINT_FUNCTION;
-#ifdef UDGCD_DEMODE
+#ifdef UDGCD_DEVMODE
 	std::cout << "current tree idx=" << tree[topNode].idx << "\n";
 	printVector(std::cout, cycle, "cycle to add" );
 #endif
@@ -711,7 +717,7 @@ addCycleToTree(
 		boost::add_edge( u, v, tree );
 		u = v;
 	}
-#ifdef UDGCD_DEMODE
+#ifdef UDGCD_DEVMODE
 	boost::print_graph( tree, boost::get(&TreeVertex::idx, tree), std::cout );
 #endif
 }
@@ -825,6 +831,83 @@ addCycleToTrees(
 	}
 
 }
+
+#if 1
+//-------------------------------------------------------------------------------------------
+template<typename T, typename graph_t>
+std::vector<std::vector<T>>
+strip(
+	const std::vector<std::vector<T>>& v_cycles,
+	const graph_t& gr
+)
+{
+	PRINT_FUNCTION;
+	std::vector<std::vector<T>> out;
+	out.reserve( v_cycles.size() );
+
+	for( const auto& cycle: v_cycles )
+	{
+		auto newcy = findTrueCycle( cycle );
+		assert( newcy.size()>2 );
+		out.push_back( newcy );
+	}
+	return out;
+}
+
+	//-------------------------------------------------------------------------------------------
+template<typename T, typename graph_t>
+std::vector<std::vector<T>>
+storeUnique(
+	const std::vector<std::vector<T>>& v_cycles,
+	const graph_t& gr
+)
+{
+	PRINT_FUNCTION;
+
+	using tree_t = boost::adjacency_list<
+			boost::vecS,
+			boost::vecS,
+			boost::directedS,
+			TreeVertex
+		>;
+
+	std::vector<std::vector<T>> out;
+	out.reserve( v_cycles.size() );
+
+	std::vector<tree_t> vtrees( boost::num_vertices(gr) );
+
+	for( const auto& cycle: v_cycles )
+	{
+		if( !addCycleToTrees( cycle, vtrees ) )
+			out.push_back( cycle );
+	}
+#ifdef UDGCD_DEV_MODE
+		printTrees( vtrees, "final" );
+#endif
+
+	return out;
+}
+
+//-------------------------------------------------------------------------------------------
+template<typename T, typename graph_t>
+std::vector<std::vector<T>>
+stripCycles(
+	const std::vector<std::vector<T>>& v_cycles,
+	const graph_t& gr
+)
+{
+	PRINT_FUNCTION;
+//	std::cout << __FUNCTION__ << "(): size=" << v_cycles.size() << "\n";
+	assert( v_cycles.size() );
+UDGCD_COUT << "BEFORE STRIP\n";
+	auto v1 = strip( v_cycles, gr );
+UDGCD_COUT << "AFTER STRIP\n";
+	printPaths( std::cout, v1, "unsorted" );
+	std::sort( std::begin(v1), std::end(v1) );
+	printPaths( std::cout, v1, "sorted" );
+	return storeUnique( v1, gr );
+}
+#else
 //-------------------------------------------------------------------------------------------
 /// Removes for each cycle the vertices that are not part of the cycle.
 /**
@@ -859,11 +942,6 @@ stripCycles(
 #ifdef UDGCD_DEV_MODE
 	int i=0;
 #endif
-/// Holds index of the cycle, used in the tree
-/**
-Required, because in a tree, we can have several nodes with the same cycle index.
-*/
-
 	using tree_t = boost::adjacency_list<
 			boost::vecS,
 			boost::vecS,
@@ -891,6 +969,7 @@ Required, because in a tree, we can have several nodes with the same cycle index
 	return out;
 }
 
+#endif // 0-1
 //-------------------------------------------------------------------------------------------
 /// Returns true if vertices \c v1 and \c v2 are connected by an edge
 /**
@@ -2214,7 +2293,7 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 	info.setTimeStamp( "explore" );
 	for( const auto& vi: cycleDetector.v_source_vertex )
 	{
-		UDGCD_COUT << "\n * Start exploring from source vertex " << vi << "\n";
+		UDGCD_COUT << "* Start exploring from source vertex " << vi << "\n";
 		std::vector<std::vector<vertex_t>> v_paths;
 		std::vector<vertex_t> newv(1, vi ); // start by one of the filed source vertex
 		v_paths.push_back( newv );
@@ -2222,7 +2301,8 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 	}
 
 	info.nbRawCycles = v_cycles.size();
-//	std::cout << "-Nb initial cycles: " << info.nbRawCycles << '\n';
+	UDGCD_COUT << "-Nb initial cycles: " << info.nbRawCycles << '\n';
+	printPaths( std::cout, v_cycles, "raw cycles" );
 
 //////////////////////////////////////
 // step 3 (post process): cleanout the cycles by removing the vertices that are not part of the cycle and sort
