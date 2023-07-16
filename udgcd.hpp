@@ -724,7 +724,6 @@ addCycleToTree(
 //-------------------------------------------------------------------------------------------
 /// Recursive function, start from \c node
 /**
-
 \return:
 - false if cycle is not in the tree (but it has been added)
 - true if cycle is already in the tree
@@ -752,45 +751,45 @@ The tree will then become:
 */
 template<typename T, typename tree_t>
 bool
-searchAndAddCycleInTree(
+searchCycleInTree(
 	tree_t&               tree,
-	typename boost::graph_traits<tree_t>::vertex_descriptor currVertex,
+	typename boost::graph_traits<tree_t>::vertex_descriptor& currVertex,
 	const std::vector<T>& cycle,
-	size_t                cyIdx  ///< current index in the cycle (this is a recursive function, so we need to know where we are)
+	size_t&               cyIdx  ///< current index in the cycle (this is a recursive function, so we need to know where we are)
 )
 {
-	UDGCD_COUT << __FUNCTION__ << "(): current=" << currVertex << " idx=" << tree[currVertex].idx <<  "\ncycle=";
+	static int depth;
+	depth++;
+	UDGCD_COUT << __FUNCTION__ << "()" << " depth=" << depth << " currVertex=" << currVertex << " idx=" << tree[currVertex].idx << " cyIdx=" << cyIdx << " cycle=";
 //	printVector( std::cout, cycle );
-	UDGCD_COUT << "out degree=" << boost::out_degree( currVertex, tree ) << '\n';
+
+	if( cyIdx+1 == cycle.size() )   // if last element,no more exploration of the tree is needed
+	{
+		UDGCD_COUT << __FUNCTION__ << "() END: depth=" << depth << " currVertex=" << currVertex << " idx=" << tree[currVertex].idx << " cyIdx=" << cyIdx << " return true (last elem)\n";
+		depth--;
+		return true;
+	}
 
 // We iterate on each leaf and check if the cycle element is there
 	bool found = false;
-	for( auto oei = boost::out_edges( currVertex, tree ); oei.first != oei.second; ++oei.first )
+	auto current = currVertex;
+	for( auto oei = boost::out_edges( current, tree ); oei.first != oei.second; ++oei.first )
 	{
-		auto target = boost::target( *oei.first, tree );
-		UDGCD_COUT << "target=" << target << " idx=" << tree[target].idx << '\n';
-		if( tree[target].idx == cycle[cyIdx+1] )  // correspondance at this level
+		currVertex = boost::target( *oei.first, tree );
+		UDGCD_COUT << "currVertex=" << currVertex << " idx=" << tree[currVertex].idx << '\n';
+		if( tree[currVertex].idx == cycle[cyIdx+1] )  // correspondance at this level, lets get further down
 		{
-			found = true;
-			auto r = searchAndAddCycleInTree( tree, target, cycle, cyIdx+1 ); // explore further on
-			if( r )
-				return true;
+			UDGCD_COUT << " -found vertex, going next level\n"; //) END: depth=" << depth << " current=" << currVertex << " idx=" << tree[currVertex].idx << " cyIdx=" << cyIdx << " return TRUE\n";
+			cyIdx = cyIdx+1;
+			found = searchCycleInTree( tree, currVertex, cycle, cyIdx ); // explore further on
+			UDGCD_COUT << " -back from level, found=" << found << "\n"; //__FUNCTION__ << "() END: depth=" << depth << " current=" << currVertex << " idx=" << tree[currVertex].idx << " cyIdx=" << cyIdx << " return TRUE\n";
 		}
 	}
-	if( !found ) // add remaining elements of cycle in the tree
-	{
-		UDGCD_COUT << "not found, adding remaining elements of cycle\n";
-		for( size_t i=cyIdx+1; i<cycle.size(); i++ )
-		{
-			UDGCD_COUT << "i=" << i << " adding elem " << cycle[i] << " edge: from " << tree[currVertex].idx << "\n";
-			auto newV = boost::add_vertex( tree );
-			tree[newV].idx = cycle[i];
-			boost::add_edge( currVertex, newV, tree );
-			currVertex = newV;
-		}
-	}
+	if( !found ) // path not found in tree, we set the current vertex to the one we began with
+		currVertex = current;
 
-	UDGCD_COUT << "return:" << found << "\n";
+	UDGCD_COUT << __FUNCTION__ << "() END: depth=" << depth << " current=" << currVertex << " idx=" << tree[currVertex].idx << " cyIdx=" << cyIdx << " return found=" << found << "\n";
+	depth--;
 	return found;
 }
 
@@ -809,27 +808,48 @@ addCycleToTrees(
 )
 {
 	PRINT_FUNCTION;
+//	printVector( std::cout,  cycle );
+
 // if tree starting with initial node equal to first one in path does not exist, then build it
 	auto firstNode = cycle.front();
 	UDGCD_COUT << "* firstNode=" << firstNode << " vtrees.size()=" << vtrees.size()  << "\n";
 	UDGCD_ASSERT_2( firstNode < vtrees.size(), firstNode, vtrees.size() );
 	auto& tree = vtrees[firstNode];
 //	printTree( std::cout, tree, "initial tree" );
-	UDGCD_COUT << "nb vertices=" << boost::num_vertices( tree ) << "\n";
+	UDGCD_COUT << "tree nb vertices=" << boost::num_vertices( tree ) << "\n";
 	if( boost::num_vertices( tree ) == 0 )
 	{
 		auto topNode = boost::add_vertex( tree );
 		tree[topNode].idx = firstNode;
 		UDGCD_COUT << "create first node, topNode=" << topNode << " idx=" << firstNode << "\n";
 		addCycleToTree( tree, cycle, topNode );
+
+		UDGCD_COUT << "single vertex in tree, return false!\n";
 		return false;
 	}
 	else
 	{
+		typename boost::graph_traits<tree_t>::vertex_descriptor currVertex = 0;
+		size_t cyIdx = 0;
+		auto found = searchCycleInTree( vtrees[firstNode], currVertex, cycle, cyIdx );
+		UDGCD_COUT << "back from searchCycleInTree(), found=" << found << " currVertex=" << currVertex << " cyIdx=" << cyIdx << "\n";
 
-		return searchAndAddCycleInTree( vtrees[firstNode], 0, cycle, 0 );
+		if( !found ) // add remaining elements of cycle in the tree
+		{
+			UDGCD_COUT << "not found, adding remaining elements of cycle\n";
+			for( size_t i=cyIdx+1; i<cycle.size(); i++ )
+			{
+				UDGCD_COUT << "i=" << i << " adding elem " << cycle[i] << " edge: from " << tree[currVertex].idx << "\n";
+				auto newV = boost::add_vertex( tree );
+				tree[newV].idx = cycle[i];
+				boost::add_edge( currVertex, newV, tree );
+				currVertex = newV;
+			}
+		}
+
+		UDGCD_COUT << "exploration end, return " << found << '\n';
+		return found;
 	}
-
 }
 
 #if 1
@@ -878,8 +898,14 @@ storeUnique(
 
 	for( const auto& cycle: v_cycles )
 	{
+//		UDGCD_COUT << "cycle:"; printVector( std::cout, cycle );
 		if( !addCycleToTrees( cycle, vtrees ) )
+		{
+			UDGCD_COUT << " - cycle ADDED\n";
 			out.push_back( cycle );
+		}
+		else
+			UDGCD_COUT << " - cycle NOT ADDED\n";
 	}
 #ifdef UDGCD_DEV_MODE
 		printTrees( vtrees, "final" );
@@ -899,12 +925,12 @@ stripCycles(
 	PRINT_FUNCTION;
 //	std::cout << __FUNCTION__ << "(): size=" << v_cycles.size() << "\n";
 	assert( v_cycles.size() );
-UDGCD_COUT << "BEFORE STRIP\n";
+//UDGCD_COUT << "BEFORE STRIP\n";
 	auto v1 = strip( v_cycles, gr );
-UDGCD_COUT << "AFTER STRIP\n";
-	printPaths( std::cout, v1, "unsorted" );
+//UDGCD_COUT << "AFTER STRIP\n";
+//	printPaths( std::cout, v1, "unsorted" );
 	std::sort( std::begin(v1), std::end(v1) );
-	printPaths( std::cout, v1, "sorted" );
+//	printPaths( std::cout, v1, "sorted" );
 	return storeUnique( v1, gr );
 }
 #else
@@ -2302,7 +2328,7 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 
 	info.nbRawCycles = v_cycles.size();
 	UDGCD_COUT << "-Nb initial cycles: " << info.nbRawCycles << '\n';
-	printPaths( std::cout, v_cycles, "raw cycles" );
+//	printPaths( std::cout, v_cycles, "raw cycles" );
 
 //////////////////////////////////////
 // step 3 (post process): cleanout the cycles by removing the vertices that are not part of the cycle and sort
