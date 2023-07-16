@@ -631,6 +631,9 @@ findTrueCycle( const std::vector<T>& cycle )
 	return out;
 }
 //-------------------------------------------------------------------------------------------
+/// Holds code related to using trees to sort unique cycles
+namespace tree {
+
 /// A tree node, that holds the idx of the node in the main graph
 /**
 Required, because in a tree, we can have several nodes with the same cycle index.
@@ -640,7 +643,12 @@ struct TreeVertex
 	size_t idx;
 };
 
-// from: https://www.boost.org/doc/libs/1_82_0/libs/graph/doc/write-graphviz.html
+/// A class dedicated to printing trees in DOT format
+/**
+from: https://www.boost.org/doc/libs/1_82_0/libs/graph/doc/write-graphviz.html
+\sa make_label_writer_1()
+\sa printTree()
+*/
 template <class Name>
 class label_writer
 {
@@ -650,25 +658,38 @@ public:
 	template <class VertexOrEdge>
 	void operator()(std::ostream& out, const VertexOrEdge& v) const
 	{
-		out << "[label=\"" << name[v] << "\"]";
+		out << "[label=\"" << name[v] << "\"";
+		if( v == 0 )
+			out << ",penwidth=\"2\"";
+		out << "]";
 	}
 private:
 	Name name;
 };
 
-
-template<typename tree_t>
-void
-printTree( std::ostream& out, const tree_t& tree, std::string name )
+/// \sa printTree()
+template < class Name >
+inline
+label_writer<Name>
+make_label_writer_1(Name n)
 {
-	std::cout << name << " #v=" << boost::num_vertices(tree) << ":\n";
-	boost::print_graph( tree, boost::get(&TreeVertex::idx, tree), std::cout );
+	return label_writer<Name>(n);
+}
+
+/// Saves tree in a DOT file, can be rendered with `$ make svg`
+template<typename tree_t>
+inline
+void
+printTree( const tree_t& tree, std::string name )
+{
+//	std::cout << name << " #v=" << boost::num_vertices(tree) << ":\n";
+///	boost::print_graph( tree, boost::get(&TreeVertex::idx, tree), std::cout );
 	std::ofstream f( "out/" + name + ".dot" );
 	assert( f.is_open() );
 	boost::write_graphviz(
 		f,
 		tree,
-		make_label_writer(
+		make_label_writer_1(
 			boost::get( &TreeVertex::idx, tree )
 		)
 	);
@@ -676,21 +697,19 @@ printTree( std::ostream& out, const tree_t& tree, std::string name )
 
 template<typename tree_t>
 void
-printTrees( const std::vector<tree_t>&  vtrees, const char* msg=nullptr )
+printTrees( const std::vector<tree_t>&  vtrees ) //, const char* msg=nullptr )
 {
 	PRINT_FUNCTION;
-	std::cout << "Trees: ";
+/*	std::cout << "Trees: ";
 	if( msg )
 		std::cout << msg << "\n";
-	size_t i = 0;
+	size_t i = 0;*/
 	for( const auto& tree: vtrees )
 	{
 		std::ostringstream oss;
 		oss << "tree_" << i++;
-		printTree( std::cout, tree, oss.str() );
-//		boost::print_graph( tree, boost::get(&TreeVertex::idx, tree), std::cout );
+		printTree( tree, oss.str() );
 	}
-
 }
 
 //-------------------------------------------------------------------------------------------
@@ -722,11 +741,9 @@ addCycleToTree(
 #endif
 }
 //-------------------------------------------------------------------------------------------
-/// Recursive function, start from \c node
+/// Recursive function, starts from \c currVertex
 /**
-\return:
-- false if cycle is not in the tree (but it has been added)
-- true if cycle is already in the tree
+\return false if cycle is not in the tree, true if cycle is already in the tree
 
 Say we have the following tree, starting from vertex 1:
 \verbatim
@@ -738,23 +755,14 @@ Say we have the following tree, starting from vertex 1:
 \endverbatim
 
 - If we query this function with the cycle 1-3-5 or 1-2-4, it will return true
-- If we query this function with the cycle 1-4-6, it will add this path and return false.
-
-The tree will then become:
-\verbatim
-      1
-    / |  \
-   3  4     2
- / |  | \   | \
-4  5  5  6  4  5
-\endverbatim
+- If we query this function with the cycle 1-4-6, it will return false.
 */
 template<typename T, typename tree_t>
 bool
 searchCycleInTree(
-	tree_t&               tree,
-	typename boost::graph_traits<tree_t>::vertex_descriptor& currVertex,
-	const std::vector<T>& cycle,
+	tree_t&               tree, ///< current tree
+	typename boost::graph_traits<tree_t>::vertex_descriptor& currVertex, ///< current vertex in tree
+	const std::vector<T>& cycle, ///< the cycle we are investigating
 	size_t&               cyIdx  ///< current index in the cycle (this is a recursive function, so we need to know where we are)
 )
 {
@@ -808,23 +816,16 @@ addCycleToTrees(
 )
 {
 	PRINT_FUNCTION;
-//	printVector( std::cout,  cycle );
 
 // if tree starting with initial node equal to first one in path does not exist, then build it
 	auto firstNode = cycle.front();
-	UDGCD_COUT << "* firstNode=" << firstNode << " vtrees.size()=" << vtrees.size()  << "\n";
 	UDGCD_ASSERT_2( firstNode < vtrees.size(), firstNode, vtrees.size() );
 	auto& tree = vtrees[firstNode];
-//	printTree( std::cout, tree, "initial tree" );
-	UDGCD_COUT << "tree nb vertices=" << boost::num_vertices( tree ) << "\n";
 	if( boost::num_vertices( tree ) == 0 )
 	{
 		auto topNode = boost::add_vertex( tree );
 		tree[topNode].idx = firstNode;
-		UDGCD_COUT << "create first node, topNode=" << topNode << " idx=" << firstNode << "\n";
 		addCycleToTree( tree, cycle, topNode );
-
-		UDGCD_COUT << "single vertex in tree, return false!\n";
 		return false;
 	}
 	else
@@ -832,7 +833,6 @@ addCycleToTrees(
 		typename boost::graph_traits<tree_t>::vertex_descriptor currVertex = 0;
 		size_t cyIdx = 0;
 		auto found = searchCycleInTree( vtrees[firstNode], currVertex, cycle, cyIdx );
-		UDGCD_COUT << "back from searchCycleInTree(), found=" << found << " currVertex=" << currVertex << " cyIdx=" << cyIdx << "\n";
 
 		if( !found ) // add remaining elements of cycle in the tree
 		{
@@ -846,8 +846,6 @@ addCycleToTrees(
 				currVertex = newV;
 			}
 		}
-
-		UDGCD_COUT << "exploration end, return " << found << '\n';
 		return found;
 	}
 }
@@ -874,7 +872,7 @@ strip(
 	return out;
 }
 
-	//-------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------
 template<typename T, typename graph_t>
 std::vector<std::vector<T>>
 storeUnique(
@@ -894,25 +892,21 @@ storeUnique(
 	std::vector<std::vector<T>> out;
 	out.reserve( v_cycles.size() );
 
-	std::vector<tree_t> vtrees( boost::num_vertices(gr) );
-
+/* say we have a graph with 5 vertices (0-1-2-3-4). Then we need at most 3 trees, because the paths will be sorted.
+So a path like 3-4-0 will be stored in the tree '0', as 0-3-4
+*/
+	std::vector<tree_t> vtrees( boost::num_vertices(gr) - 2 );
 	for( const auto& cycle: v_cycles )
-	{
-//		UDGCD_COUT << "cycle:"; printVector( std::cout, cycle );
 		if( !addCycleToTrees( cycle, vtrees ) )
-		{
-			UDGCD_COUT << " - cycle ADDED\n";
 			out.push_back( cycle );
-		}
-		else
-			UDGCD_COUT << " - cycle NOT ADDED\n";
-	}
-#ifdef UDGCD_DEV_MODE
-		printTrees( vtrees, "final" );
-#endif
+//#ifdef UDGCD_DEV_MODE
+		printTrees( vtrees ); //, "final" );
+//#endif
 
 	return out;
 }
+
+} // namespace tree
 
 //-------------------------------------------------------------------------------------------
 template<typename T, typename graph_t>
@@ -926,12 +920,12 @@ stripCycles(
 //	std::cout << __FUNCTION__ << "(): size=" << v_cycles.size() << "\n";
 	assert( v_cycles.size() );
 //UDGCD_COUT << "BEFORE STRIP\n";
-	auto v1 = strip( v_cycles, gr );
+	auto v1 = tree::strip( v_cycles, gr );
 //UDGCD_COUT << "AFTER STRIP\n";
 //	printPaths( std::cout, v1, "unsorted" );
-	std::sort( std::begin(v1), std::end(v1) );
+//	std::sort( std::begin(v1), std::end(v1) );
 //	printPaths( std::cout, v1, "sorted" );
-	return storeUnique( v1, gr );
+	return tree::storeUnique( v1, gr );
 }
 #else
 //-------------------------------------------------------------------------------------------
