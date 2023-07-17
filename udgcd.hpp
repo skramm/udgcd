@@ -466,6 +466,14 @@ struct IncidenceMatrix : public BinaryMatrix
 namespace udgcd {
 
 //-------------------------------------------------------------------------------------------
+/// holds runtime flags (replicated in UdgcdInfo to minimize number of parameters
+struct RunTimeOptions
+{
+	bool printTrees = true; //false;
+	bool printCycles = true;
+
+};
+//-------------------------------------------------------------------------------------------
 /// Holds information on the cycle detection process
 /// (nb of cycles at each step and timing information)
 struct UdgcdInfo
@@ -484,7 +492,7 @@ struct UdgcdInfo
 		>
 	> timePoints;
 
-	bool printTrees = false;
+	RunTimeOptions runTime;
 
 public:
     void setTimeStamp( const char* stepName=0 )
@@ -766,17 +774,17 @@ printTree( const tree_t& tree, std::string name )
 
 template<typename tree_t>
 void
-printTrees( const std::vector<tree_t>&  vtrees ) //, const char* msg=nullptr )
+printTrees( const std::vector<tree_t>&  vtrees )
 {
 	PRINT_FUNCTION;
 /*	std::cout << "Trees: ";
 	if( msg )
-		std::cout << msg << "\n";
-	size_t i = 0;*/
+		std::cout << msg << "\n";*/
+	size_t i = 0;
 	for( const auto& tree: vtrees )
 	{
 		std::ostringstream oss;
-//		oss << "tree_" << i++;
+		oss << "tree_" << i++;
 		printTree( tree, oss.str() );
 	}
 }
@@ -943,7 +951,8 @@ template<typename T, typename graph_t>
 std::vector<std::vector<T>>
 storeUnique(
 	const std::vector<std::vector<T>>& v_cycles,
-	const graph_t& gr
+	const graph_t&                     gr,
+	const UdgcdInfo&                   info
 )
 {
 	PRINT_FUNCTION;
@@ -965,9 +974,9 @@ So a path like 3-4-0 will be stored in the tree '0', as 0-3-4
 	for( const auto& cycle: v_cycles )
 		if( !addCycleToTrees( cycle, vtrees ) )
 			out.push_back( cycle );
-//#ifdef UDGCD_DEV_MODE
-		printTrees( vtrees ); //, "final" );
-//#endif
+
+	if( info.printTrees )
+		printTrees( vtrees );
 
 	return out;
 }
@@ -979,7 +988,8 @@ template<typename T, typename graph_t>
 std::vector<std::vector<T>>
 stripCycles(
 	const std::vector<std::vector<T>>& v_cycles,
-	const graph_t& gr
+	const graph_t& gr,
+	const UdgcdInfo&            info
 )
 {
 	PRINT_FUNCTION;
@@ -991,7 +1001,7 @@ stripCycles(
 //	printPaths( std::cout, v1, "unsorted" );
 //	std::sort( std::begin(v1), std::end(v1) );
 //	printPaths( std::cout, v1, "sorted" );
-	return tree::storeUnique( v1, gr );
+	return tree::storeUnique( v1, gr, info );
 }
 #else
 //-------------------------------------------------------------------------------------------
@@ -1012,7 +1022,7 @@ std::vector<std::vector<T>>
 stripCycles(
 	const std::vector<std::vector<T>>& v_cycles,
 	const graph_t&                     gr,
-	const UdgcdInfo&            info
+	const UdgcdInfo&                   info
 )
 {
 	PRINT_FUNCTION;
@@ -1041,7 +1051,7 @@ So a path like 3-4-0 will be stored in the tree '0', as 0-3-4 */
 			out.push_back( newcy );
 	}
 
-	if( info.printTrees )
+	if( info.runTime.printTrees )
 		printTrees( vtrees );
 
 	return out;

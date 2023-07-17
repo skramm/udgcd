@@ -744,11 +744,12 @@ If other value, it is the absolute number of differences between:
 */
 template<typename graph_t,typename vertex_t>
 std::pair<int,std::vector<std::vector<vertex_t>>>
-processGraph( graph_t& g )
+processGraph( graph_t& g, const udgcd::RunTimeOptions& rtOptions )
 {
 	auto expected = printGraphInfo( g );
 
 	udgcd::UdgcdInfo info;
+	info.runTime = rtOptions;
 	auto cycles = udgcd::findCycles<graph_t,vertex_t>( g, info );
 //	udgcd::printPaths( std::cout, cycles, "final" );
 	if( expected != cycles.size() )
@@ -758,6 +759,8 @@ processGraph( graph_t& g )
 
 //	udgcd::priv::printStatus( std::cout, cycles, __LINE__ );
 
+	if( rtOptions.printCycles )
+		udgcd::printPaths( std::cout, cycles, "final" );
 	auto check = udgcd::priv::checkCycles( cycles, g );
 	if( check.first != 0 )
 	{

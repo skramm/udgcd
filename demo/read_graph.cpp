@@ -85,7 +85,8 @@ int main( int argc, const char** argv )
 	if( noProcess )
 		return 0;
 
-	auto result = sample::processGraph<graph_t,vertex_t>( gr );
+	udgcd::RunTimeOptions rtOptions;
+	auto result = sample::processGraph<graph_t,vertex_t>( gr, rtOptions );
 	sample::renderGraph2( gr, result.second, vs2[0]+"_color" );
 	return result.first;
 }

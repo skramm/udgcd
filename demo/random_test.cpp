@@ -113,7 +113,8 @@ int main( int argc, const char** argv )
 	SaveGraph( g, std::to_string(current_time) );
 	sample::renderGraph( g, "gen_" + std::to_string(current_time) );
 
-	auto result = sample::processGraph<graph_t,vertex_t>( g );
+	udgcd::RunTimeOptions rtOptions;
+	auto result = sample::processGraph<graph_t,vertex_t>( g, rtOptions );
 
 	return result.first;
 }
