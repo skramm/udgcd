@@ -23,6 +23,7 @@ These are sorted with the smallest vertex in first position, and such as the sec
 - beta, may produce a result, no guarantee at all (this is a stalled project)
 - Author: Sebastien Kramm
 - Latest news:
+  - 2023-07-17: (**major update**) Algorithm improvment, now much more efficient, see [details here](misc/tree_stripping.md)
   - 2023-07-03: was reported to [build on Windows using VisualStudio](https://github.com/skramm/udgcd/issues/4#issuecomment-1611426339)
   - 2020-06-09: experimental code and preliminar release, source is pretty messy, but it works fine, give it a try (instructions below).
 - Released under the Boost licence.
@@ -75,7 +76,7 @@ This will copy the file in `/usr/local/include/`
 Some additional apps are included, that are build by the makefile:
  - `read_graph.cpp`: reads graph from a text file given as argument, computes its cycles, prints them and generate the corresponding dot file.
  - `random_test.cpp`: generates a random graph computes its cycles, prints them and generate the corresponding dot file.
- - `sample_?.cpp`: c++ apps that build a graph and computes its cycles.
+ - `sample_?.cpp`: C++ apps that build a graph and computes its cycles.
 
 #### Build options:
  - The provided makefile is not requested to use the library, as it is "header-only".

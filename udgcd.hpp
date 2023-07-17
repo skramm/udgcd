@@ -464,6 +464,75 @@ struct IncidenceMatrix : public BinaryMatrix
 #endif
 
 namespace udgcd {
+
+//-------------------------------------------------------------------------------------------
+/// Holds information on the cycle detection process
+/// (nb of cycles at each step and timing information)
+struct UdgcdInfo
+{
+	size_t nbRawCycles      = 0;
+	size_t nbStrippedCycles = 0;
+	size_t nbNonChordlessCycles = 0;
+	size_t nbFinalCycles  = 0;
+	size_t nbSourceVertex = 0;
+	int maxDepth = 0;
+
+	std::vector<
+		std::pair<
+			std::string,
+			std::chrono::time_point<std::chrono::high_resolution_clock>
+		>
+	> timePoints;
+
+	bool printTrees = false;
+
+public:
+    void setTimeStamp( const char* stepName=0 )
+    {
+		std::string s;
+		if( stepName )
+			s = stepName;
+		timePoints.push_back( std::make_pair( s, std::chrono::high_resolution_clock::now() ) );
+    }
+
+	void print( std::ostream& f ) const
+	{
+		f << "UdgcdInfo:"
+			<< "\n - nbRawCycles="      << nbRawCycles
+			<< "\n - nbSourceVertex="   << nbSourceVertex
+			<< "\n - nbStrippedCycles=" << nbStrippedCycles
+			<< "\n - nbNonChordlessCycles=" << nbNonChordlessCycles
+			<< "\n - nbFinalCycles=" << nbFinalCycles
+			<< "\n - maxDepth="      << maxDepth
+			<< "\n - Duration per step:\n";
+			for( size_t i=0; i<timePoints.size()-1; i++ )
+			{
+				auto dur = timePoints[i+1].second - timePoints[i].second;
+				f <<  "step " << i+1 << " ("
+				<< timePoints[i].first << "): "
+				<< std::chrono::duration_cast<std::chrono::milliseconds>(dur).count() << " ms\n";
+			}
+	}
+
+	void printCSV( std::ostream& f ) const
+	{
+		auto siz = timePoints.size();
+		char sep=';';
+		f << nbRawCycles << sep
+			<< nbStrippedCycles << sep
+			<< nbNonChordlessCycles << sep
+			<< nbFinalCycles << sep;
+		for( size_t i=0; i<siz-1; i++ )
+		{
+			auto d = timePoints[i+1].second - timePoints[i].second;
+			f << std::chrono::duration_cast<std::chrono::milliseconds>(d).count();
+			if( i != siz-2 )
+				f << sep;
+		}
+		f << "\n";
+	}
+};
+
 namespace priv {
 
 //-------------------------------------------------------------------------------------------
@@ -707,13 +776,13 @@ printTrees( const std::vector<tree_t>&  vtrees ) //, const char* msg=nullptr )
 	for( const auto& tree: vtrees )
 	{
 		std::ostringstream oss;
-		oss << "tree_" << i++;
+//		oss << "tree_" << i++;
 		printTree( tree, oss.str() );
 	}
 }
 
 //-------------------------------------------------------------------------------------------
-/// Assumes the initial node is already set
+/// Assumes the initial node of the tree is already set
 template<typename T, typename tree_t>
 void
 addCycleToTree(
@@ -768,12 +837,9 @@ searchCycleInTree(
 {
 	static int depth;
 	depth++;
-	UDGCD_COUT << __FUNCTION__ << "()" << " depth=" << depth << " currVertex=" << currVertex << " idx=" << tree[currVertex].idx << " cyIdx=" << cyIdx << " cycle=";
-//	printVector( std::cout, cycle );
 
-	if( cyIdx+1 == cycle.size() )   // if last element,no more exploration of the tree is needed
+	if( cyIdx+1 == cycle.size() )   // if last element of cycle, no more exploration of the tree is needed
 	{
-		UDGCD_COUT << __FUNCTION__ << "() END: depth=" << depth << " currVertex=" << currVertex << " idx=" << tree[currVertex].idx << " cyIdx=" << cyIdx << " return true (last elem)\n";
 		depth--;
 		return true;
 	}
@@ -787,16 +853,13 @@ searchCycleInTree(
 		UDGCD_COUT << "currVertex=" << currVertex << " idx=" << tree[currVertex].idx << '\n';
 		if( tree[currVertex].idx == cycle[cyIdx+1] )  // correspondance at this level, lets get further down
 		{
-			UDGCD_COUT << " -found vertex, going next level\n"; //) END: depth=" << depth << " current=" << currVertex << " idx=" << tree[currVertex].idx << " cyIdx=" << cyIdx << " return TRUE\n";
 			cyIdx = cyIdx+1;
 			found = searchCycleInTree( tree, currVertex, cycle, cyIdx ); // explore further on
-			UDGCD_COUT << " -back from level, found=" << found << "\n"; //__FUNCTION__ << "() END: depth=" << depth << " current=" << currVertex << " idx=" << tree[currVertex].idx << " cyIdx=" << cyIdx << " return TRUE\n";
 		}
 	}
 	if( !found ) // path not found in tree, we set the current vertex to the one we began with
 		currVertex = current;
 
-	UDGCD_COUT << __FUNCTION__ << "() END: depth=" << depth << " current=" << currVertex << " idx=" << tree[currVertex].idx << " cyIdx=" << cyIdx << " return found=" << found << "\n";
 	depth--;
 	return found;
 }
@@ -850,8 +913,11 @@ addCycleToTrees(
 	}
 }
 
-#if 1
+} // namespace tree
+
+#if 0
 //-------------------------------------------------------------------------------------------
+namespace tree {
 template<typename T, typename graph_t>
 std::vector<std::vector<T>>
 strip(
@@ -939,53 +1005,45 @@ Example:
 However, the output vector has a size usually less than 10 times less the size of the input vector.
 Thus there might be some memory saving to do here.
 
-\todo Most of the time spend here is probably in the find() function. An improvement can probably be done by
-storing the cycles in a tree, as they are normalized (or are they?)
-
 \sa findTrueCycle()
 */
 template<typename T, typename graph_t>
 std::vector<std::vector<T>>
 stripCycles(
 	const std::vector<std::vector<T>>& v_cycles,
-	const graph_t& gr
+	const graph_t&                     gr,
+	const UdgcdInfo&            info
 )
 {
 	PRINT_FUNCTION;
 //	std::cout << __FUNCTION__ << "(): size=" << v_cycles.size() << "\n";
 	assert( v_cycles.size() );
 
-	auto nbv = boost::num_vertices(gr);
 	std::vector<std::vector<T>> out;
 	out.reserve( v_cycles.size() );
 
-#ifdef UDGCD_DEV_MODE
-	int i=0;
-#endif
 	using tree_t = boost::adjacency_list<
 			boost::vecS,
 			boost::vecS,
 			boost::directedS,
-			TreeVertex
+			tree::TreeVertex
 		>;
-	std::vector<tree_t> vtrees(nbv);
+
+/* say we have a graph with 5 vertices (0-1-2-3-4). Then we need at most 3 trees, because the paths will be sorted.
+So a path like 3-4-0 will be stored in the tree '0', as 0-3-4 */
+	std::vector<tree_t> vtrees( boost::num_vertices(gr) - 2 );
 
 	for( const auto& cycle: v_cycles )
 	{
 		auto newcy = findTrueCycle( cycle );
 		assert( newcy.size()>2 );
-#ifdef UDGCD_DEV_MODE
-		UDGCD_COUT << i++ << "-BEFORE: ";
-		printVector( std::cout, cycle );
-		UDGCD_COUT << i << "-AFTER:  ";
-		printVector( std::cout, newcy );
-#endif
 		if( !addCycleToTrees( newcy, vtrees ) )
 			out.push_back( newcy );
-#ifdef UDGCD_DEV_MODE
-		printTrees( vtrees );
-#endif
 	}
+
+	if( info.printTrees )
+		printTrees( vtrees );
+
 	return out;
 }
 
@@ -2161,70 +2219,6 @@ checkCycles( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& gr )
 } // namespace priv
 
 //-------------------------------------------------------------------------------------------
-/// Holds information on the cycle detection process
-/// (nb of cycles at each step and timing information)
-struct UdgcdInfo
-{
-	size_t nbRawCycles      = 0;
-	size_t nbStrippedCycles = 0;
-	size_t nbNonChordlessCycles = 0;
-	size_t nbFinalCycles  = 0;
-	size_t nbSourceVertex = 0;
-	int maxDepth = 0;
-
-	std::vector<
-		std::pair<
-			std::string,
-			std::chrono::time_point<std::chrono::high_resolution_clock>
-		>
-	> timePoints;
-
-    void setTimeStamp( const char* stepName=0 )
-    {
-		std::string s;
-		if( stepName )
-			s = stepName;
-		timePoints.push_back( std::make_pair( s, std::chrono::high_resolution_clock::now() ) );
-    }
-
-	void print( std::ostream& f ) const
-	{
-		f << "UdgcdInfo:"
-			<< "\n - nbRawCycles="      << nbRawCycles
-			<< "\n - nbSourceVertex="   << nbSourceVertex
-			<< "\n - nbStrippedCycles=" << nbStrippedCycles
-			<< "\n - nbNonChordlessCycles=" << nbNonChordlessCycles
-			<< "\n - nbFinalCycles=" << nbFinalCycles
-			<< "\n - maxDepth="      << maxDepth
-			<< "\n - Duration per step:\n";
-			for( size_t i=0; i<timePoints.size()-1; i++ )
-			{
-				auto dur = timePoints[i+1].second - timePoints[i].second;
-				f <<  "step " << i+1 << " ("
-				<< timePoints[i].first << "): "
-				<< std::chrono::duration_cast<std::chrono::milliseconds>(dur).count() << " ms\n";
-			}
-	}
-
-	void printCSV( std::ostream& f ) const
-	{
-		auto siz = timePoints.size();
-		char sep=';';
-		f << nbRawCycles << sep
-			<< nbStrippedCycles << sep
-			<< nbNonChordlessCycles << sep
-			<< nbFinalCycles << sep;
-		for( size_t i=0; i<siz-1; i++ )
-		{
-			auto d = timePoints[i+1].second - timePoints[i].second;
-			f << std::chrono::duration_cast<std::chrono::milliseconds>(d).count();
-			if( i != siz-2 )
-				f << sep;
-		}
-		f << "\n";
-	}
-};
-//-------------------------------------------------------------------------------------------
 /// Cycle detector for an undirected graph
 /**
 Passed by value as visitor to \c boost::undirected_dfs()
@@ -2276,7 +2270,10 @@ Returns a vector of cycles that have been found in the graph
 */
 template<typename graph_t, typename vertex_t>
 std::vector<std::vector<vertex_t>>
-findCycles( graph_t& gr, UdgcdInfo& info )
+findCycles(
+	graph_t&              gr,
+	UdgcdInfo&            info
+)
 {
 	PRINT_FUNCTION;
 
@@ -2329,7 +2326,7 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 //////////////////////////////////////
 
 	info.setTimeStamp( "clean cycles" );
-	auto v_cycles0 = priv::stripCycles( v_cycles, gr );
+	auto v_cycles0 = priv::stripCycles( v_cycles, gr, info );
 	info.nbStrippedCycles = v_cycles0.size();
 
 // SORTING

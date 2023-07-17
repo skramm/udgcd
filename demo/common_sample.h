@@ -741,7 +741,6 @@ The first value is 0 in case of success, -1 if incorrect cycles were found.
 If other value, it is the absolute number of differences between:
 - the \b computed number of cycles
 - and the \b expected number of cycles
-
 */
 template<typename graph_t,typename vertex_t>
 std::pair<int,std::vector<std::vector<vertex_t>>>
