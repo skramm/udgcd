@@ -843,11 +843,13 @@ searchCycleInTree(
 	tree_t&               tree, ///< current tree
 	typename boost::graph_traits<tree_t>::vertex_descriptor& currVertex, ///< current vertex in tree
 	const std::vector<T>& cycle, ///< the cycle we are investigating
-	size_t&               cyIdx  ///< current index in the cycle (this is a recursive function, so we need to know where we are)
+	size_t&               cyIdx,  ///< current index in the cycle (this is a recursive function, so we need to know where we are)
+	typename boost::graph_traits<tree_t>::vertex_descriptor& lastGoodVertex
 )
 {
 	static int depth;
 	depth++;
+	UDGCD_COUT << "start, depth=" << depth << " currVertex=" << currVertex << " idx=" << tree[currVertex].idx << " lastGoodVertex=" << lastGoodVertex << '\n';
 
 	if( cyIdx+1 == cycle.size() )   // if last element of cycle, no more exploration of the tree is needed
 	{
@@ -857,21 +859,23 @@ searchCycleInTree(
 
 // We iterate on each leaf and check if the cycle element is there
 	bool found = false;
-	auto current = currVertex;
-	for( auto oei = boost::out_edges( current, tree ); oei.first != oei.second; ++oei.first )
+	lastGoodVertex = currVertex;
+	for( auto oei = boost::out_edges( currVertex, tree ); oei.first != oei.second; ++oei.first )
 	{
 		currVertex = boost::target( *oei.first, tree );
-		UDGCD_COUT << "currVertex=" << currVertex << " idx=" << tree[currVertex].idx << '\n';
+		UDGCD_COUT << "loop: currVertex=" << currVertex << " idx=" << tree[currVertex].idx << '\n';
 		if( tree[currVertex].idx == cycle[cyIdx+1] )  // correspondance at this level, lets get further down
 		{
 			cyIdx = cyIdx+1;
-			found = searchCycleInTree( tree, currVertex, cycle, cyIdx ); // explore further on
+			UDGCD_COUT << "equal, search further\n";
+			found = searchCycleInTree( tree, currVertex, cycle, cyIdx, lastGoodVertex ); // explore further on
 		}
 	}
-	UDGCD_COUT << "BEFORE currVertex=" << currVertex << '\n';
-	if( !found ) // path not found in tree, we set the current vertex to the one we began with
-		currVertex = current;
-	UDGCD_COUT << "AFTER currVertex=" << currVertex << '\n';
+//	UDGCD_COUT << "BEFORE currVertex=" << currVertex << " idx=" << tree[currVertex].idx << " found=" << found << '\n';
+//	if( !found ) // path not found in tree, we set the current vertex to the one we began with
+//		currVertex = current;
+//	UDGCD_COUT << "END currVertex=" << currVertex << " idx=" << tree[currVertex].idx << '\n';
+	UDGCD_COUT << "END, depth=" << depth << " currVertex=" << currVertex << ",idx=" << tree[currVertex].idx << " lastGoodVertex=" << lastGoodVertex << ",idx=" << tree[lastGoodVertex].idx << '\n';
 
 	depth--;
 	return found;
@@ -915,26 +919,30 @@ addCycleToTrees(
 	else
 	{
 		typename boost::graph_traits<tree_t>::vertex_descriptor currVertex = 0;
+		typename boost::graph_traits<tree_t>::vertex_descriptor lastGoodVertex = 0;
 		size_t cyIdx = 0;
-		auto found = searchCycleInTree( tree, currVertex, cycle, cyIdx );
+		auto found = searchCycleInTree( tree, currVertex, cycle, cyIdx, lastGoodVertex );
 
 		if( !found ) // add remaining elements of cycle in the tree
 		{
-			UDGCD_COUT << "not found, adding remaining elements of cycle, currVertex= "<< currVertex << " idx=" << tree[currVertex].idx << "\n";
+			UDGCD_COUT << "not found, adding remaining elements of cycle, lastGoodVertex= "<< lastGoodVertex << " idx=" << tree[lastGoodVertex].idx << "\n";
 			for( size_t i=cyIdx+1; i<cycle.size(); i++ )
 			{
-				UDGCD_COUT << "i=" << i << " adding elem " << cycle[i] << " edge: from " << tree[currVertex].idx << "\n";
+				UDGCD_COUT << "i=" << i << " adding elem " << cycle[i] << " edge: from " << tree[lastGoodVertex].idx << "\n";
 				auto newV = boost::add_vertex( tree );
 				tree[newV].idx = cycle[i];
-				boost::add_edge( currVertex, newV, tree );
-				currVertex = newV;
+				boost::add_edge( lastGoodVertex, newV, tree );
+				lastGoodVertex = newV;
 			}
 #ifdef UDGCD_DEV_MODE
-			static int index;
-			std::ostringstream oss;
-			oss << "tmp_" << firstNode << "_" << index++;
-			printTree( tree, oss.str() );
-			UDGCD_COUT << "tree saved to " << oss.str() << "\n";
+			if( cycle.size() > cyIdx+1 )
+			{
+				static int index;
+				std::ostringstream oss;
+				oss << "tmp_" << firstNode << "_" << index++;
+				printTree( tree, oss.str() );
+				UDGCD_COUT << "tree saved to " << oss.str() << "\n";
+			}
 #endif
 		}
 		return found;

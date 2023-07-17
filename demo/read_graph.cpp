@@ -39,33 +39,34 @@ int main( int argc, const char** argv )
 		std::cout << "missing input filename, exit.\n";
 		return 1;
 	}
-	auto vs = sample::splitString( argv[argc-1], '.' );
+	std::string fname = argv[argc-1];
+	auto vs = sample::splitString( fname, '.' );
 	if( vs.size() < 2 )
 	{
-		std::cerr << "Error, input file '" <<  argv[1] << "' has no extension\n";
+		std::cerr << "Error, input file '" << fname << "' has no extension\n";
 		return 1;
 	}
 
 	graph_t gr;
 	if( vs.back() == "dot" )
 	{
-		gr = sample::loadGraph_dot<graph_t>( argv[1] );
+		gr = sample::loadGraph_dot<graph_t>( fname );
 	}
 	else
 	{
 		if( vs.back() == "txt" )
 		{
-			gr = sample::loadGraph_txt<graph_t>( argv[1] );
+			gr = sample::loadGraph_txt<graph_t>( fname );
 		}
 		else
 		{
-			std::cerr << "Error, input file '" <<  argv[1] << "' extension invalid\n";
+			std::cerr << "Error, input file '" <<  fname << "' extension invalid\n";
 			return 1;
 		}
 	}
 
 
-	auto vs1 = sample::splitString( argv[1], '/' );      // splits by '/', and keep the last one (filename)
+	auto vs1 = sample::splitString( fname, '/' );      // splits by '/', and keep the last one (filename)
 	auto vs2 = sample::splitString( vs1.back(), '.' );     // splits by the point (if any)
 	sample::renderGraph( gr, vs2[0] );
 

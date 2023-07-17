@@ -504,7 +504,7 @@ will generate a graph of 6 vertices (0 to 5), with only 0 and 1 connected.
 */
 template<typename graph_t>
 graph_t
-loadGraph_dot( const char* fname )
+loadGraph_dot( std::string fname )
 {
 	std::cout<< " - Reading file:" << fname << '\n';
 	std::ifstream f( fname );
@@ -648,7 +648,7 @@ loadGraph_dot( const char* fname )
 /// Load graph from custom simple text format
 template<typename graph_t>
 graph_t
-loadGraph_txt( const char* fname )
+loadGraph_txt( std::string fname )
 {
 	graph_t g;
 
