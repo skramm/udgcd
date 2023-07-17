@@ -751,7 +751,7 @@ processGraph( graph_t& g, const udgcd::RunTimeOptions& rtOptions )
 	udgcd::UdgcdInfo info;
 	info.runTime = rtOptions;
 	auto cycles = udgcd::findCycles<graph_t,vertex_t>( g, info );
-//	udgcd::printPaths( std::cout, cycles, "final" );
+
 	if( expected != cycles.size() )
 		std::cout << "ERROR: computed nb of cycles is not what expected (expected=" << expected << ")\n";
 

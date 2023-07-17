@@ -13,6 +13,7 @@ Inspired from http://www.boost.org/doc/libs/1_58_0/libs/graph/example/undirected
 
 \todo 2020-03-09: add a data structure that can measure the run-time depth of the recursive functions
 
+\todo Check memory usage with `$ valgrind --tool=massif`
 See file README.md
 */
 
@@ -790,30 +791,32 @@ printTrees( const std::vector<tree_t>&  vtrees )
 }
 
 //-------------------------------------------------------------------------------------------
-/// Assumes the initial node of the tree is already set
+/// Adds the \c cycle to the \c tree.
 template<typename T, typename tree_t>
 void
-addCycleToTree(
+addCycleToNewTree(
 	tree_t&               tree,
-	const std::vector<T>& cycle,
-	typename boost::graph_traits<tree_t>::vertex_descriptor topNode
+	const std::vector<T>& cycle
 )
 {
 	PRINT_FUNCTION;
-#ifdef UDGCD_DEVMODE
-	std::cout << "current tree idx=" << tree[topNode].idx << "\n";
-	printVector(std::cout, cycle, "cycle to add" );
-#endif
 
-	auto u = topNode;
-	for( T i=0; i<cycle.size()-1; i++ )
+#ifdef UDGCD_DEV_MODE
+	printVector( std::cout, cycle, "cycle to add" );
+#endif
+	assert( boost::num_vertices(tree) == 0 );
+
+	auto u = boost::add_vertex( tree ); // create initial vertex
+	tree[u].idx = cycle.front();
+
+	for( size_t i=0; i<cycle.size()-1; i++ )
 	{
 		auto v = boost::add_vertex(tree);
 		tree[v].idx = cycle[i+1];
 		boost::add_edge( u, v, tree );
 		u = v;
 	}
-#ifdef UDGCD_DEVMODE
+#ifdef UDGCD_DEV_MODE
 	boost::print_graph( tree, boost::get(&TreeVertex::idx, tree), std::cout );
 #endif
 }
@@ -883,27 +886,35 @@ template<typename T, typename tree_t>
 bool
 addCycleToTrees(
 	const std::vector<T>& cycle,
-	std::vector<tree_t>&  vtrees
+	std::vector<tree_t>&  vtrees ///< array of trees
 )
 {
 	PRINT_FUNCTION;
 
+#ifdef UDGCD_DEV_MODE
+	printVector( std::cout, cycle, "addCycleToTrees()" );
+#endif
 // if tree starting with initial node equal to first one in path does not exist, then build it
 	auto firstNode = cycle.front();
 	UDGCD_ASSERT_2( firstNode < vtrees.size(), firstNode, vtrees.size() );
 	auto& tree = vtrees[firstNode];
 	if( boost::num_vertices( tree ) == 0 )
 	{
-		auto topNode = boost::add_vertex( tree );
-		tree[topNode].idx = firstNode;
-		addCycleToTree( tree, cycle, topNode );
+		addCycleToNewTree( tree, cycle );
+#ifdef UDGCD_DEV_MODE
+			std::ostringstream oss;
+			oss << "tmp_" << firstNode << "_INIT";
+			printTree( tree, oss.str() );
+			UDGCD_COUT << "tree saved to " << oss.str() << "\n";
+#endif
+
 		return false;
 	}
 	else
 	{
 		typename boost::graph_traits<tree_t>::vertex_descriptor currVertex = 0;
 		size_t cyIdx = 0;
-		auto found = searchCycleInTree( vtrees[firstNode], currVertex, cycle, cyIdx );
+		auto found = searchCycleInTree( tree, currVertex, cycle, cyIdx );
 
 		if( !found ) // add remaining elements of cycle in the tree
 		{
@@ -916,6 +927,13 @@ addCycleToTrees(
 				boost::add_edge( currVertex, newV, tree );
 				currVertex = newV;
 			}
+#ifdef UDGCD_DEV_MODE
+			static int index;
+			std::ostringstream oss;
+			oss << "tmp_" << firstNode << "_" << index++;
+			printTree( tree, oss.str() );
+			UDGCD_COUT << "tree saved to " << oss.str() << "\n";
+#endif
 		}
 		return found;
 	}
@@ -1003,7 +1021,7 @@ stripCycles(
 //	printPaths( std::cout, v1, "sorted" );
 	return tree::storeUnique( v1, gr, info );
 }
-#else
+#else // 0-1
 //-------------------------------------------------------------------------------------------
 /// Removes for each cycle the vertices that are not part of the cycle.
 /**
@@ -2329,7 +2347,7 @@ findCycles(
 
 	info.nbRawCycles = v_cycles.size();
 	UDGCD_COUT << "-Nb initial cycles: " << info.nbRawCycles << '\n';
-//	printPaths( std::cout, v_cycles, "raw cycles" );
+	printPaths( std::cout, v_cycles, "raw cycles" );
 
 //////////////////////////////////////
 // step 3 (post process): cleanout the cycles by removing the vertices that are not part of the cycle and sort
@@ -2338,6 +2356,8 @@ findCycles(
 	info.setTimeStamp( "clean cycles" );
 	auto v_cycles0 = priv::stripCycles( v_cycles, gr, info );
 	info.nbStrippedCycles = v_cycles0.size();
+
+	printPaths( std::cout, v_cycles0, "stripped cycles" );
 
 // SORTING
 	info.setTimeStamp( "sorting" );
