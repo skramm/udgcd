@@ -868,8 +868,10 @@ searchCycleInTree(
 			found = searchCycleInTree( tree, currVertex, cycle, cyIdx ); // explore further on
 		}
 	}
+	UDGCD_COUT << "BEFORE currVertex=" << currVertex << '\n';
 	if( !found ) // path not found in tree, we set the current vertex to the one we began with
 		currVertex = current;
+	UDGCD_COUT << "AFTER currVertex=" << currVertex << '\n';
 
 	depth--;
 	return found;
@@ -918,7 +920,7 @@ addCycleToTrees(
 
 		if( !found ) // add remaining elements of cycle in the tree
 		{
-			UDGCD_COUT << "not found, adding remaining elements of cycle\n";
+			UDGCD_COUT << "not found, adding remaining elements of cycle, currVertex= "<< currVertex << " idx=" << tree[currVertex].idx << "\n";
 			for( size_t i=cyIdx+1; i<cycle.size(); i++ )
 			{
 				UDGCD_COUT << "i=" << i << " adding elem " << cycle[i] << " edge: from " << tree[currVertex].idx << "\n";

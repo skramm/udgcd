@@ -1,0 +1,33 @@
+# see https://en.wikipedia.org/wiki/Tietze%27s_graph
+
+
+graph G {
+
+0[root="true"];
+
+# inner triangle
+0--1;
+1--2;
+2--0;
+
+
+# outside perimeter
+3--4;
+4--5;
+5--6;
+6--7;
+7--8;
+8--9;
+9--10;
+10--11;
+
+
+0--3;
+1--6;
+2--9;
+
+4--8;
+5--10;
+7--11;
+}
+
