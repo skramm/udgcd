@@ -11,9 +11,8 @@ Home page: https://github.com/skramm/udgcd
 
 Inspired from http://www.boost.org/doc/libs/1_58_0/libs/graph/example/undirected_dfs.cpp
 
-\todo 2020-03-09: add a data structure that can measure the run-time depth of the recursive functions
-
 \todo Check memory usage with `$ valgrind --tool=massif`
+
 See file README.md
 */
 
@@ -470,13 +469,16 @@ namespace udgcd {
 /// holds runtime flags (replicated in UdgcdInfo to minimize number of parameters
 struct RunTimeOptions
 {
-	bool printTrees = true; //false;
-	bool printCycles = true;
+	bool printTrees = false;
+	bool printCycles = false;
 
 };
 //-------------------------------------------------------------------------------------------
 /// Holds information on the cycle detection process
 /// (nb of cycles at each step and timing information)
+/**
+Also holds some runtime options (\se RunTimeOptions)
+*/
 struct UdgcdInfo
 {
 	size_t nbRawCycles      = 0;
@@ -484,7 +486,7 @@ struct UdgcdInfo
 	size_t nbNonChordlessCycles = 0;
 	size_t nbFinalCycles  = 0;
 	size_t nbSourceVertex = 0;
-	int maxDepth = 0;
+	int maxDepth = 0;           ///< post-DFS max explore depth
 
 	std::vector<
 		std::pair<
@@ -909,7 +911,7 @@ addCycleToTrees(
 		addCycleToNewTree( tree, cycle );
 #ifdef UDGCD_DEV_MODE
 			std::ostringstream oss;
-			oss << "tmp_" << firstNode << "_INIT";
+			oss << "tree_tmp_" << firstNode << "_0";
 			printTree( tree, oss.str() );
 			UDGCD_COUT << "tree saved to " << oss.str() << "\n";
 #endif
@@ -937,9 +939,9 @@ addCycleToTrees(
 #ifdef UDGCD_DEV_MODE
 			if( cycle.size() > cyIdx+1 )
 			{
-				static int index;
+				static int index=1;
 				std::ostringstream oss;
-				oss << "tmp_" << firstNode << "_" << index++;
+				oss << "tree_tmp_" << firstNode << "_" << index++;
 				printTree( tree, oss.str() );
 				UDGCD_COUT << "tree saved to " << oss.str() << "\n";
 			}

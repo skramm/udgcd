@@ -146,10 +146,16 @@ This step is the most time-consuming.
 - The third steps does some post-processing:
 sort cycles by decreasing length, and do Gaussian Elimination to retain a Minimal Cycle Basis (MCB).
 
+### Dependencies
+
+- boost::graph - https://www.boost.org/doc/libs/1_82_0/libs/graph/doc/
+(warning: boost graph itself has a lot of other boost dependencies)
+- boost::dynamic_bitset https://www.boost.org/doc/libs/1_82_0/libs/dynamic_bitset/dynamic_bitset.html
+
+
 ### References
 <a name="s_ref"></a>
 
-- BGL: http://www.boost.org/doc/libs/1_59_0/libs/graph/doc
 - https://en.wikipedia.org/wiki/Cycle_basis
 - J. D. Horton, <i>A polynomial-time algorithm to find a shortest cycle basis of a graph</i>, SIAM Journal of Computing 16, 1987, pp. 359–366
 [link](https://epubs.siam.org/doi/10.1137/0216026).

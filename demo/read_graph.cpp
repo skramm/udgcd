@@ -18,6 +18,15 @@ Also generates a .dot file that can be graphically rendered with Graphviz
 std::string prog_id = "read_graph";
 #include "common_sample.h"
 
+/// help function
+/// \sa RunTimeOptions
+void help()
+{
+	std::cout << "Options" \
+		"\n -t: print cycles as trees" \
+		"\n -p: print produced cycles" \
+		"\n";
+}
 
 //-------------------------------------------------------------------
 /// see read_graph.cpp
@@ -36,7 +45,8 @@ int main( int argc, const char** argv )
 
 	if( argc < 2 )
 	{
-		std::cout << "missing input filename, exit.\n";
+		std::cout << "missing input filename, exit\n";
+		help();
 		return 1;
 	}
 	std::string fname = argv[argc-1];
@@ -70,6 +80,8 @@ int main( int argc, const char** argv )
 	auto vs2 = sample::splitString( vs1.back(), '.' );     // splits by the point (if any)
 	sample::renderGraph( gr, vs2[0] );
 
+	udgcd::RunTimeOptions rtOptions;
+
 	bool noProcess(false);
 	bool verbose(false);
 	if( argc > 2 )
@@ -81,12 +93,15 @@ int main( int argc, const char** argv )
 				noProcess = true;
 			if( a == "-v" )
 				verbose = true;
+			if( a == "-t" )
+				rtOptions.printTrees = true;
+			if( a == "-p" )
+				rtOptions.printCycles = true;
 		}
 	}
 	if( noProcess )
 		return 0;
 
-	udgcd::RunTimeOptions rtOptions;
 	auto result = sample::processGraph<graph_t,vertex_t>( gr, rtOptions );
 	sample::renderGraph2( gr, result.second, vs2[0]+"_color" );
 	return result.first;

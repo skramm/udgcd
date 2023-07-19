@@ -152,6 +152,11 @@ doc:
 	doxygen misc/doxyfile 1>build/doxygen.stdout 2>build/doxygen.stderr
 	xdg-open build/html/index.html
 
+doc2:
+	make runsam -j4
+	make svg -j4
+	make doc
+
 clean:
 	@-rm $(OBJ_DIR)/*
 	@-rm $(BIN_DIR)/*
