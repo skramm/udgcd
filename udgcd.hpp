@@ -471,6 +471,8 @@ struct RunTimeOptions
 {
 	bool printTrees = false;
 	bool printCycles = false;
+	bool printHistogram = false;
+	bool doChecking = false;
 
 };
 //-------------------------------------------------------------------------------------------
@@ -2359,7 +2361,9 @@ findCycles(
 
 	info.nbRawCycles = v_cycles.size();
 	UDGCD_COUT << "-Nb initial cycles: " << info.nbRawCycles << '\n';
+#ifdef UDGCD_DEV_MODE
 	printPaths( std::cout, v_cycles, "raw cycles" );
+#endif
 
 //////////////////////////////////////
 // step 3 (post process): cleanout the cycles by removing the vertices that are not part of the cycle and sort
@@ -2368,8 +2372,9 @@ findCycles(
 	info.setTimeStamp( "clean cycles" );
 	auto v_cycles0 = priv::stripCycles( v_cycles, gr, info );
 	info.nbStrippedCycles = v_cycles0.size();
-
+#ifdef UDGCD_DEV_MODE
 	printPaths( std::cout, v_cycles0, "stripped cycles" );
+#endif
 
 // SORTING
 	info.setTimeStamp( "sorting" );

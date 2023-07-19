@@ -30,7 +30,7 @@ These are sorted with the smallest vertex in first position, and such as the sec
 
 ### Features
 
-- Single-file, header only, OS agnostic
+- Single-file header only library, OS agnostic
 - Works for graphs holding unconnected sub-graphs.
 - Works for non-planar graphs
 - Modern C++ design (RAII), basic C++11.

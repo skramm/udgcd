@@ -7,7 +7,9 @@
 \file read_graph.cpp
 \brief Read a graph in a file, searches for cycles, and make sure these are correct.
 
-Also generates a .dot file that can be graphically rendered with Graphviz
+Also generates a .dot file in the `out/` folder, that can be graphically rendered with Graphviz (done with `$ make svg`).
+
+Has some runtime switches, see help()
 */
 
 #include <iostream>
@@ -22,9 +24,11 @@ std::string prog_id = "read_graph";
 /// \sa RunTimeOptions
 void help()
 {
-	std::cout << "Options" \
+	std::cout << "Options:" \
 		"\n -t: print cycles as trees" \
 		"\n -p: print produced cycles" \
+		"\n -h: print histogram of cycles length" \
+		"\n -c: does a checking of correctness of computed cycles" \
 		"\n";
 }
 
@@ -97,6 +101,11 @@ int main( int argc, const char** argv )
 				rtOptions.printTrees = true;
 			if( a == "-p" )
 				rtOptions.printCycles = true;
+			if( a == "-h" )
+				rtOptions.printHistogram = true;
+			if( a == "-c" )
+				rtOptions.doChecking = true;
+
 		}
 	}
 	if( noProcess )

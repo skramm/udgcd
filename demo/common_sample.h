@@ -480,7 +480,7 @@ The counterpart is that we do not read the vertices/edges properties that can be
 
 \warning This is a minimal reader, don't expect any fancy features.
 
-Limitation/features:  as we do not handle labels, the index in input file will be the BGL vertex index.<br>
+Limitation/features: as we do not handle labels, the index in input file will be the BGL vertex index.<br>
 Drawback: if a node is missing in input file, it will be in the generated graph, because BGL indexes are always
 consecutives.
 
@@ -761,24 +761,31 @@ processGraph( graph_t& g, const udgcd::RunTimeOptions& rtOptions )
 
 	if( rtOptions.printCycles )
 		udgcd::printPaths( std::cout, cycles, "final" );
-	auto check = udgcd::priv::checkCycles( cycles, g );
-	if( check.first != 0 )
+
+	if( rtOptions.doChecking )
 	{
-		std::cout << "ERROR: " << check.first << " incorrect cycles found\n";
-		return std::make_pair(-1, cycles );
-	}
-	if( check.second != 0 )
-	{
-		std::cout << "Found: " << check.second << " non chordless cycles\n";
+		auto check = udgcd::priv::checkCycles( cycles, g );
+		if( check.first != 0 )
+		{
+			std::cout << "ERROR: " << check.first << " incorrect cycles found\n";
+			return std::make_pair(-1, cycles );
+		}
+		if( check.second != 0 )
+		{
+			std::cout << "Found: " << check.second << " non chordless cycles\n";
+		}
 	}
 
 	info.print( std::cout );
 //	info.printCSV( std::cerr );
 
-	std::cout << "Histogram of cycle sizes:\n";
-	auto histog = buildSizeHistogram( cycles );
-	for( size_t i=0; i<histog.size(); i++ )
-		std::cout << i+3 << ":" << histog[i] << "\n";
+	if( rtOptions.printHistogram )
+	{
+		std::cout << "Histogram of cycle sizes:\n";
+		auto histog = buildSizeHistogram( cycles );
+		for( size_t i=0; i<histog.size(); i++ )
+			std::cout << i+3 << ":" << histog[i] << "\n";
+	}
 
 	auto diff = (int)cycles.size() - (int)expected;
 	return std::make_pair(diff, cycles );

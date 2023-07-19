@@ -39,6 +39,7 @@
 		<Unit filename="../wrapper_m4ri_convert.hpp" />
 		<Unit filename="doxyfile" />
 		<Unit filename="samples.h" />
+		<Unit filename="tree_stripping.md" />
 		<Extensions />
 	</Project>
 </CodeBlocks_project_file>
