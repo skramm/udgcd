@@ -20,7 +20,7 @@ Then we consider the candidate cycles one by one.
 The first cycle we find is 0-1-2-3-4.
 The tree #0 is empty, so we just store that cycle in it:
 
-![tree0](img/tree_tmp_0_0_dot.svg)
+![tree0](tree_tmp_0_0_dot.svg)
 
 The second we consider is 0-1-2-7-5. We parse the tree-#0 up to node 2 and, discovering it has no child 7, we add the rest of the cycle to node 2:
 
