@@ -20,21 +20,21 @@ Then we consider the candidate cycles one by one.
 The first cycle we find is 0-1-2-3-4.
 The tree #0 is empty, so we just store that cycle in it:
 
-\image html tree_tmp_0_0_dot.svg
-
+![tree0](img/tree_tmp_0_0_dot.svg)
 
 The second we consider is 0-1-2-7-5. We parse the tree-#0 up to node 2 and, discovering it has no child 7, we add the rest of the cycle to node 2:
-\image html tree_tmp_0_2_dot.svg
+
+![tree1](tree_tmp_0_2_dot.svg)
 
 Then, we consider the cycle 0-4-3-2-7-5. It is not present in the tree, so we store it:
 
-\image html tree_tmp_0_3_dot.svg
+![tree2](tree_tmp_0_3_dot.svg)
 
 
 This process iterates until all cycles are stored in the tree.
 And any already present cycle in it will not be stored:
 
-\image html tree_tmp_0_5_dot.svg
+![tree3](tree_tmp_0_5_dot.svg)
 
 
 
