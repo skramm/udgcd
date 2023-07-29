@@ -23,6 +23,7 @@ jobs:
         with:
           arch: x64
       - run: cd
+      - run: VER
       - run: dir
       - name: get boost
         run: curl https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.zip -O -J -L
@@ -31,5 +32,5 @@ jobs:
         run: unzip boost_1_82_0.zip
       - run: dir
       - name: run msvc
-        run: cl /EHsc /I graph-boost-1.82.0/include /showIncludes demo/sample_1.cpp
+        run: cl /EHsc /I boost_1_82_0/ /showIncludes demo/sample_1.cpp
 
