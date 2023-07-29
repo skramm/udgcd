@@ -80,9 +80,6 @@ DOT_FILES=$(wildcard out/*.dot)
 SVG_FILES=$(patsubst out/%.dot,out/svg/%_dot.svg,$(DOT_FILES))
 SVG_FILES+=$(patsubst out/%.dot,out/svg/%_neato.svg,$(DOT_FILES))
 
-# default target
-all: $(EXEC_FILES)
-	@echo "- Done target $@"
 
 help:
 	@echo "Available targets:"
@@ -100,17 +97,21 @@ help:
 	@echo " -PRINT_STEPS={Y|N} (default: N) : logs some steps to stdout"
 	@echo " -DEVMODE={Y|N} (default: N) : lots of additional logging on stdout (useless for end user)"
 
+all: $(EXEC_FILES)
+	@echo "- Done target $@"
+
 # runs once all the produced binaries
 run: all
 	$(addsuffix ;,$(EXEC_FILES))
+	@echo "- Done target $@"
 
 # runs on all generated samples
 rungen: $(GEN_GSAMPLES_OUTPUT) $(BIN_DIR)/read_graph
-	@echo "target $@ done"
+	@echo "- Done target $@"
 
 # runs cycle detection process on all provided samples
 runsam: clearlogfile $(GEN_SAMPLES_OUTPUT) $(BIN_DIR)/read_graph
-	@echo "target $@ done"
+	@echo "- Done target $@"
 
 
 clearlogfile: makefile
