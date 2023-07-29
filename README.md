@@ -20,8 +20,7 @@ These are sorted with the smallest vertex in first position, and such as the sec
 <a name="s_stat"></a>
 
 - Home page: https://github.com/skramm/udgcd
-- beta, may produce a result, no guarantee at all (this is a stalled project)
-- Author: Sebastien Kramm
+- Author: Sebastien Kramm, firstname.lastname@univ-rouen.fr
 - Latest news:
   - 2023-07-17: (**major update**) Algorithm improvment, now much more efficient, see [details here](misc/tree_stripping.md)
   - 2023-07-03: was reported to [build on Windows using VisualStudio](https://github.com/skramm/udgcd/issues/4#issuecomment-1611426339)
