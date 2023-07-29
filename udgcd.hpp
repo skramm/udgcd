@@ -11,7 +11,7 @@ Home page: https://github.com/skramm/udgcd
 
 Inspired from http://www.boost.org/doc/libs/1_58_0/libs/graph/example/undirected_dfs.cpp
 
-\todo 2020-03-09: add a data structure that can measure the run-time depth of the recursive functions
+\todo Check memory usage with `$ valgrind --tool=massif`
 
 See file README.md
 */
@@ -27,6 +27,10 @@ See file README.md
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/undirected_dfs.hpp>
 #include <boost/dynamic_bitset.hpp>       // needed ! Allows bitwise operations on dynamic size boolean vectors
+#include <boost/graph/graphviz.hpp>
+
+/// TEMP
+#include <boost/graph/graph_utility.hpp>
 
 #ifdef UDGCD_USE_M4RI
 	#include "wrapper_m4ri.hpp"
@@ -45,9 +49,12 @@ See file README.md
 	#include <iostream>
 	#define UDGCD_COUT if(1) std::cout << std::setw(4) << __LINE__ << ": "
 	#define UDGCD_PRINT_STEPS
+	#define UDGCD_ASSERT_2(a,b,c) if(!(a)) std::cout << "ASSERT FAILURE, line " << __LINE__ << ", b=" << b << " c=" << c << '\n'
+
 //	#define PRINT_DIFF( step, v_after, v_before ) std::cout << step << ": REMOVAL OF " << v_before.size() - v_after.size() << " cycles\n"
 #else
 	#define UDGCD_COUT if(0) std::cout
+	#define UDGCD_ASSERT_2(a,b,c) assert(a)
 //	#define PRINT_DIFF(a,b,c) ;
 #endif
 
@@ -57,8 +64,11 @@ namespace udgcd {
 //-------------------------------------------------------------------------------------------
 template<typename T>
 void
-printVector( std::ostream& f, const std::vector<T>& vec )
+printVector( std::ostream& f, const std::vector<T>& vec, const char* msg=nullptr )
 {
+	f << "#=" << vec.size() << ": ";
+	if( msg )
+		f << "(" << msg << ") ";
 	for( const auto& elem : vec )
 		f << elem << "-";
 	f << "\n";
@@ -454,6 +464,88 @@ struct IncidenceMatrix : public BinaryMatrix
 #endif
 
 namespace udgcd {
+
+//-------------------------------------------------------------------------------------------
+/// holds runtime flags (replicated in UdgcdInfo to minimize number of parameters
+struct RunTimeOptions
+{
+	bool printTrees = false;
+	bool printCycles = false;
+	bool printHistogram = false;
+	bool doChecking = false;
+
+};
+//-------------------------------------------------------------------------------------------
+/// Holds information on the cycle detection process
+/// (nb of cycles at each step and timing information)
+/**
+Also holds some runtime options (\se RunTimeOptions)
+*/
+struct UdgcdInfo
+{
+	size_t nbRawCycles      = 0;
+	size_t nbStrippedCycles = 0;
+	size_t nbNonChordlessCycles = 0;
+	size_t nbFinalCycles  = 0;
+	size_t nbSourceVertex = 0;
+	int maxDepth = 0;           ///< post-DFS max explore depth
+
+	std::vector<
+		std::pair<
+			std::string,
+			std::chrono::time_point<std::chrono::high_resolution_clock>
+		>
+	> timePoints;
+
+	RunTimeOptions runTime;
+
+public:
+    void setTimeStamp( const char* stepName=0 )
+    {
+		std::string s;
+		if( stepName )
+			s = stepName;
+		timePoints.push_back( std::make_pair( s, std::chrono::high_resolution_clock::now() ) );
+    }
+
+	void print( std::ostream& f ) const
+	{
+		f << "UdgcdInfo:"
+			<< "\n - nbRawCycles="      << nbRawCycles
+			<< "\n - nbSourceVertex="   << nbSourceVertex
+			<< "\n - nbStrippedCycles=" << nbStrippedCycles
+			<< "\n - nbNonChordlessCycles=" << nbNonChordlessCycles
+			<< "\n - nbFinalCycles=" << nbFinalCycles
+			<< "\n - maxDepth="      << maxDepth
+			<< "\n - Duration per step:\n";
+			for( size_t i=0; i<timePoints.size()-1; i++ )
+			{
+				auto dur = timePoints[i+1].second - timePoints[i].second;
+				f <<  "step " << i+1 << " ("
+				<< timePoints[i].first << "): "
+				<< std::chrono::duration_cast<std::chrono::milliseconds>(dur).count() << " ms\n";
+			}
+	}
+
+	void printCSV( std::ostream& f ) const
+	{
+		auto siz = timePoints.size();
+		char sep=';';
+		f << nbRawCycles << sep
+			<< nbStrippedCycles << sep
+			<< nbNonChordlessCycles << sep
+			<< nbFinalCycles << sep;
+		for( size_t i=0; i<siz-1; i++ )
+		{
+			auto d = timePoints[i+1].second - timePoints[i].second;
+			f << std::chrono::duration_cast<std::chrono::milliseconds>(d).count();
+			if( i != siz-2 )
+				f << sep;
+		}
+		f << "\n";
+	}
+};
+
 namespace priv {
 
 //-------------------------------------------------------------------------------------------
@@ -609,7 +701,7 @@ findTrueCycle( const std::vector<T>& cycle )
 			}
 		}
 	}
-	putSmallestElemFirst( out );   // if we have 4-3-2-1, then transform into 1-4-3-2
+	putSmallestElemFirst( out );   // if we have 4-3-2-1, then transform into 1-4-3-2 (rotate)
 
 	if( out.back() < out[1] )                     // if we have 1-4-3-2, then
 	{
@@ -617,9 +709,333 @@ findTrueCycle( const std::vector<T>& cycle )
 		putSmallestElemFirst( out );                // and put smallest first: 1-2-3-4
 	}
 
-//	UDGCD_COUT << "out: "; PrintVector( std::cout, out );
+//	UDGCD_COUT << "out: "; printVector( std::cout, out );
 	return out;
 }
+//-------------------------------------------------------------------------------------------
+/// Holds code related to using trees to sort unique cycles
+namespace tree {
+
+/// A tree node, that holds the idx of the node in the main graph
+/**
+Required, because in a tree, we can have several nodes with the same cycle index.
+*/
+struct TreeVertex
+{
+	size_t idx;
+};
+
+/// A class dedicated to printing trees in DOT format
+/**
+from: https://www.boost.org/doc/libs/1_82_0/libs/graph/doc/write-graphviz.html
+\sa make_label_writer_1()
+\sa printTree()
+*/
+template <class Name>
+class label_writer
+{
+public:
+	label_writer(Name _name) : name(_name) {}
+
+	template <class VertexOrEdge>
+	void operator()(std::ostream& out, const VertexOrEdge& v) const
+	{
+		out << "[label=\"" << name[v] << "\"";
+		if( v == 0 )
+			out << ",penwidth=\"2\"";
+		out << "]";
+	}
+private:
+	Name name;
+};
+
+/// \sa printTree()
+template < class Name >
+inline
+label_writer<Name>
+make_label_writer_1(Name n)
+{
+	return label_writer<Name>(n);
+}
+
+/// Saves tree in a DOT file, can be rendered with `$ make svg`
+template<typename tree_t>
+inline
+void
+printTree( const tree_t& tree, std::string name )
+{
+//	std::cout << name << " #v=" << boost::num_vertices(tree) << ":\n";
+///	boost::print_graph( tree, boost::get(&TreeVertex::idx, tree), std::cout );
+	std::ofstream f( "out/" + name + ".dot" );
+	assert( f.is_open() );
+	boost::write_graphviz(
+		f,
+		tree,
+		make_label_writer_1(
+			boost::get( &TreeVertex::idx, tree )
+		)
+	);
+}
+
+template<typename tree_t>
+void
+printTrees( const std::vector<tree_t>&  vtrees )
+{
+	PRINT_FUNCTION;
+/*	std::cout << "Trees: ";
+	if( msg )
+		std::cout << msg << "\n";*/
+	size_t i = 0;
+	for( const auto& tree: vtrees )
+	{
+		std::ostringstream oss;
+		oss << "tree_" << i++;
+		printTree( tree, oss.str() );
+	}
+}
+
+//-------------------------------------------------------------------------------------------
+/// Adds the \c cycle to the \c tree.
+template<typename T, typename tree_t>
+void
+addCycleToNewTree(
+	tree_t&               tree,
+	const std::vector<T>& cycle
+)
+{
+	PRINT_FUNCTION;
+
+#ifdef UDGCD_DEV_MODE
+	printVector( std::cout, cycle, "cycle to add" );
+#endif
+	assert( boost::num_vertices(tree) == 0 );
+
+	auto u = boost::add_vertex( tree ); // create initial vertex
+	tree[u].idx = cycle.front();
+
+	for( size_t i=0; i<cycle.size()-1; i++ )
+	{
+		auto v = boost::add_vertex(tree);
+		tree[v].idx = cycle[i+1];
+		boost::add_edge( u, v, tree );
+		u = v;
+	}
+#ifdef UDGCD_DEV_MODE
+	boost::print_graph( tree, boost::get(&TreeVertex::idx, tree), std::cout );
+#endif
+}
+//-------------------------------------------------------------------------------------------
+/// Recursive function, starts from \c currVertex
+/**
+\return false if cycle is not in the tree, true if cycle is already in the tree
+
+Say we have the following tree, starting from vertex 1:
+\verbatim
+      1
+    / | \
+   3  4   2
+ / |  |   | \
+4  5  5   4  5
+\endverbatim
+
+- If we query this function with the cycle 1-3-5 or 1-2-4, it will return true
+- If we query this function with the cycle 1-4-6, it will return false.
+*/
+template<typename T, typename tree_t>
+bool
+searchCycleInTree(
+	tree_t&               tree, ///< current tree
+	typename boost::graph_traits<tree_t>::vertex_descriptor& currVertex, ///< current vertex in tree
+	const std::vector<T>& cycle, ///< the cycle we are investigating
+	size_t&               cyIdx,  ///< current index in the cycle (this is a recursive function, so we need to know where we are)
+	typename boost::graph_traits<tree_t>::vertex_descriptor& lastGoodVertex
+)
+{
+	static int depth;
+	depth++;
+	UDGCD_COUT << "start, depth=" << depth << " currVertex=" << currVertex << " idx=" << tree[currVertex].idx << " lastGoodVertex=" << lastGoodVertex << '\n';
+
+	if( cyIdx+1 == cycle.size() )   // if last element of cycle, no more exploration of the tree is needed
+	{
+		depth--;
+		return true;
+	}
+
+// We iterate on each leaf and check if the cycle element is there
+	bool found = false;
+	lastGoodVertex = currVertex;
+	for( auto oei = boost::out_edges( currVertex, tree ); oei.first != oei.second; ++oei.first )
+	{
+		currVertex = boost::target( *oei.first, tree );
+		UDGCD_COUT << "loop: currVertex=" << currVertex << " idx=" << tree[currVertex].idx << '\n';
+		if( tree[currVertex].idx == cycle[cyIdx+1] )  // correspondance at this level, lets get further down
+		{
+			cyIdx = cyIdx+1;
+			UDGCD_COUT << "equal, search further\n";
+			found = searchCycleInTree( tree, currVertex, cycle, cyIdx, lastGoodVertex ); // explore further on
+		}
+	}
+//	UDGCD_COUT << "BEFORE currVertex=" << currVertex << " idx=" << tree[currVertex].idx << " found=" << found << '\n';
+//	if( !found ) // path not found in tree, we set the current vertex to the one we began with
+//		currVertex = current;
+//	UDGCD_COUT << "END currVertex=" << currVertex << " idx=" << tree[currVertex].idx << '\n';
+	UDGCD_COUT << "END, depth=" << depth << " currVertex=" << currVertex << ",idx=" << tree[currVertex].idx << " lastGoodVertex=" << lastGoodVertex << ",idx=" << tree[lastGoodVertex].idx << '\n';
+
+	depth--;
+	return found;
+}
+
+//-------------------------------------------------------------------------------------------
+/// Selects the right tree, create it if needed, then search the tree for the cycle \c cycle,
+/// and add it if not present
+/**
+- If not present, add it to the tree and return false
+- If present, return true
+*/
+template<typename T, typename tree_t>
+bool
+addCycleToTrees(
+	const std::vector<T>& cycle,
+	std::vector<tree_t>&  vtrees ///< array of trees
+)
+{
+	PRINT_FUNCTION;
+
+#ifdef UDGCD_DEV_MODE
+	printVector( std::cout, cycle, "addCycleToTrees()" );
+#endif
+// if tree starting with initial node equal to first one in path does not exist, then build it
+	auto firstNode = cycle.front();
+	UDGCD_ASSERT_2( firstNode < vtrees.size(), firstNode, vtrees.size() );
+	auto& tree = vtrees[firstNode];
+	if( boost::num_vertices( tree ) == 0 )
+	{
+		addCycleToNewTree( tree, cycle );
+#ifdef UDGCD_DEV_MODE
+			std::ostringstream oss;
+			oss << "tree_tmp_" << firstNode << "_0";
+			printTree( tree, oss.str() );
+			UDGCD_COUT << "tree saved to " << oss.str() << "\n";
+#endif
+
+		return false;
+	}
+	else
+	{
+		typename boost::graph_traits<tree_t>::vertex_descriptor currVertex = 0;
+		typename boost::graph_traits<tree_t>::vertex_descriptor lastGoodVertex = 0;
+		size_t cyIdx = 0;
+		auto found = searchCycleInTree( tree, currVertex, cycle, cyIdx, lastGoodVertex );
+
+		if( !found ) // add remaining elements of cycle in the tree
+		{
+			UDGCD_COUT << "not found, adding remaining elements of cycle, lastGoodVertex= "<< lastGoodVertex << " idx=" << tree[lastGoodVertex].idx << "\n";
+			for( size_t i=cyIdx+1; i<cycle.size(); i++ )
+			{
+				UDGCD_COUT << "i=" << i << " adding elem " << cycle[i] << " edge: from " << tree[lastGoodVertex].idx << "\n";
+				auto newV = boost::add_vertex( tree );
+				tree[newV].idx = cycle[i];
+				boost::add_edge( lastGoodVertex, newV, tree );
+				lastGoodVertex = newV;
+			}
+#ifdef UDGCD_DEV_MODE
+			if( cycle.size() > cyIdx+1 )
+			{
+				static int index=1;
+				std::ostringstream oss;
+				oss << "tree_tmp_" << firstNode << "_" << index++;
+				printTree( tree, oss.str() );
+				UDGCD_COUT << "tree saved to " << oss.str() << "\n";
+			}
+#endif
+		}
+		return found;
+	}
+}
+
+} // namespace tree
+
+#if 0
+//-------------------------------------------------------------------------------------------
+namespace tree {
+template<typename T, typename graph_t>
+std::vector<std::vector<T>>
+strip(
+	const std::vector<std::vector<T>>& v_cycles,
+	const graph_t& gr
+)
+{
+	PRINT_FUNCTION;
+	std::vector<std::vector<T>> out;
+	out.reserve( v_cycles.size() );
+
+	for( const auto& cycle: v_cycles )
+	{
+		auto newcy = findTrueCycle( cycle );
+		assert( newcy.size()>2 );
+		out.push_back( newcy );
+	}
+	return out;
+}
+
+//-------------------------------------------------------------------------------------------
+template<typename T, typename graph_t>
+std::vector<std::vector<T>>
+storeUnique(
+	const std::vector<std::vector<T>>& v_cycles,
+	const graph_t&                     gr,
+	const UdgcdInfo&                   info
+)
+{
+	PRINT_FUNCTION;
+
+	using tree_t = boost::adjacency_list<
+			boost::vecS,
+			boost::vecS,
+			boost::directedS,
+			TreeVertex
+		>;
+
+	std::vector<std::vector<T>> out;
+	out.reserve( v_cycles.size() );
+
+/* say we have a graph with 5 vertices (0-1-2-3-4). Then we need at most 3 trees, because the paths will be sorted.
+So a path like 3-4-0 will be stored in the tree '0', as 0-3-4
+*/
+	std::vector<tree_t> vtrees( boost::num_vertices(gr) - 2 );
+	for( const auto& cycle: v_cycles )
+		if( !addCycleToTrees( cycle, vtrees ) )
+			out.push_back( cycle );
+
+	if( info.printTrees )
+		printTrees( vtrees );
+
+	return out;
+}
+
+} // namespace tree
+
+//-------------------------------------------------------------------------------------------
+template<typename T, typename graph_t>
+std::vector<std::vector<T>>
+stripCycles(
+	const std::vector<std::vector<T>>& v_cycles,
+	const graph_t& gr,
+	const UdgcdInfo&            info
+)
+{
+	PRINT_FUNCTION;
+//	std::cout << __FUNCTION__ << "(): size=" << v_cycles.size() << "\n";
+	assert( v_cycles.size() );
+//UDGCD_COUT << "BEFORE STRIP\n";
+	auto v1 = tree::strip( v_cycles, gr );
+//UDGCD_COUT << "AFTER STRIP\n";
+//	printPaths( std::cout, v1, "unsorted" );
+//	std::sort( std::begin(v1), std::end(v1) );
+//	printPaths( std::cout, v1, "sorted" );
+	return tree::storeUnique( v1, gr, info );
+}
+#else // 0-1
 //-------------------------------------------------------------------------------------------
 /// Removes for each cycle the vertices that are not part of the cycle.
 /**
@@ -631,14 +1047,15 @@ Example:
 However, the output vector has a size usually less than 10 times less the size of the input vector.
 Thus there might be some memory saving to do here.
 
-\todo Most of the time spend here is probably in the find() function. An improvement can probably be done by
-storing the cycles in a tree, as they are normalized (or are they?)
-
 \sa findTrueCycle()
 */
-template<typename T>
+template<typename T, typename graph_t>
 std::vector<std::vector<T>>
-stripCycles( const std::vector<std::vector<T>>& v_cycles )
+stripCycles(
+	const std::vector<std::vector<T>>& v_cycles,
+	const graph_t&                     gr,
+	const UdgcdInfo&                   info
+)
 {
 	PRINT_FUNCTION;
 //	std::cout << __FUNCTION__ << "(): size=" << v_cycles.size() << "\n";
@@ -647,32 +1064,39 @@ stripCycles( const std::vector<std::vector<T>>& v_cycles )
 	std::vector<std::vector<T>> out;
 	out.reserve( v_cycles.size() );
 
-#ifdef UDGCD_DEV_MODE
-	int i=0;
-#endif
+	using tree_t = boost::adjacency_list<
+			boost::vecS,
+			boost::vecS,
+			boost::directedS,
+			tree::TreeVertex
+		>;
+
+/* say we have a graph with 5 vertices (0-1-2-3-4). Then we need at most 3 trees, because the paths will be sorted.
+So a path like 3-4-0 will be stored in the tree '0', as 0-3-4 */
+	std::vector<tree_t> vtrees( boost::num_vertices(gr) - 2 );
 
 	for( const auto& cycle: v_cycles )
 	{
 		auto newcy = findTrueCycle( cycle );
-#ifdef UDGCD_DEV_MODE
-		std::cout << i++ << "-BEFORE: ";
-		printVector( std::cout, cycle );
-		std::cout << i << "-AFTER:  ";
-		printVector( std::cout, newcy );
-#endif
-		if( std::find( std::begin(out), std::end(out), newcy ) == std::end(out) )     // add to output vector only if not already present
+		assert( newcy.size()>2 );
+		if( !addCycleToTrees( newcy, vtrees ) )
 			out.push_back( newcy );
 	}
+
+	if( info.runTime.printTrees )
+		printTrees( vtrees );
+
 	return out;
 }
 
+#endif // 0-1
 //-------------------------------------------------------------------------------------------
 /// Returns true if vertices \c v1 and \c v2 are connected by an edge
 /**
 http://www.boost.org/doc/libs/1_59_0/libs/graph/doc/IncidenceGraph.html#sec:out-edges
 
 \todo Replace the calling to this function (that needs to iterate at every call)
-by a static binary vector, givening the result instantly from an index value.
+by a static binary vector, giving the result instantly from an index value.
 */
 template<typename vertex_t, typename graph_t>
 bool
@@ -1837,70 +2261,6 @@ checkCycles( const std::vector<std::vector<vertex_t>>& v_in, const graph_t& gr )
 } // namespace priv
 
 //-------------------------------------------------------------------------------------------
-/// Holds information on the cycle detection process
-/// (nb of cycles at each step and timing information)
-struct UdgcdInfo
-{
-	size_t nbRawCycles      = 0;
-	size_t nbStrippedCycles = 0;
-	size_t nbNonChordlessCycles = 0;
-	size_t nbFinalCycles  = 0;
-	size_t nbSourceVertex = 0;
-	int maxDepth = 0;
-
-	std::vector<
-		std::pair<
-			std::string,
-			std::chrono::time_point<std::chrono::high_resolution_clock>
-		>
-	> timePoints;
-
-    void setTimeStamp( const char* stepName=0 )
-    {
-		std::string s;
-		if( stepName )
-			s = stepName;
-		timePoints.push_back( std::make_pair( s, std::chrono::high_resolution_clock::now() ) );
-    }
-
-	void print( std::ostream& f ) const
-	{
-		f << "UdgcdInfo:"
-			<< "\n - nbRawCycles="      << nbRawCycles
-			<< "\n - nbSourceVertex="   << nbSourceVertex
-			<< "\n - nbStrippedCycles=" << nbStrippedCycles
-			<< "\n - nbNonChordlessCycles=" << nbNonChordlessCycles
-			<< "\n - nbFinalCycles=" << nbFinalCycles
-			<< "\n - maxDepth="      << maxDepth
-			<< "\n - Duration per step:\n";
-			for( size_t i=0; i<timePoints.size()-1; i++ )
-			{
-				auto dur = timePoints[i+1].second - timePoints[i].second;
-				f <<  "step " << i+1 << " ("
-				<< timePoints[i].first << "): "
-				<< std::chrono::duration_cast<std::chrono::milliseconds>(dur).count() << " ms\n";
-			}
-	}
-
-	void printCSV( std::ostream& f ) const
-	{
-		auto siz = timePoints.size();
-		char sep=';';
-		f << nbRawCycles << sep
-			<< nbStrippedCycles << sep
-			<< nbNonChordlessCycles << sep
-			<< nbFinalCycles << sep;
-		for( size_t i=0; i<siz-1; i++ )
-		{
-			auto d = timePoints[i+1].second - timePoints[i].second;
-			f << std::chrono::duration_cast<std::chrono::milliseconds>(d).count();
-			if( i != siz-2 )
-				f << sep;
-		}
-		f << "\n";
-	}
-};
-//-------------------------------------------------------------------------------------------
 /// Cycle detector for an undirected graph
 /**
 Passed by value as visitor to \c boost::undirected_dfs()
@@ -1952,7 +2312,10 @@ Returns a vector of cycles that have been found in the graph
 */
 template<typename graph_t, typename vertex_t>
 std::vector<std::vector<vertex_t>>
-findCycles( graph_t& gr, UdgcdInfo& info )
+findCycles(
+	graph_t&              gr,
+	UdgcdInfo&            info
+)
 {
 	PRINT_FUNCTION;
 
@@ -1989,7 +2352,7 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 	info.setTimeStamp( "explore" );
 	for( const auto& vi: cycleDetector.v_source_vertex )
 	{
-		UDGCD_COUT << "\n * Start exploring from source vertex " << vi << "\n";
+		UDGCD_COUT << "* Start exploring from source vertex " << vi << "\n";
 		std::vector<std::vector<vertex_t>> v_paths;
 		std::vector<vertex_t> newv(1, vi ); // start by one of the filed source vertex
 		v_paths.push_back( newv );
@@ -1997,15 +2360,21 @@ findCycles( graph_t& gr, UdgcdInfo& info )
 	}
 
 	info.nbRawCycles = v_cycles.size();
-//	std::cout << "-Nb initial cycles: " << info.nbRawCycles << '\n';
+	UDGCD_COUT << "-Nb initial cycles: " << info.nbRawCycles << '\n';
+#ifdef UDGCD_DEV_MODE
+	printPaths( std::cout, v_cycles, "raw cycles" );
+#endif
 
 //////////////////////////////////////
 // step 3 (post process): cleanout the cycles by removing the vertices that are not part of the cycle and sort
 //////////////////////////////////////
 
 	info.setTimeStamp( "clean cycles" );
-	auto v_cycles0 = priv::stripCycles( v_cycles );
+	auto v_cycles0 = priv::stripCycles( v_cycles, gr, info );
 	info.nbStrippedCycles = v_cycles0.size();
+#ifdef UDGCD_DEV_MODE
+	printPaths( std::cout, v_cycles0, "stripped cycles" );
+#endif
 
 // SORTING
 	info.setTimeStamp( "sorting" );

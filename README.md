@@ -20,16 +20,16 @@ These are sorted with the smallest vertex in first position, and such as the sec
 <a name="s_stat"></a>
 
 - Home page: https://github.com/skramm/udgcd
-- beta, may produce a result, no guarantee at all (this is a stalled project)
-- Author: Sebastien Kramm
+- Author: Sebastien Kramm, firstname.lastname@univ-rouen.fr
 - Latest news:
+  - 2023-07-17: (**major update**) Algorithm improvment, now much more efficient, see [details here](misc/tree_stripping.md)
   - 2023-07-03: was reported to [build on Windows using VisualStudio](https://github.com/skramm/udgcd/issues/4#issuecomment-1611426339)
   - 2020-06-09: experimental code and preliminar release, source is pretty messy, but it works fine, give it a try (instructions below).
 - Released under the Boost licence.
 
 ### Features
 
-- Single-file, header only, OS agnostic
+- Single-file header only library, OS agnostic
 - Works for graphs holding unconnected sub-graphs.
 - Works for non-planar graphs
 - Modern C++ design (RAII), basic C++11.
@@ -75,7 +75,7 @@ This will copy the file in `/usr/local/include/`
 Some additional apps are included, that are build by the makefile:
  - `read_graph.cpp`: reads graph from a text file given as argument, computes its cycles, prints them and generate the corresponding dot file.
  - `random_test.cpp`: generates a random graph computes its cycles, prints them and generate the corresponding dot file.
- - `sample_?.cpp`: c++ apps that build a graph and computes its cycles.
+ - `sample_?.cpp`: C++ apps that build a graph and computes its cycles.
 
 #### Build options:
  - The provided makefile is not requested to use the library, as it is "header-only".
@@ -145,10 +145,16 @@ This step is the most time-consuming.
 - The third steps does some post-processing:
 sort cycles by decreasing length, and do Gaussian Elimination to retain a Minimal Cycle Basis (MCB).
 
+### Dependencies
+
+- boost::graph - https://www.boost.org/doc/libs/1_82_0/libs/graph/doc/
+(warning: boost graph itself has a lot of other boost dependencies)
+- boost::dynamic_bitset https://www.boost.org/doc/libs/1_82_0/libs/dynamic_bitset/dynamic_bitset.html
+
+
 ### References
 <a name="s_ref"></a>
 
-- BGL: http://www.boost.org/doc/libs/1_59_0/libs/graph/doc
 - https://en.wikipedia.org/wiki/Cycle_basis
 - J. D. Horton, <i>A polynomial-time algorithm to find a shortest cycle basis of a graph</i>, SIAM Journal of Computing 16, 1987, pp. 359–366
 [link](https://epubs.siam.org/doi/10.1137/0216026).

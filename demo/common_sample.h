@@ -32,9 +32,16 @@ Home page: https://github.com/skramm/udgcd
 #include <string>
 #include <numeric>
 
+#ifdef UDGCD_USE_M4RI
+	#define HAS_M4RI "YES\n"
+#else
+	#define HAS_M4RI "NO\n"
+#endif
+
 #define SHOW_INFO \
 	std::cout << "-START: " << __FILE__ \
-		<< "\n-built with Boost " << BOOST_LIB_VERSION << '\n'
+		<< "\n-built with Boost " << BOOST_LIB_VERSION \
+		<< "\n-build option: USE_M4RI: " << HAS_M4RI << "\n";
 
 extern std::string prog_id; // allocated in samples files
 int g_idx = 0;
@@ -473,7 +480,7 @@ The counterpart is that we do not read the vertices/edges properties that can be
 
 \warning This is a minimal reader, don't expect any fancy features.
 
-Limitation/features:  as we do not handle labels, the index in input file will be the BGL vertex index.<br>
+Limitation/features: as we do not handle labels, the index in input file will be the BGL vertex index.<br>
 Drawback: if a node is missing in input file, it will be in the generated graph, because BGL indexes are always
 consecutives.
 
@@ -497,7 +504,7 @@ will generate a graph of 6 vertices (0 to 5), with only 0 and 1 connected.
 */
 template<typename graph_t>
 graph_t
-loadGraph_dot( const char* fname )
+loadGraph_dot( std::string fname )
 {
 	std::cout<< " - Reading file:" << fname << '\n';
 	std::ifstream f( fname );
@@ -641,7 +648,7 @@ loadGraph_dot( const char* fname )
 /// Load graph from custom simple text format
 template<typename graph_t>
 graph_t
-loadGraph_txt( const char* fname )
+loadGraph_txt( std::string fname )
 {
 	graph_t g;
 
@@ -734,17 +741,17 @@ The first value is 0 in case of success, -1 if incorrect cycles were found.
 If other value, it is the absolute number of differences between:
 - the \b computed number of cycles
 - and the \b expected number of cycles
-
 */
 template<typename graph_t,typename vertex_t>
 std::pair<int,std::vector<std::vector<vertex_t>>>
-processGraph( graph_t& g )
+processGraph( graph_t& g, const udgcd::RunTimeOptions& rtOptions )
 {
 	auto expected = printGraphInfo( g );
 
 	udgcd::UdgcdInfo info;
+	info.runTime = rtOptions;
 	auto cycles = udgcd::findCycles<graph_t,vertex_t>( g, info );
-//	udgcd::printPaths( std::cout, cycles, "final" );
+
 	if( expected != cycles.size() )
 		std::cout << "ERROR: computed nb of cycles is not what expected (expected=" << expected << ")\n";
 
@@ -752,24 +759,33 @@ processGraph( graph_t& g )
 
 	udgcd::priv::printStatus( std::cout, cycles, __LINE__ );
 
-	auto check = udgcd::priv::checkCycles( cycles, g );
-	if( check.first != 0 )
+	if( rtOptions.printCycles )
+		udgcd::printPaths( std::cout, cycles, "final" );
+
+	if( rtOptions.doChecking )
 	{
-		std::cout << "ERROR: " << check.first << " incorrect cycles found\n";
-		return std::make_pair(-1, cycles );
-	}
-	if( check.second != 0 )
-	{
-		std::cout << "Found: " << check.second << " non chordless cycles\n";
+		auto check = udgcd::priv::checkCycles( cycles, g );
+		if( check.first != 0 )
+		{
+			std::cout << "ERROR: " << check.first << " incorrect cycles found\n";
+			return std::make_pair(-1, cycles );
+		}
+		if( check.second != 0 )
+		{
+			std::cout << "Found: " << check.second << " non chordless cycles\n";
+		}
 	}
 
 	info.print( std::cout );
 //	info.printCSV( std::cerr );
 
-	std::cout << "Histogram of cycle sizes:\n";
-	auto histog = buildSizeHistogram( cycles );
-	for( size_t i=0; i<histog.size(); i++ )
-		std::cout << i+3 << ":" << histog[i] << "\n";
+	if( rtOptions.printHistogram )
+	{
+		std::cout << "Histogram of cycle sizes:\n";
+		auto histog = buildSizeHistogram( cycles );
+		for( size_t i=0; i<histog.size(); i++ )
+			std::cout << i+3 << ":" << histog[i] << "\n";
+	}
 
 	auto diff = (int)cycles.size() - (int)expected;
 	return std::make_pair(diff, cycles );

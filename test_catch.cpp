@@ -8,13 +8,14 @@ https://github.com/philsquared/Catch/
 #define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
 #include "catch.hpp"
 
+#define UDGCD_LOG_FUNC
 #include "udgcd.hpp"
 #include "demo/common_sample.h"
 
 using namespace udgcd;
 using namespace sample;
 
-using  graph_t = boost::adjacency_list<
+using graph_t = boost::adjacency_list<
 		boost::vecS,
 		boost::vecS,
 		boost::undirectedS
@@ -586,5 +587,27 @@ TEST_CASE( "splitstring", "[tsplit]" )
     CHECK( trimString( "   abc   " ) == "abc" );
 
 }
+//-------------------------------------------------------------------------------------------
+TEST_CASE( "tree stripping", "[tree-strip]" )
+{
+	graph_t gr(8);
+
+	std::vector<std::vector<size_t>> vcy = {
+		{1,2,3,1},
+		{0,1,2,3,0},
+		{4,3,5,4},
+		{4,3,5,4},
+		{3,5,2,3},
+		{0,3,4,0},
+		{4,3,5,4},
+		{0,1,3},
+		{0,3,4,0}
+	};
+	priv::stripCycles( vcy, gr );
+
+
+
+}
+
 //-------------------------------------------------------------------------------------------
 
