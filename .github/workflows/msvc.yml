@@ -23,7 +23,7 @@ jobs:
         with:
           arch: x64
       - run: cd
-      - run: VER
+      - run: systeminfo
       - run: dir
       - name: get boost
         run: curl https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.zip -O -J -L
